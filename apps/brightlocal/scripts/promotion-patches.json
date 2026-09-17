@@ -850,6 +850,41 @@
       "why": "Ali, 17 Sep: the next run is the date alone, no weekday in front",
       "find": "                {frequency === \"daily\" ? \"tomorrow\" : `${runDay} ${formatDate(\"2026-09-08\")}`}",
       "replace": "                {/* No weekday in front of the date either (Ali, 17 Sep): it\n                    doubled the Run day field above, and it was the part that\n                    could disagree with the date. */}\n                {frequency === \"daily\" ? \"tomorrow\" : formatDate(\"2026-09-08\")}"
+    },
+    {
+      "why": "Ali, 17 Sep: run-now lifecycle: AlertWarning and the DS Link",
+      "find": "import { AlertInfo } from \"@brightlocal/ui-components/alert\";\n",
+      "replace": "import { AlertInfo, AlertWarning } from \"@brightlocal/ui-components/alert\";\nimport { Link } from \"@brightlocal/ui-components/link\";\n"
+    },
+    {
+      "why": "Ali, 17 Sep: run-now lifecycle: the run state and the history as state",
+      "find": "  const [connectOpen, setConnectOpen] = useState(false);\n",
+      "replace": "  const [connectOpen, setConnectOpen] = useState(false);\n\n  // RUN REPORT NOW HAS A LIFECYCLE (Ali, 17 Sep: \"Can we add three states\n  // in?\", from Margarita's review). Per the PRD an ad-hoc run is credit-checked\n  // against the subscription and rejected with \"no ad-hoc runs left\", and the\n  // API cannot tell us the quota BEFORE the click. So the button is never\n  // disabled up front: a click either queues a run, which reports running\n  // until it is done, or comes back rejected. The same pattern AI Visibility\n  // and Local Search Grid use: a loading button, then a no-credits alert.\n  //   idle      the button\n  //   running   the button spins and says so, the header says Running now\n  //   rejected  a warning above the schedule, with the way to more runs\n  // ASSUMPTION, demo only: one manual run is left, so the first click runs\n  // (and lands in the history when it finishes) and the second is rejected.\n  // The real allowance is the subscription's, and nothing here knows it.\n  const [runState, setRunState] = useState(\"idle\");\n  const [runs, setRuns] = useState(RUNS);\n  const [manualRunsLeft, setManualRunsLeft] = useState(1);\n  const runNow = () => {\n    if (runState === \"running\") return;\n    if (manualRunsLeft < 1) {\n      setRunState(\"rejected\");\n      return;\n    }\n    setRunState(\"running\");\n    window.setTimeout(() => {\n      setRuns((prev) => [\n        { id: \"r0\", at: \"2026-09-03T10:12\", trigger: \"Manual\", found: 1249, added: 2, state: \"ok\" },\n        ...prev,\n      ]);\n      setManualRunsLeft((n) => n - 1);\n      setRunState(\"idle\");\n    }, 6000);\n  };\n"
+    },
+    {
+      "why": "Ali, 17 Sep: run-now lifecycle: the button runs, spins and says Running",
+      "find": "            statusRight={<DateStamp label=\"Last run\" value={RUNS[0].at} dataHook=\"last-run\" />}\n            actions={\n              <Button variant=\"outline\" dataHook=\"run-now\">\n                <Play className=\"size-4\" />\n                Run report now\n              </Button>\n            }",
+      "replace": "            // Last run stays put while a run is going: the button already\n            // says Running, and a second \"running\" under it only repeated it.\n            statusRight={<DateStamp label=\"Last run\" value={runs[0].at} dataHook=\"last-run\" />}\n            actions={\n              <Button\n                variant=\"outline\"\n                dataHook=\"run-now\"\n                onClick={runNow}\n                loading={runState === \"running\"}\n                disabled={runState === \"running\"}\n              >\n                {runState === \"running\" ? null : <Play className=\"size-4\" />}\n                {runState === \"running\" ? \"Running…\" : \"Run report now\"}\n              </Button>\n            }"
+    },
+    {
+      "why": "Ali, 17 Sep: run-now lifecycle: the no runs left warning above the schedule",
+      "find": "          <style>{SPACING_FIXES}</style>\n          {/* ── SCHEDULE ─────────────────────────────────────────────── */}",
+      "replace": "          <style>{SPACING_FIXES}</style>\n          {/* The rejection. Above everything, because it answers the click in\n              the header, and it says the schedule still stands so nobody\n              reads it as the report having stopped. */}\n          {runState === \"rejected\" ? (\n            <AlertWarning\n              dataHook=\"run-rejected\"\n              title=\"No manual runs left\"\n              description={`Your plan's manual runs are used up, so this run did not start. The report still runs on its schedule, next on ${formatDate(\"2026-09-08\")}.`}\n              action={\n                <Button variant=\"outline\" size=\"sm\" dataHook=\"run-rejected-plans\" asChild>\n                  <a href=\"/account/subscription\">See plans</a>\n                </Button>\n              }\n            />\n          ) : null}\n          {/* ── SCHEDULE ─────────────────────────────────────────────── */}"
+    },
+    {
+      "why": "Ali, 17 Sep: next run is always a date, never tomorrow",
+      "find": "                {frequency === \"daily\" ? \"tomorrow\" : formatDate(\"2026-09-08\")}",
+      "replace": "                {/* Always a date, never \"tomorrow\" (Ali, 17 Sep: \"always\n                    just put the date\"). Daily: the day after the last run. */}\n                {frequency === \"daily\" ? formatDate(\"2026-09-03\") : formatDate(\"2026-09-08\")}"
+    },
+    {
+      "why": "Ali, 17 Sep: run-now lifecycle: the allowance hint in the schedule sentence",
+      "find": "              . A run can be triggered by hand at any time, and doing so does not move the schedule.",
+      "replace": "              . A run can be triggered by hand at any time, and doing so does not move the schedule.\n              {/* THE ALLOWANCE HINT. No number: the API gives no quota and the\n                  plans table has no manual-run figure to quote, so it says\n                  where the number lives instead of making one up. */}\n              {\" \"}Manual runs come out of your plan's allowance.{\" \"}\n              <Link variant=\"inline\" dataHook=\"run-allowance\" href=\"/account/subscription\">\n                See what your plan includes\n              </Link>"
+    },
+    {
+      "why": "Ali, 17 Sep: run-now lifecycle: the history reads the runs state",
+      "find": "                {RUNS.map((r) => {",
+      "replace": "                {runs.map((r) => {"
     }
   ]
 }

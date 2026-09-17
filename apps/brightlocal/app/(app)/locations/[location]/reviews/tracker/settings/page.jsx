@@ -82,7 +82,8 @@ import {
   InputListItems,
   InputListInput,
 } from "@brightlocal/ui-components/input-list";
-import { AlertInfo } from "@brightlocal/ui-components/alert";
+import { AlertInfo, AlertWarning } from "@brightlocal/ui-components/alert";
+import { Link } from "@brightlocal/ui-components/link";
 import {
   Dialog,
   DialogContent,
@@ -370,6 +371,39 @@ export default function RMReportSettingsPage() {
   const [profileUrl, setProfileUrl] = useState("");
   const [connectOpen, setConnectOpen] = useState(false);
 
+  // RUN REPORT NOW HAS A LIFECYCLE (Ali, 17 Sep: "Can we add three states
+  // in?", from Margarita's review). Per the PRD an ad-hoc run is credit-checked
+  // against the subscription and rejected with "no ad-hoc runs left", and the
+  // API cannot tell us the quota BEFORE the click. So the button is never
+  // disabled up front: a click either queues a run, which reports running
+  // until it is done, or comes back rejected. The same pattern AI Visibility
+  // and Local Search Grid use: a loading button, then a no-credits alert.
+  //   idle      the button
+  //   running   the button spins and says so, the header says Running now
+  //   rejected  a warning above the schedule, with the way to more runs
+  // ASSUMPTION, demo only: one manual run is left, so the first click runs
+  // (and lands in the history when it finishes) and the second is rejected.
+  // The real allowance is the subscription's, and nothing here knows it.
+  const [runState, setRunState] = useState("idle");
+  const [runs, setRuns] = useState(RUNS);
+  const [manualRunsLeft, setManualRunsLeft] = useState(1);
+  const runNow = () => {
+    if (runState === "running") return;
+    if (manualRunsLeft < 1) {
+      setRunState("rejected");
+      return;
+    }
+    setRunState("running");
+    window.setTimeout(() => {
+      setRuns((prev) => [
+        { id: "r0", at: "2026-09-03T10:12", trigger: "Manual", found: 1249, added: 2, state: "ok" },
+        ...prev,
+      ]);
+      setManualRunsLeft((n) => n - 1);
+      setRunState("idle");
+    }, 6000);
+  };
+
   const list = DIRECTORIES[country];
   const shareUrl = "https://reports.brightlocal.com/r/8k2p1x";
 
@@ -432,11 +466,19 @@ export default function RMReportSettingsPage() {
             // avoid: a long timestamp sitting in the header instead of a
             // short date with the detail one hover away. Same component the
             // campaign cards and the page header's own Last updated use.
-            statusRight={<DateStamp label="Last run" value={RUNS[0].at} dataHook="last-run" />}
+            // Last run stays put while a run is going: the button already
+            // says Running, and a second "running" under it only repeated it.
+            statusRight={<DateStamp label="Last run" value={runs[0].at} dataHook="last-run" />}
             actions={
-              <Button variant="outline" dataHook="run-now">
-                <Play className="size-4" />
-                Run report now
+              <Button
+                variant="outline"
+                dataHook="run-now"
+                onClick={runNow}
+                loading={runState === "running"}
+                disabled={runState === "running"}
+              >
+                {runState === "running" ? null : <Play className="size-4" />}
+                {runState === "running" ? "Running…" : "Run report now"}
               </Button>
             }
           />
@@ -445,6 +487,21 @@ export default function RMReportSettingsPage() {
         <GlobalLayoutContentBody dataHook="settings-page-body" className="gap-4 pb-10">
           {/* See SPACING_FIXES. Scoped to this page's body so nothing leaks. */}
           <style>{SPACING_FIXES}</style>
+          {/* The rejection. Above everything, because it answers the click in
+              the header, and it says the schedule still stands so nobody
+              reads it as the report having stopped. */}
+          {runState === "rejected" ? (
+            <AlertWarning
+              dataHook="run-rejected"
+              title="No manual runs left"
+              description={`Your plan's manual runs are used up, so this run did not start. The report still runs on its schedule, next on ${formatDate("2026-09-08")}.`}
+              action={
+                <Button variant="outline" size="sm" dataHook="run-rejected-plans" asChild>
+                  <a href="/account/subscription">See plans</a>
+                </Button>
+              }
+            />
+          ) : null}
           {/* ── SCHEDULE ─────────────────────────────────────────────── */}
           <SettingsCard
             dataHook="schedule-card"
@@ -501,9 +558,18 @@ export default function RMReportSettingsPage() {
                 {/* No weekday in front of the date either (Ali, 17 Sep): it
                     doubled the Run day field above, and it was the part that
                     could disagree with the date. */}
-                {frequency === "daily" ? "tomorrow" : formatDate("2026-09-08")}
+                {/* Always a date, never "tomorrow" (Ali, 17 Sep: "always
+                    just put the date"). Daily: the day after the last run. */}
+                {frequency === "daily" ? formatDate("2026-09-03") : formatDate("2026-09-08")}
               </span>
               . A run can be triggered by hand at any time, and doing so does not move the schedule.
+              {/* THE ALLOWANCE HINT. No number: the API gives no quota and the
+                  plans table has no manual-run figure to quote, so it says
+                  where the number lives instead of making one up. */}
+              {" "}Manual runs come out of your plan's allowance.{" "}
+              <Link variant="inline" dataHook="run-allowance" href="/account/subscription">
+                See what your plan includes
+              </Link>
             </p>
           </SettingsCard>
 
@@ -820,7 +886,7 @@ export default function RMReportSettingsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {RUNS.map((r) => {
+                {runs.map((r) => {
                   const state = RUN_STATE[r.state];
                   return (
                     <TableRow key={r.id} data-hook={`run-${r.id}`}>
