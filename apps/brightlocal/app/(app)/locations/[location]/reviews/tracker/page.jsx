@@ -839,21 +839,21 @@ function ReviewPerformance() {
                         added and it made a magnitude bar heavier than the
                         number beside it (Ali, 28 Aug: "a bit overkill in
                         their saturation, and also maybe a bit too fat").
-                        The fill is --chart-1 (Ali, 17 Sep: "switch to chart
-                        color 1"): these bars count reviews, they do not report
-                        good or bad, so they take the first chart colour like
-                        any other count, not a brand green that claims a
-                        meaning. Progress has no chart colour of its own, so
-                        the indicator is set here, and the track is sky-100,
-                        the tint of chart-1's own ramp. A ramp step, not an
-                        opacity mix, per the house rule on colour. */}
+                        NEUTRAL, the funnel's greys (Ali, 17 Sep: the blue "does
+                        draw the eye a bit"; brand green before it, 28 Aug, read
+                        as a verdict). These bars count reviews, they do not
+                        report good or bad, so they take the middle step of the
+                        ramp ReviewFunnel draws with, neutral-500, on
+                        neutral-100. Progress has no neutral colour of its own,
+                        so both are set here. Ramp steps, not an opacity mix,
+                        per the house rule on colour. */}
                     <Progress
                       dataHook={`rating-bar-${bucket.id}`}
                       value={byBucket[bucket.id]}
                       max={peak}
-                      indicatorClassName="bg-chart-1"
+                      indicatorClassName="bg-[var(--ds-tailwind-colors-neutral-500)]"
                       ariaLabel={`${byBucket[bucket.id]} reviews`}
-                      className="h-2 flex-1 bg-[var(--ds-tailwind-colors-sky-100)]"
+                      className="h-2 flex-1 bg-[var(--ds-tailwind-colors-neutral-100)]"
                     />
                     <span className="w-10 shrink-0 text-right text-sm tabular-nums">
                       {byBucket[bucket.id]}

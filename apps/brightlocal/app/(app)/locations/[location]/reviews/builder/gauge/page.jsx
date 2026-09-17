@@ -207,7 +207,7 @@ import {
   Pie,
   Cell,
 } from "@brightlocal/ui-components/chart";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@brightlocal/ui-components/table";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@brightlocal/ui-components/table";
 import { ViewToggle } from "@/components/view-toggle";
 import { CampaignPerformance } from "@/components/campaign-performance";
 import {
@@ -3589,7 +3589,7 @@ const CONVERSION_BANDS = [
   { id: "high", label: "Over 20%", meaning: "strong", to: 40 },
 ];
 
-function Gauge({ value, min, max, bands, display, caption, dataHook, legend = true }) {
+function Gauge({ value, min, max, bands, display, unit, caption, dataHook, legend = true }) {
   const { size, cx, cy, outer, inner } = GAUGE;
   const t = Math.min(1, Math.max(0, (value - min) / (max - min)));
   const angle = ((225 - 270 * t) * Math.PI) / 180;
@@ -3633,9 +3633,10 @@ function Gauge({ value, min, max, bands, display, caption, dataHook, legend = tr
             endAngle={-45}
             innerRadius={inner}
             outerRadius={outer}
-            paddingAngle={2}
-            cornerRadius={4}
-            stroke="none"
+            // Drawn like the Review performance donut (Ali, 17 Sep: "The donut in
+            // Review performance is different to the NPS one"): square ends and
+            // the chart's own thin separators, not rounded, gapped blocks.
+            paddingAngle={1}
             isAnimationActive={false}
           >
             {data.map((d) => (
@@ -3648,7 +3649,10 @@ function Gauge({ value, min, max, bands, display, caption, dataHook, legend = tr
         <polygon points={pointer} fill="currentColor" />
       </svg>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-semibold tabular-nums">{display}</span>
+        <span className="text-metric">{display}</span>
+        {/* What the number IS, under it, the way the donut says "reviews"
+            (Ali, 17 Sep: "is that 36 responses?"). */}
+        {unit ? <span className="text-muted-foreground text-xs">{unit}</span> : null}
       </div>
       {caption ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-1 text-center">
@@ -3715,6 +3719,9 @@ function CampaignInsights({ campaign, onAllFeedback }) {
   const [grain, setGrain] = useState(config.channel === "link" ? "month" : "day");
   // Chart or table on Reviews over time, like Review Tracker (Ali, 17 Sep).
   const [timelineView, setTimelineView] = useState("chart");
+  // Every chart is backed by a table (Ali, 17 Sep: "All charts should be backed with tables").
+  const [funnelView, setFunnelView] = useState("chart");
+  const [feedbackView, setFeedbackView] = useState("chart");
 
   // AN INFO TOOLTIP ON THE ONES THAT NEED IT (Ali, 3 Sep: "an info with a
   // tooltip is probably also useful on here"). StatCard already has an
@@ -3902,24 +3909,33 @@ function CampaignInsights({ campaign, onAllFeedback }) {
                   neutral funnel bars were told NOT to make; the gauge is
                   where that judgement now lives, so the bars can stay grey. */}
               <div className="flex flex-col gap-6 md:flex-row md:items-start">
-                <div className="flex flex-col">
-                  <p className="mb-3 text-sm font-medium" data-hook="insights-conversion-title">
-                    Conversion
-                  </p>
-                  <Gauge
-                    value={conversion}
-                    min={0}
-                    max={40}
-                    bands={CONVERSION_BANDS}
-                    display={`${conversion}%`}
-                    caption="sent to review site"
-                    dataHook="insights-conversion-gauge"
-                  />
-                </div>
+                {/* In table view the conversion dial steps aside: its figure
+                    is the funnel table's last "Of those sent". */}
+                {funnelView === "chart" ? (
+                  <div className="flex flex-col">
+                    <p className="mb-3 text-sm font-medium" data-hook="insights-conversion-title">
+                      Conversion
+                    </p>
+                    <Gauge
+                      value={conversion}
+                      min={0}
+                      max={40}
+                      bands={CONVERSION_BANDS}
+                      display={`${conversion}%`}
+                      caption="sent to review site"
+                      dataHook="insights-conversion-gauge"
+                    />
+                  </div>
+                ) : null}
                 <div className="min-w-0 flex-1">
-                  <p className="mb-3 text-sm font-medium" data-hook="insights-funnel-title">
-                    Funnel
-                  </p>
+                  {/* All charts are backed by tables (Ali, 17 Sep), so the
+                      funnel gets the chart/table switch beside its heading. */}
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium" data-hook="insights-funnel-title">
+                      Funnel
+                    </p>
+                    <ViewToggle view={funnelView} onChange={setFunnelView} idPrefix="funnel" />
+                  </div>
                   {/* A REAL FUNNEL (Ali, 3 Sep: "next up need a funnel
                       chart"), replacing the four Progress bars. Same data,
                       same greys as ReviewFunnel's ramp — the shape now does what
@@ -3937,7 +3953,34 @@ function CampaignInsights({ campaign, onAllFeedback }) {
                       width and hands the chart explicit pixels, which is the
                       only shape that keeps the DS chart context and stays
                       responsive. See the ReviewFunnel sidecar. */}
-                  <ReviewFunnel data={funnel} dataHook="insights-funnel-chart" height={224} />
+                  {funnelView === "table" ? (
+                    <Table dataHook="insights-funnel-table">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Step</TableHead>
+                          <TableHead align="right">Recipients</TableHead>
+                          <TableHead align="right">Of those sent</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {funnel.map((step) => (
+                          <TableRow key={step.k}>
+                            <TableCell>{step.k}</TableCell>
+                            <TableCell align="right" className="tabular-nums">
+                              {step.v.toLocaleString("en-GB")}
+                            </TableCell>
+                            <TableCell align="right" className="tabular-nums">
+                              {stats.sent ? Math.round((step.v / stats.sent) * 100) : 0}%
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <>
+                      <ReviewFunnel data={funnel} dataHook="insights-funnel-chart" height={224} />
+                    </>
+                  )}
                 </div>
               </div>
             </>
@@ -4063,141 +4106,222 @@ function CampaignInsights({ campaign, onAllFeedback }) {
 
           {config.ask === "feedback" ? (
             <>
-              <Card dataHook="insights-feedback-summary" className="max-w-none">
-                <CardHeader>
-                  <CardTitle size="small" dataHook="insights-feedback-title">
-                    Internal feedback
-                  </CardTitle>
-                  <CardDescription dataHook="insights-feedback-sub">
-                    Only visible to you. These are not public reviews.
-                  </CardDescription>
+              <Card dataHook="insights-feedback-summary" density="condensed" className="max-w-none">
+                {/* MATCHES THE OTHER CHART CARDS (Ali, 17 Sep: "The internal
+                    feedback card should match the others - we might also want a
+                    table"). The Tracker's sticky header band and the chart/table
+                    switch; no description ("extra noise"). */}
+                <CardHeader
+                  className="bg-card sticky top-[var(--gds-page-header-height,0px)] z-[5] -mt-3 rounded-t-[inherit] border-b px-6 pt-4 pb-4"
+                  style={{ gridTemplateRows: "auto", rowGap: 0 }}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-5">
+                    <CardTitle size="small" dataHook="insights-feedback-title">
+                      Internal feedback
+                    </CardTitle>
+                    <ViewToggle view={feedbackView} onChange={setFeedbackView} idPrefix="feedback" />
+                  </div>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                  {config.feedbackType === "nps" ? (
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                      {/* GAUGE WHERE THE NPS SCORE WAS (Ali, 3 Sep). The number
-                          moves into the dial's centre; the three band bars to
-                          the right are the same three blocks unrolled, so the
-                          two read as one instrument. Response count goes in
-                          the dial's bottom gap where the caption slot is. */}
-                      <Gauge
-                        value={nps}
-                        min={-100}
-                        max={100}
-                        bands={NPS_BANDS}
-                        display={nps}
-                        // ONE SCALE ON SCREEN (Ali, 17 Sep: "0-50 and 50 and above
-                        // - but we are one to 10? Weird discrepancy?"). The dial's
-                        // legend ranged the SCORE (-100 to 100) right beside rows
-                        // ranging the ANSWER (0 to 10), in the same three colours,
-                        // so they read as one scale. The legend goes; the band's
-                        // word moves into the caption, and the rows keep the 0 to
-                        // 10 ranges people actually answered on.
-                        legend={false}
-                        caption={`${(() => {
-                          const band = NPS_BANDS.find((b) => nps < b.to) ?? NPS_BANDS[NPS_BANDS.length - 1];
-                          return band.meaning.charAt(0).toUpperCase() + band.meaning.slice(1);
-                        })()} NPS, ${responded} responses`}
-                        dataHook="insights-nps-gauge"
-                      />
-                      <div className="flex flex-1 flex-col gap-2">
-                        {/* THE DS COLOUR ENUM IS BROKEN, so these are painted
-                            explicitly. Progress advertises green / red /
-                            orange / yellow in its contract, and MEASURED on
-                            the live render only green paints: yellow and red
-                            come back rgba(0,0,0,0) for BOTH the track and the
-                            indicator, so two of these three bars were
-                            invisible — the row rendered, the numbers rendered,
-                            and the bar was simply not there (Ali, 3 Sep:
-                            "seems to be a lack of other bar charts here").
-                            Logged as a DS finding.
-                            Colours are MUTED (Ali, same message: "is there a
-                            slightly more neutral chart colour? big bright
-                            fighting for attention"). The band still carries
-                            meaning — promoter, passive, detractor is a real
-                            scale — so the hues stay, at a step that reads as
-                            data rather than as an alert. */}
-                        {[
-                          // WHOLE CLASS NAMES, not a variable dropped into one at
-                          // runtime (Ali, 17 Sep: the bars "appear to be empty").
-                          // Tailwind only builds classes it can read in the
-                          // source, so bg-[var(${row.bar})] never existed in the
-                          // app's CSS and every fill was transparent.
-                          { k: "Promoters (9 to 10)", n: promoters, bar: "bg-[var(--ds-tailwind-colors-emerald-600)]" },
-                          { k: "Passives (7 to 8)", n: passives, bar: "bg-[var(--ds-tailwind-colors-amber-400)]" },
-                          { k: "Detractors (0 to 6)", n: detractors, bar: "bg-[var(--ds-tailwind-colors-rose-400)]" },
-                        ].map((row) => (
-                          <div key={row.k} className="flex items-center gap-3">
-                            <span className="w-40 shrink-0 text-sm">{row.k}</span>
-                            <Progress
-                              dataHook={`nps-${row.k.slice(0, 3).toLowerCase()}`}
-                              value={row.n}
-                              max={responded}
-                              indicatorClassName={row.bar}
-                              ariaLabel={`${row.n} ${row.k}`}
-                              className="h-2 flex-1 bg-[var(--ds-tailwind-colors-neutral-200)]"
-                            />
-                            {/* PERCENTAGES ONLY (Ali, 17 Sep: "Do we need numbers
-                                AND percentages?"). NPS is the promoter share less
-                                the detractor share, so the shares are the numbers
-                                that add up to it; the response count is in the
-                                dial's caption, and each count stays in the bar's
-                                label for a screen reader. */}
-                            <span className="w-12 shrink-0 text-right text-sm tabular-nums">
-                              {Math.round((row.n / responded) * 100)}%
+                <CardContent className="px-6 pt-2 pb-6">
+                  {feedbackView === "table" ? (
+                    (() => {
+                      // The same answers the chart draws, as rows: the share and the count
+                      // both, because a table is where the exact figures belong.
+                      const rows =
+                        config.feedbackType === "nps"
+                          ? [
+                              { k: "Promoters", range: "9 to 10", n: promoters },
+                              { k: "Passives", range: "7 to 8", n: passives },
+                              { k: "Detractors", range: "0 to 6", n: detractors },
+                            ]
+                          : config.feedbackType === "thumbs"
+                            ? [
+                                { k: "Thumbs up", n: FEEDBACK_ITEMS.filter((f) => f.score >= 7).length },
+                                { k: "Thumbs down", n: FEEDBACK_ITEMS.filter((f) => f.score < 7).length },
+                              ]
+                            : distribution.map((dist) => ({ k: `${dist.stars} star`, n: dist.count }));
+                      const total = rows.reduce((a, row) => a + row.n, 0);
+                      return (
+                        <Table dataHook="insights-feedback-table">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Answer</TableHead>
+                              <TableHead align="right">Responses</TableHead>
+                              <TableHead align="right">Share</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {rows.map((row) => (
+                              <TableRow key={row.k}>
+                                <TableCell>
+                                {row.k}
+                                {row.range ? <span className="text-muted-foreground ml-2">{row.range}</span> : null}
+                              </TableCell>
+                                <TableCell align="right" className="tabular-nums">
+                                  {row.n}
+                                </TableCell>
+                                <TableCell align="right" className="tabular-nums">
+                                  {total ? Math.round((row.n / total) * 100) : 0}%
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                          <TableFooter>
+                            <TableRow>
+                              <TableCell className="font-medium">Total</TableCell>
+                              <TableCell align="right" className="font-medium tabular-nums">
+                                {total}
+                              </TableCell>
+                              <TableCell />
+                            </TableRow>
+                            {config.feedbackType === "nps" ? (
+                              <TableRow>
+                                <TableCell className="font-medium">Net Promoter Score</TableCell>
+                                <TableCell align="right" className="font-medium tabular-nums">
+                                  {nps}
+                                </TableCell>
+                                <TableCell />
+                              </TableRow>
+                            ) : null}
+                          </TableFooter>
+                        </Table>
+                      );
+                    })()
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {config.feedbackType === "nps" ? (
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                          {/* GAUGE WHERE THE NPS SCORE WAS (Ali, 3 Sep). The number
+                              moves into the dial's centre; the three band bars to
+                              the right are the same three blocks unrolled, so the
+                              two read as one instrument. Response count goes in
+                              the dial's bottom gap where the caption slot is. */}
+                          <Gauge
+                            value={nps}
+                            min={-100}
+                            max={100}
+                            bands={NPS_BANDS}
+                            display={nps}
+                            unit="Net Promoter Score"
+                            // ONE SCALE ON SCREEN (Ali, 17 Sep: "0-50 and 50 and above
+                            // - but we are one to 10? Weird discrepancy?"). The dial's
+                            // legend ranged the SCORE (-100 to 100) right beside rows
+                            // ranging the ANSWER (0 to 10), in the same three colours,
+                            // so they read as one scale. The legend goes; the band's
+                            // word moves into the caption, and the rows keep the 0 to
+                            // 10 ranges people actually answered on.
+                            legend={false}
+                            caption={`${(() => {
+                              const band = NPS_BANDS.find((b) => nps < b.to) ?? NPS_BANDS[NPS_BANDS.length - 1];
+                              return band.meaning.charAt(0).toUpperCase() + band.meaning.slice(1);
+                            })()}, from ${responded} responses`}
+                            dataHook="insights-nps-gauge"
+                          />
+                          <div className="flex flex-1 flex-col gap-2">
+                            {/* THE DS COLOUR ENUM IS BROKEN, so these are painted
+                                explicitly. Progress advertises green / red /
+                                orange / yellow in its contract, and MEASURED on
+                                the live render only green paints: yellow and red
+                                come back rgba(0,0,0,0) for BOTH the track and the
+                                indicator, so two of these three bars were
+                                invisible — the row rendered, the numbers rendered,
+                                and the bar was simply not there (Ali, 3 Sep:
+                                "seems to be a lack of other bar charts here").
+                                Logged as a DS finding.
+                                Colours are MUTED (Ali, same message: "is there a
+                                slightly more neutral chart colour? big bright
+                                fighting for attention"). The band still carries
+                                meaning — promoter, passive, detractor is a real
+                                scale — so the hues stay, at a step that reads as
+                                data rather than as an alert. */}
+                            {[
+                              // WHOLE CLASS NAMES, not a variable dropped into one at
+                              // runtime (Ali, 17 Sep: the bars "appear to be empty").
+                              // Tailwind only builds classes it can read in the
+                              // source, so bg-[var(${row.bar})] never existed in the
+                              // app's CSS and every fill was transparent.
+                              { k: "Promoters", range: "9 to 10", n: promoters, bar: "bg-[var(--ds-tailwind-colors-emerald-600)]" },
+                              { k: "Passives", range: "7 to 8", n: passives, bar: "bg-[var(--ds-tailwind-colors-amber-400)]" },
+                              { k: "Detractors", range: "0 to 6", n: detractors, bar: "bg-[var(--ds-tailwind-colors-rose-400)]" },
+                            ].map((row) => (
+                              <div key={row.k} className="flex items-center gap-3">
+                                {/* The range as a muted label after the name (Ali, 17 Sep), the
+                                  way "Sources" sits beside "7 sources". */}
+                              <span className="flex w-40 shrink-0 items-baseline gap-2 text-sm">
+                                {row.k}
+                                <span className="text-muted-foreground">{row.range}</span>
+                              </span>
+                                <Progress
+                                  dataHook={`nps-${row.k.slice(0, 3).toLowerCase()}`}
+                                  value={row.n}
+                                  max={responded}
+                                  indicatorClassName={row.bar}
+                                  ariaLabel={`${row.n} ${row.k}`}
+                                  className="h-2 flex-1 bg-[var(--ds-tailwind-colors-neutral-200)]"
+                                />
+                                {/* PERCENTAGES ONLY (Ali, 17 Sep: "Do we need numbers
+                                    AND percentages?"). NPS is the promoter share less
+                                    the detractor share, so the shares are the numbers
+                                    that add up to it; the response count is in the
+                                    dial's caption, and each count stays in the bar's
+                                    label for a screen reader. */}
+                                <span className="w-12 shrink-0 text-right text-sm tabular-nums">
+                                  {Math.round((row.n / responded) * 100)}%
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : config.feedbackType === "thumbs" ? (
+                        <div className="flex items-center gap-6">
+                          <div className="flex flex-col">
+                            <span className="text-3xl font-semibold tabular-nums">
+                              {Math.round((FEEDBACK_ITEMS.filter((f) => f.score >= 7).length / responded) * 100)}%
+                            </span>
+                            <span className="text-muted-foreground text-sm">
+                              positive, {responded} responses
                             </span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : config.feedbackType === "thumbs" ? (
-                    <div className="flex items-center gap-6">
-                      <div className="flex flex-col">
-                        <span className="text-3xl font-semibold tabular-nums">
-                          {Math.round((FEEDBACK_ITEMS.filter((f) => f.score >= 7).length / responded) * 100)}%
-                        </span>
-                        <span className="text-muted-foreground text-sm">
-                          positive, {responded} responses
-                        </span>
-                      </div>
-                      <div className="flex flex-1 flex-col gap-2">
-                        {[
-                          { k: "Thumbs up", n: FEEDBACK_ITEMS.filter((f) => f.score >= 7).length, color: "green" },
-                          { k: "Thumbs down", n: FEEDBACK_ITEMS.filter((f) => f.score < 7).length, color: "red" },
-                        ].map((row) => (
-                          <div key={row.k} className="flex items-center gap-3">
-                            <span className="w-32 shrink-0 text-sm">{row.k}</span>
-                            <Progress
-                              dataHook={`thumbs-${row.k.includes("up") ? "up" : "down"}`}
-                              value={row.n}
-                              max={responded}
-                              color={row.color}
-                              ariaLabel={`${row.n} ${row.k}`}
-                              className="h-2 flex-1"
-                            />
-                            <span className="w-10 shrink-0 text-right text-sm tabular-nums">{row.n}</span>
+                          <div className="flex flex-1 flex-col gap-2">
+                            {[
+                              { k: "Thumbs up", n: FEEDBACK_ITEMS.filter((f) => f.score >= 7).length, color: "green" },
+                              { k: "Thumbs down", n: FEEDBACK_ITEMS.filter((f) => f.score < 7).length, color: "red" },
+                            ].map((row) => (
+                              <div key={row.k} className="flex items-center gap-3">
+                                <span className="w-32 shrink-0 text-sm">{row.k}</span>
+                                <Progress
+                                  dataHook={`thumbs-${row.k.includes("up") ? "up" : "down"}`}
+                                  value={row.n}
+                                  max={responded}
+                                  color={row.color}
+                                  ariaLabel={`${row.n} ${row.k}`}
+                                  className="h-2 flex-1"
+                                />
+                                <span className="w-10 shrink-0 text-right text-sm tabular-nums">{row.n}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {distribution.map((d) => (
-                        <div key={d.stars} className="flex items-center gap-3">
-                          <span className="w-24 shrink-0">
-                            <Rating value={d.stars} size="sm" dataHook={`dist-${d.stars}`} />
-                          </span>
-                          <Progress
-                            dataHook={`dist-bar-${d.stars}`}
-                            value={d.count}
-                            max={distributionPeak}
-                            color="green"
-                            ariaLabel={`${d.count} responses at ${d.stars} stars`}
-                            className="h-2 flex-1"
-                          />
-                          <span className="w-10 shrink-0 text-right text-sm tabular-nums">{d.count}</span>
                         </div>
-                      ))}
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {distribution.map((d) => (
+                            <div key={d.stars} className="flex items-center gap-3">
+                              <span className="w-24 shrink-0">
+                                <Rating value={d.stars} size="sm" dataHook={`dist-${d.stars}`} />
+                              </span>
+                              <Progress
+                                dataHook={`dist-bar-${d.stars}`}
+                                value={d.count}
+                                max={distributionPeak}
+                                color="green"
+                                ariaLabel={`${d.count} responses at ${d.stars} stars`}
+                                className="h-2 flex-1"
+                              />
+                              <span className="w-10 shrink-0 text-right text-sm tabular-nums">{d.count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>

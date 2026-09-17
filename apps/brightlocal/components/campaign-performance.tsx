@@ -230,14 +230,14 @@ export function CampaignPerformance({ reviews, sites, dataHook }: { reviews: num
                       ) : null}
                       <div className="flex items-center gap-3">
                         <span className="flex w-9 shrink-0 items-center justify-start gap-1">{glyph(b.kind, b.id)}</span>
-                        {/* The Tracker's bars: --chart-1 on a sky-100 track. */}
+                        {/* The Tracker's bars: the funnel's neutral-500 on neutral-100. */}
                         <Progress
                           dataHook={`${dataHook}-bar-${b.id}`}
                           value={byBucket[b.id]}
                           max={peak}
-                          indicatorClassName="bg-chart-1"
+                          indicatorClassName="bg-[var(--ds-tailwind-colors-neutral-500)]"
                           ariaLabel={`${byBucket[b.id]} reviews`}
-                          className="h-2 flex-1 bg-[var(--ds-tailwind-colors-sky-100)]"
+                          className="h-2 flex-1 bg-[var(--ds-tailwind-colors-neutral-100)]"
                         />
                         <span className="w-10 shrink-0 text-right text-sm tabular-nums">{byBucket[b.id]}</span>
                       </div>
