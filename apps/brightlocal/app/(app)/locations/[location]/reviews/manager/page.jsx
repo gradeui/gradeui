@@ -2005,24 +2005,6 @@ function ReviewsInbox() {
             }}
           />
 
-          <div className="grow" />
-
-          {/* Row count + prev/next, all derived from the table. renderRowCount
-              keeps the en dash the hand-rolled version used; the DS default
-              is a hyphen. */}
-          <DataTablePagination
-            table={table}
-            dataHook="reviews-pagination"
-            // The DS root is `flex w-full …`, which in this wrap-enabled row
-            // forces pagination onto its own line and splits the bar in two.
-            // w-auto is a standard utility so tailwind-merge genuinely
-            // displaces w-full here (unlike the DS's custom section-* ones).
-            className="w-auto"
-            ariaLabel="Review pagination"
-            renderRowCount={({ startRow, endRow, totalRows }) =>
-              `${startRow} to ${endRow} of ${totalRows}`
-            }
-          />
         </div>
       </div>
 
@@ -2040,6 +2022,24 @@ function ReviewsInbox() {
         // status/date all collapse when narrow and `text` becomes column one.
         className="rounded-none border-0 [&_thead]:bg-transparent [&_thead_th]:h-0 [&_thead_th]:p-0 [&_tbody_tr]:cursor-pointer [&_tbody_tr:hover]:bg-muted/50 [&_tbody_tr:has([data-open-row])]:bg-accent [&_tbody_tr:last-child]:border-0 [&_tbody_td:first-child]:pl-4"
       />
+
+      {/* PAGINATION PINNED TO THE BOTTOM (Ali, 17 Sep: "I want the same on
+          Review Manager", the Internal feedback table's bar). position:
+          sticky at bottom 0: while the card's end is below the fold the bar
+          holds the bottom of the screen, and once the end scrolls into view
+          it rests there. White and bordered like the top band, above the
+          rows. It moved out of the Order row, so the count and the pages
+          sit where you finish reading the page of reviews. */}
+      <div className="bg-[var(--ds-tailwind-colors-base-white)] sticky bottom-0 z-20 rounded-b-[inherit] border-t px-4 py-2">
+        <DataTablePagination
+          table={table}
+          dataHook="reviews-pagination"
+          ariaLabel="Review pagination"
+          renderRowCount={({ startRow, endRow, totalRows }) =>
+            `${startRow} to ${endRow} of ${totalRows}`
+          }
+        />
+      </div>
     </Card>
   );
 
