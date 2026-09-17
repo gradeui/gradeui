@@ -857,14 +857,14 @@
       "replace": "import { AlertInfo, AlertWarning } from \"@brightlocal/ui-components/alert\";\nimport { Link } from \"@brightlocal/ui-components/link\";\n"
     },
     {
-      "why": "Ali, 17 Sep: run-now lifecycle and runs come from lib/report-runs; ?connect=facebook opens the dialog",
+      "why": "Ali, 17 Sep: run-now lifecycle, local to the page; Last run is state",
       "find": "  const [connectOpen, setConnectOpen] = useState(false);\n",
-      "replace": "  const [connectOpen, setConnectOpen] = useState(false);\n  // Reports' Reconnect lands here with ?connect=facebook and opens the\n  // dialog: the Facebook connection is a setting, so its fix lives here.\n  useEffect(() => {\n    if (new URLSearchParams(window.location.search).get(\"connect\") === \"facebook\") setConnectOpen(true);\n  }, []);\n\n  // RUN REPORT NOW and the runs live in lib/report-runs (17 Sep), shared with\n  // the Reports page that now holds the run history. The lifecycle (running,\n  // rejected with no manual runs left) and its demo assumption are noted there.\n  const location = useLocationKey();\n  const { runs, runState } = useReportRuns();\n"
+      "replace": "  const [connectOpen, setConnectOpen] = useState(false);\n\n  // RUN REPORT NOW HAS A LIFECYCLE (Ali, 17 Sep: \"Can we add three states\n  // in?\", from Margarita's review). Per the PRD an ad-hoc run is credit-checked\n  // against the subscription and rejected with \"no ad-hoc runs left\", and the\n  // API cannot tell us the quota BEFORE the click. So the button is never\n  // disabled up front: a click either queues a run, which reports running\n  // until it is done, or comes back rejected.\n  //   idle      the button\n  //   running   the button spins and says so\n  //   rejected  a warning above the schedule, with the way to more runs\n  // A finished run moves Last run in the header. There is no run history to\n  // land in: it was cut (Ali, 17 Sep), see the note where its card was.\n  // ASSUMPTION, demo only: one manual run is left, so the first click runs\n  // and the second is rejected. The real allowance is the subscription's,\n  // and nothing here knows it.\n  const [lastRun, setLastRun] = useState(\"2026-09-02T06:00\");\n  const [runState, setRunState] = useState(\"idle\");\n  const [manualRunsLeft, setManualRunsLeft] = useState(1);\n  const runNow = () => {\n    if (runState === \"running\") return;\n    if (manualRunsLeft < 1) {\n      setRunState(\"rejected\");\n      return;\n    }\n    setRunState(\"running\");\n    window.setTimeout(() => {\n      setLastRun(\"2026-09-03T10:12\");\n      setManualRunsLeft((n) => n - 1);\n      setRunState(\"idle\");\n    }, 6000);\n  };\n"
     },
     {
-      "why": "Ali, 17 Sep: run-now lifecycle: the button runs, spins and says Running; Reports button beside it",
+      "why": "Ali, 17 Sep: run-now lifecycle: the button runs, spins and says Running",
       "find": "            statusRight={<DateStamp label=\"Last run\" value={RUNS[0].at} dataHook=\"last-run\" />}\n            actions={\n              <Button variant=\"outline\" dataHook=\"run-now\">\n                <Play className=\"size-4\" />\n                Run report now\n              </Button>\n            }",
-      "replace": "            // Last run stays put while a run is going: the button already\n            // says Running, and a second \"running\" under it only repeated it.\n            statusRight={<DateStamp label=\"Last run\" value={runs[0].at} dataHook=\"last-run\" />}\n            actions={\n              <>\n                {/* REPORTS holds the run history (Ali, 17 Sep: \"a button ...\n                    that says Reports - We can basically add Run History to\n                    that\"). Svitlana's review: history is a result, and this\n                    page is settings. */}\n                <Button variant=\"outline\" dataHook=\"reports\" asChild>\n                  <NextLink href={reportsPath(location)}>\n                    <FileText className=\"size-4\" />\n                    Reports\n                  </NextLink>\n                </Button>\n                <Button\n                  variant=\"outline\"\n                  dataHook=\"run-now\"\n                  onClick={runNow}\n                  loading={runState === \"running\"}\n                  disabled={runState === \"running\"}\n                >\n                  {runState === \"running\" ? null : <Play className=\"size-4\" />}\n                  {runState === \"running\" ? \"Running…\" : \"Run report now\"}\n                </Button>\n              </>\n            }"
+      "replace": "            // Last run stays put while a run is going: the button already\n            // says Running, and a second \"running\" under it only repeated it.\n            statusRight={<DateStamp label=\"Last run\" value={lastRun} dataHook=\"last-run\" />}\n            actions={\n              <Button\n                variant=\"outline\"\n                dataHook=\"run-now\"\n                onClick={runNow}\n                loading={runState === \"running\"}\n                disabled={runState === \"running\"}\n              >\n                {runState === \"running\" ? null : <Play className=\"size-4\" />}\n                {runState === \"running\" ? \"Running…\" : \"Run report now\"}\n              </Button>\n            }"
     },
     {
       "why": "Ali, 17 Sep: run-now lifecycle: the no runs left warning above the schedule",
@@ -882,24 +882,14 @@
       "replace": "              . A run can be triggered by hand at any time, and doing so does not move the schedule.\n              {/* THE ALLOWANCE HINT. No number: the API gives no quota and the\n                  plans table has no manual-run figure to quote, so it says\n                  where the number lives instead of making one up. */}\n              {\" \"}Manual runs come out of your plan's allowance.{\" \"}\n              <Link variant=\"inline\" dataHook=\"run-allowance\" href=\"/account/subscription\">\n                See what your plan includes\n              </Link>"
     },
     {
-      "why": "Ali, 17 Sep: Run history moves to the Reports page",
+      "why": "Ali, 17 Sep: Run history is cut",
       "find": "          {/* ── RUN HISTORY ──────────────────────────────────────────── */}\n          <SettingsCard\n            dataHook=\"history-card\"\n            title=\"Run history\"\n            // Five runs here; the full history is its own page (Ali, 7 Sep:\n            // \"you'd also want to see all the reports historically, maybe on\n            // another page, but it doesn't need to be live\"). So the way\n            // there exists and goes nowhere yet.\n            action={\n              <Button variant=\"ghost\" size=\"sm\" dataHook=\"history-all\">\n                View all runs\n              </Button>\n            }\n          >\n            <Table dataHook=\"history-table\" minWidth=\"640px\" scrollRegionLabel=\"Report run history\">\n              <TableHeader>\n                <TableRow>\n                  <TableHead>Run</TableHead>\n                  <TableHead>Trigger</TableHead>\n                  <TableHead align=\"right\">Reviews found</TableHead>\n                  <TableHead align=\"right\">New</TableHead>\n                  <TableHead>Result</TableHead>\n                </TableRow>\n              </TableHeader>\n              <TableBody>\n                {RUNS.map((r) => {\n                  const state = RUN_STATE[r.state];\n                  return (\n                    <TableRow key={r.id} data-hook={`run-${r.id}`}>\n                      <TableCell>{formatDateTime(r.at) ?? formatDate(r.at)}</TableCell>\n                      <TableCell>{r.trigger}</TableCell>\n                      {/* tabular-nums so the columns line up down the page.\n                          A count that shifts left and right as the digits\n                          change is unreadable as a trend. */}\n                      <TableCell className=\"text-right tabular-nums\">\n                        {r.found.toLocaleString()}\n                      </TableCell>\n                      <TableCell className=\"text-right tabular-nums\">+{r.added}</TableCell>\n                      <TableCell>\n                        <Badge variant={state.variant} dataHook={`run-${r.id}-state`}>\n                          {state.label}\n                        </Badge>\n                      </TableCell>\n                    </TableRow>\n                  );\n                })}\n              </TableBody>\n            </Table>\n            {/* A PARTIAL RUN NEEDS A ROUTE OUT, not just a badge. The brief\n                names unexplained failures as the recurring support theme, so\n                the one row that did not fully succeed says what to do. */}\n            <AlertInfo\n              dataHook=\"history-note\"\n              description={`Facebook was skipped on ${formatDate(\"2026-08-19\")} because the connection had expired. Reconnect Facebook to include its reviews in future runs.`}\n              action={\n                <Button variant=\"ghost\" size=\"sm\" dataHook=\"reconnect-facebook\" onClick={() => setConnectOpen(true)}>\n                  <Link2 className=\"size-4\" />\n                  Reconnect\n                </Button>\n              }\n            />\n          </SettingsCard>\n",
-      "replace": "          {/* RUN HISTORY LIVES ON REPORTS now (Ali, 17 Sep), reached from the\n              Reports button in the header. Svitlana's review: history is a\n              result, and this page is settings. */}\n"
+      "replace": "          {/* NO RUN HISTORY (Ali, 17 Sep: \"Yes remove it, keep Last run\").\n              Neither the RM brief nor Harry's audit asks for it: the brief\n              lists the legacy run history table only as what exists today,\n              not as something carrying over, and the audit never mentions\n              it. On the new platform the report is live data, so looking\n              back is the Review Tracker's timelines, and a copy of a moment\n              is the PDF download. Svitlana's review had also flagged a\n              result sitting inside settings. Last run stays in the header. */}\n"
     },
     {
-      "why": "Ali, 17 Sep: the runs data moves to lib/report-runs, shared with Reports",
+      "why": "Ali, 17 Sep: the runs data goes with the run history",
       "find": "// Run history. Every row is a real outcome, including the one that partly\n// failed: a history that only ever shows success is not a history, and the\n// brief names reply/fetch failures as the recurring support theme.\n// ISO IN, house format OUT. Every date in RM goes through `formatDate` /\n// `formatDateTime` from @brightlocal/proposal — the same functions the page\n// header's Last updated line uses — so a date in this table and a date in a\n// header read identically.\nconst RUNS = [\n  { id: \"r1\", at: \"2026-09-02T06:00\", trigger: \"Scheduled\", found: 1247, added: 12, state: \"ok\" },\n  { id: \"r2\", at: \"2026-08-26T06:00\", trigger: \"Scheduled\", found: 1235, added: 9, state: \"ok\" },\n  { id: \"r3\", at: \"2026-08-22T14:31\", trigger: \"Manual\", found: 1226, added: 4, state: \"ok\" },\n  { id: \"r4\", at: \"2026-08-19T06:00\", trigger: \"Scheduled\", found: 1222, added: 7, state: \"partial\" },\n  { id: \"r5\", at: \"2026-08-12T06:00\", trigger: \"Scheduled\", found: 1215, added: 11, state: \"ok\" },\n];\n\nconst RUN_STATE = {\n  ok: { label: \"Complete\", variant: \"secondary\" },\n  partial: { label: \"Facebook skipped\", variant: \"outline\" },\n};\n\n",
-      "replace": "// The runs moved to lib/report-runs (17 Sep), shared with the Reports page.\n\n"
-    },
-    {
-      "why": "Ali, 17 Sep: Reports imports (useEffect, next/link, report-runs, location)",
-      "find": "import { useState } from \"react\";\n",
-      "replace": "import { useState, useEffect } from \"react\";\nimport NextLink from \"next/link\";\n"
-    },
-    {
-      "why": "Ali, 17 Sep: Reports imports (the shared runs store and the location)",
-      "find": "} from \"@brightlocal/proposal\";\n",
-      "replace": "} from \"@brightlocal/proposal\";\nimport { useLocationKey } from \"@/lib/location\";\nimport { runNow, useReportRuns, reportsPath } from \"@/lib/report-runs\";\n"
+      "replace": ""
     },
     {
       "why": "Ali, 17 Sep: the history table's imports go with it",
@@ -907,9 +897,9 @@
       "replace": ""
     },
     {
-      "why": "Ali, 17 Sep: Reconnect's icon leaves with the history; Reports takes FileText",
+      "why": "Ali, 17 Sep: Reconnect's icon leaves with the history",
       "find": "  Link2,\n",
-      "replace": "  FileText,\n"
+      "replace": ""
     },
     {
       "why": "Ali, 17 Sep: formatDateTime was only the history's",
@@ -920,6 +910,11 @@
       "why": "Ali, 17 Sep: the page is titled Settings (\"call the title of the Settings page just Settings\")",
       "find": "title=\"Report settings\"",
       "replace": "title=\"Settings\""
+    },
+    {
+      "why": "Ali, 17 Sep: the Last run note no longer points at a run history",
+      "find": "RAN, which is what the run history below is about, so it goes",
+      "replace": "RAN, so it goes"
     }
   ]
 }

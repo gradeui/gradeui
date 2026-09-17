@@ -43,8 +43,7 @@
 // to add to or remove from; this page edits THE report for this location.
 // If a report list ever returns, it belongs on the Reviews hub, not here.
 
-import { useState, useEffect } from "react";
-import NextLink from "next/link";
+import { useState } from "react";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -99,7 +98,6 @@ import {
   Play,
   Check,
   Copy,
-  FileText,
   Globe,
   GoogleOriginal,
   FacebookOriginal,
@@ -114,8 +112,6 @@ import {
   formatDate,
   useProposalData,
 } from "@brightlocal/proposal";
-import { useLocationKey } from "@/lib/location";
-import { runNow, useReportRuns, reportsPath } from "@/lib/report-runs";
 
 /* ================================ reference =============================== */
 
@@ -213,8 +209,6 @@ const DIRECTORIES = {
 // Same-looking rows, different verbs: "Find profile" against "Connect".
 // Collapsing them into one button would send somebody to an oAuth screen to
 // solve a missing Yell URL.
-// The runs moved to lib/report-runs (17 Sep), shared with the Reports page.
-
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 // SPACING FIXES, MEASURED ON THE LIVE PAGE (Ali, 2 Sep: "the 'what to
@@ -346,17 +340,37 @@ export default function RMReportSettingsPage() {
   const [findFor, setFindFor] = useState(null);
   const [profileUrl, setProfileUrl] = useState("");
   const [connectOpen, setConnectOpen] = useState(false);
-  // Reports' Reconnect lands here with ?connect=facebook and opens the
-  // dialog: the Facebook connection is a setting, so its fix lives here.
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("connect") === "facebook") setConnectOpen(true);
-  }, []);
 
-  // RUN REPORT NOW and the runs live in lib/report-runs (17 Sep), shared with
-  // the Reports page that now holds the run history. The lifecycle (running,
-  // rejected with no manual runs left) and its demo assumption are noted there.
-  const location = useLocationKey();
-  const { runs, runState } = useReportRuns();
+  // RUN REPORT NOW HAS A LIFECYCLE (Ali, 17 Sep: "Can we add three states
+  // in?", from Margarita's review). Per the PRD an ad-hoc run is credit-checked
+  // against the subscription and rejected with "no ad-hoc runs left", and the
+  // API cannot tell us the quota BEFORE the click. So the button is never
+  // disabled up front: a click either queues a run, which reports running
+  // until it is done, or comes back rejected.
+  //   idle      the button
+  //   running   the button spins and says so
+  //   rejected  a warning above the schedule, with the way to more runs
+  // A finished run moves Last run in the header. There is no run history to
+  // land in: it was cut (Ali, 17 Sep), see the note where its card was.
+  // ASSUMPTION, demo only: one manual run is left, so the first click runs
+  // and the second is rejected. The real allowance is the subscription's,
+  // and nothing here knows it.
+  const [lastRun, setLastRun] = useState("2026-09-02T06:00");
+  const [runState, setRunState] = useState("idle");
+  const [manualRunsLeft, setManualRunsLeft] = useState(1);
+  const runNow = () => {
+    if (runState === "running") return;
+    if (manualRunsLeft < 1) {
+      setRunState("rejected");
+      return;
+    }
+    setRunState("running");
+    window.setTimeout(() => {
+      setLastRun("2026-09-03T10:12");
+      setManualRunsLeft((n) => n - 1);
+      setRunState("idle");
+    }, 6000);
+  };
 
   const list = DIRECTORIES[country];
   const shareUrl = "https://reports.brightlocal.com/r/8k2p1x";
@@ -411,7 +425,7 @@ export default function RMReportSettingsPage() {
             // updated in this screen as well?"). Last updated describes how
             // stale the DATA is, and this page holds no data — it holds
             // settings. The equivalent fact here is when the report last
-            // RAN, which is what the run history below is about, so it goes
+            // RAN, so it goes
             // in the same slot with its own word. Same treatment as the
             // campaign page's date; see PageHeader's statusRight.
             // A DateStamp, not a formatted string (Ali, 3 Sep: "date format
@@ -422,30 +436,18 @@ export default function RMReportSettingsPage() {
             // campaign cards and the page header's own Last updated use.
             // Last run stays put while a run is going: the button already
             // says Running, and a second "running" under it only repeated it.
-            statusRight={<DateStamp label="Last run" value={runs[0].at} dataHook="last-run" />}
+            statusRight={<DateStamp label="Last run" value={lastRun} dataHook="last-run" />}
             actions={
-              <>
-                {/* REPORTS holds the run history (Ali, 17 Sep: "a button ...
-                    that says Reports - We can basically add Run History to
-                    that"). Svitlana's review: history is a result, and this
-                    page is settings. */}
-                <Button variant="outline" dataHook="reports" asChild>
-                  <NextLink href={reportsPath(location)}>
-                    <FileText className="size-4" />
-                    Reports
-                  </NextLink>
-                </Button>
-                <Button
-                  variant="outline"
-                  dataHook="run-now"
-                  onClick={runNow}
-                  loading={runState === "running"}
-                  disabled={runState === "running"}
-                >
-                  {runState === "running" ? null : <Play className="size-4" />}
-                  {runState === "running" ? "Running…" : "Run report now"}
-                </Button>
-              </>
+              <Button
+                variant="outline"
+                dataHook="run-now"
+                onClick={runNow}
+                loading={runState === "running"}
+                disabled={runState === "running"}
+              >
+                {runState === "running" ? null : <Play className="size-4" />}
+                {runState === "running" ? "Running…" : "Run report now"}
+              </Button>
             }
           />
         }
@@ -827,9 +829,14 @@ export default function RMReportSettingsPage() {
             )}
           </SettingsCard>
 
-          {/* RUN HISTORY LIVES ON REPORTS now (Ali, 17 Sep), reached from the
-              Reports button in the header. Svitlana's review: history is a
-              result, and this page is settings. */}
+          {/* NO RUN HISTORY (Ali, 17 Sep: "Yes remove it, keep Last run").
+              Neither the RM brief nor Harry's audit asks for it: the brief
+              lists the legacy run history table only as what exists today,
+              not as something carrying over, and the audit never mentions
+              it. On the new platform the report is live data, so looking
+              back is the Review Tracker's timelines, and a copy of a moment
+              is the PDF download. Svitlana's review had also flagged a
+              result sitting inside settings. Last run stays in the header. */}
           {/* ── ADD A PROFILE URL, per directory ──────────────────────
               A dialog rather than an inline field on the row: the row is a
               list item in a list of seven, and growing one of them to hold a
