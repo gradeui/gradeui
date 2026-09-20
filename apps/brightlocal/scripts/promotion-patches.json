@@ -951,6 +951,11 @@
       "why": "Reviews hub: the QR banner is hidden (Ali, 20 Sep: the QR code \"was extra from me\", and the brief is now \"make it like the current project, no extra features\"). Kept behind SHOW_QR_BANNER so it can come back. The banner.",
       "find": "          {stats.campaignsAll === 0 ? <QrBanner /> : null}\n",
       "replace": "          {SHOW_QR_BANNER && stats.campaignsAll === 0 ? <QrBanner /> : null}\n"
+    },
+    {
+      "why": "Reviews hub: the campaign card says when the reviews arrived, not a window the data does not support (audit, 20 Sep). spikeDayCount counts the send day and the day before it, so \"in the two days after 3 Sep\" was wrong against the rows on the page it links to.",
+      "find": "text: `${h.spike.campaign} brought ${h.spikeDayCount} ${h.spikeDayCount === 1 ? \"review\" : \"reviews\"} in the two days after ${h.spike.date}.` }",
+      "replace": "text: `${h.spike.campaign} brought ${h.spikeDayCount} ${h.spikeDayCount === 1 ? \"review\" : \"reviews\"} around ${h.spike.date}, when it went out.` }"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/page.jsx": [
@@ -2525,6 +2530,16 @@
       "why": "Settings, Sharing: the link line stops at what the reader sees (Ali, 20 Sep: drop \"They cannot reply, and they cannot change anything\"). The toggle above it already says anyone with the link can open the report.",
       "find": "                    Anyone with this link sees the charts and the review list for {locationName}. They\n                    cannot reply, and they cannot change anything.\n",
       "replace": "                    Anyone with this link sees the charts and the review list for {locationName}.\n"
+    },
+    {
+      "why": "Settings: TripAdvisor is spelled the way the Tracker's charts, legend, filters and tables spell it (audit, 20 Sep: the same section spelled it two ways).",
+      "find": "{ id: \"tripadvisor\", name: \"Tripadvisor\", matched: \"tripadvisor.co.uk/farm-burger\", on: true },",
+      "replace": "{ id: \"tripadvisor\", name: \"TripAdvisor\", matched: \"tripadvisor.co.uk/farm-burger\", on: true },"
+    },
+    {
+      "why": "Settings: the same spelling in the other country's list.",
+      "find": "{ id: \"tripadvisor\", name: \"Tripadvisor\", matched: \"tripadvisor.com/farm-burger\", on: true },",
+      "replace": "{ id: \"tripadvisor\", name: \"TripAdvisor\", matched: \"tripadvisor.com/farm-burger\", on: true },"
     }
   ],
   "app/(app)/locations/[location]/reviews/builder/gauge/page.jsx": [
