@@ -2752,7 +2752,17 @@ function SetupRow({ id, label, hint, children }) {
         <p className="text-sm leading-5 font-medium">{label}</p>
         {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
       </div>
-      <div className="min-w-0 flex-1">{children}</div>
+      {/* THE CONTROL COLUMN NEEDS A REAL BASE WIDTH, or the row's flex-wrap
+          never fires. flex-1 is flex: 1 1 0%, so the control's base size is
+          zero and it always "fits" beside the 176px label however little room
+          is left: at 390 the label took 176 of the row's 252 and the control
+          got 60, which truncated the name to "Ho..." and pushed the rating
+          helper text out through the card's overflow-hidden as a column of
+          half words. With a 224px base the row wraps as soon as the control
+          cannot honestly sit beside the label, and the control then takes the
+          whole width on its own line. grow/shrink/basis rather than flex-1
+          plus basis-56 so no shorthand can reset the base back to zero. */}
+      <div className="min-w-0 grow shrink basis-56">{children}</div>
     </div>
   );
 }
