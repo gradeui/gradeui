@@ -486,7 +486,8 @@ const SEND_FAILURES = {
     // that has been removed at the source is gone, and offering a retry
     // that is guaranteed to fail sends someone round a loop with no exit
     // (Ali, 27 Aug). The only real move left is to clear it, so the alert
-    // offers Skip and the footer's Send goes disabled.
+    // carries no button at all and the footer's Skip, which is there for
+    // every unreplied review, is the one thing on screen to press.
     terminal: true,
     blocking: true,
     title: "This review is no longer on {{source}}",
@@ -766,7 +767,7 @@ function DetailRow({ label, children }) {
 
 /* --------------------------------- panel ---------------------------------- */
 
-function ReplyBody({ review, business, draft, onDraft, onAi, aiPending, aiSpent, aiBlocked, aiRemaining, templates, onTemplate, sending, onRetry, onSkip }) {
+function ReplyBody({ review, business, draft, onDraft, onAi, aiPending, aiSpent, aiBlocked, aiRemaining, templates, onTemplate, sending, onRetry }) {
   const [tplOpen, setTplOpen] = useState(false);
   if (!review) return null;
   const replied = review.status === "manual" || review.status === "auto";
@@ -902,35 +903,39 @@ function ReplyBody({ review, business, draft, onDraft, onAi, aiPending, aiSpent,
               description={
                 <span className="flex flex-col items-start gap-3">
                   <span>{failure.description}</span>
-                  {/* No loading state on THIS button: pressing it clears
+                  {/* ONE PLACE TO PRESS PER ACTION (Ali, 20 Sep). The alert
+                      only carries a button when the footer cannot: on a
+                      blocking failure the composer is gone, so the footer's
+                      Send goes with it and a retry has nowhere else to
+                      live. On a recoverable failure the composer stays, so
+                      the footer's "Send again" is the retry, which is the
+                      button this copy already points at ("send again",
+                      "send it again"). The terminal one is gone from the
+                      source for good: there is nothing to retry, and the
+                      Skip its copy names is the footer's, the same Skip
+                      every unreplied review has. Before this, a live
+                      "Retry sending" sat 461px above a greyed "Send again",
+                      and the terminal state offered "Skip reply" twice.
+                      No loading state on THIS button: pressing it clears
                       sendError, so the alert it lives in unmounts and the
                       footer's Send carries the pending beat. Two spinners a
                       few hundred pixels apart would say the same thing
                       twice. Still disabled while sending, because nothing
                       stops a second click arriving before the re-render. */}
-                  {failure.terminal ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      dataHook={`skip-failed-${review.id}`}
-                      onClick={onSkip}
-                    >
-                      Skip reply
-                    </Button>
-                  ) : (
+                  {failure.blocking && !failure.terminal ? (
                     <Button
                       variant="outline"
                       size="sm"
                       dataHook={`retry-${review.id}`}
                       onClick={onRetry}
-                      // On a blocking failure the composer is hidden, so
-                      // there is no visible draft to gate on — the text is
-                      // still held in state and is what a retry sends.
-                      disabled={sending || (!failure.blocking && !draft.trim())}
+                      // The composer is hidden in this state, so there is no
+                      // visible draft to gate on: the text is still held in
+                      // state and is what a retry sends.
+                      disabled={sending}
                     >
                       Retry sending
                     </Button>
-                  )}
+                  ) : null}
                 </span>
               }
             />
@@ -1013,11 +1018,14 @@ function ReplyBody({ review, business, draft, onDraft, onAi, aiPending, aiSpent,
 
 function ReplyActions({ review, draft, sending, onSend, onSkip, onEdit, onDelete }) {
   if (!review) return null;
-  // A terminal failure kills Send: there is no longer anything at the
-  // source to post to, so an enabled Send button would be an invitation to
-  // fail again. Skip stays live, because clearing it is the one thing that
-  // still works (Ali, 27 Aug).
-  // Send goes with the composer. `blocking` covers the terminal case too.
+  // SEND GOES WITH THE COMPOSER, so a blocking failure takes it off the
+  // screen rather than greying it out (Ali, 20 Sep). `blocking` hides the
+  // composer, and a Send button under a form that is not there said "you
+  // cannot send" and "send" in the same breath, with the live recovery
+  // 461px above it in the alert. Recovery for these states is the alert's
+  // Retry; for the terminal one there is no recovery at all, only the Skip
+  // below. Skip stays live in every failure, because clearing the review is
+  // the one thing that still works (Ali, 27 Aug).
   const blocked = Boolean(sendFailureCopy(review)?.blocking);
   // Send / Skip / Edit / Delete all post to the source. None of them apply
   // to a read-only network, so the panel offers no buttons at all — the
@@ -1044,15 +1052,17 @@ function ReplyActions({ review, draft, sending, onSend, onSkip, onEdit, onDelete
       <Button variant="outline" dataHook={`skip-${review.id}`} onClick={onSkip} disabled={sending}>
         Skip reply
       </Button>
-      <Button
-        variant="primary"
-        dataHook={`send-${review.id}`}
-        onClick={onSend}
-        loading={sending}
-        disabled={sending || blocked || !draft.trim()}
-      >
-        {sending ? "Sending…" : review.sendError ? "Send again" : "Send reply"}
-      </Button>
+      {blocked ? null : (
+        <Button
+          variant="primary"
+          dataHook={`send-${review.id}`}
+          onClick={onSend}
+          loading={sending}
+          disabled={sending || !draft.trim()}
+        >
+          {sending ? "Sending…" : review.sendError ? "Send again" : "Send reply"}
+        </Button>
+      )}
     </>
   );
 }
@@ -2466,13 +2476,10 @@ function ReviewsInbox() {
             templates={templates}
             onTemplate={(t) => setDraft(resolveVars(t.body, active, business))}
             sending={sending}
+            // Retry is the only action the panel body owns. Skip belongs to
+            // the footer, which has carried it for every unreplied review
+            // all along, failure or not.
             onRetry={sendReply}
-            // Terminal failures offer Skip instead of Retry, so the panel
-            // body needs the same handler the footer uses.
-            onSkip={() => {
-              setStatus(active.id, "skipped");
-              setActiveId(null);
-            }}
           />
           )}
           </DrawerBody>
