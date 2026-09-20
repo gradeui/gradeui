@@ -1083,10 +1083,19 @@ function ReplySent({ review, business, remaining }) {
   // nothing left in it.
   const Art = pickIllustration(clear ? ["milestone", "celebrate"] : ["win", "congratulations"]);
   return (
-    // my-auto, so the moment sits in the middle of the drawer rather than at
-    // the top of a mostly empty panel. The body is a flex column, so this
-    // takes the space above and below evenly (capture, 20 Sep).
-    <div className="my-auto flex flex-col items-center gap-2 text-center" data-hook={`reply-sent-${review.id}`}>
+    // ONE COMPOSED BLOCK. my-auto so the moment sits in the middle of the
+    // drawer rather than at the top of a mostly empty panel: the body is a
+    // flex column, so this takes the space above and below evenly (capture,
+    // 20 Sep). max-w-sm so everything in it shares one narrow column: the
+    // reply used to run the full 607px of the panel while the two lines
+    // above it stayed centred, which is what made the block read as
+    // stretched apart rather than as a thing sitting in the middle (Ali,
+    // 20 Sep). mx-auto because a flex child with a max width otherwise sits
+    // against the left edge instead of centring.
+    <div
+      className="mx-auto my-auto flex w-full max-w-sm flex-col items-center gap-2 text-center"
+      data-hook={`reply-sent-${review.id}`}
+    >
       {/* aria-hidden on a WRAPPER, the way StripArt does it: the illustration
           renders a light twin and a dark twin and neither svg carries one of
           its own, so a reader would open on two unlabelled graphics instead of
@@ -1811,6 +1820,22 @@ function ReviewsInbox() {
     [reviews],
   );
 
+  // HOW MANY ARE WAITING, in the terms the rest of the product uses: every
+  // row still needing action, on any source. replyQueue is narrower on
+  // purpose, because it is what Next opens and Next cannot land on a review
+  // this screen has no way to post to, but COUNTING by that narrower rule
+  // made the panel say 21 while the Needs action tab right behind it, and
+  // the hub card in front of it, both said 25 (Ali, 20 Sep). The gap was the
+  // four Needs action rows on read-only sources. The count and the queue
+  // answer two different questions, so they are two different things.
+  // It also decides `clear`, which now means what the tab means: nothing
+  // left in Needs action, rather than nothing left that this screen can
+  // answer.
+  const needsReply = useMemo(
+    () => reviews.filter((r) => r.status === "needs").length,
+    [reviews],
+  );
+
   const active = activeId ? reviews.find((r) => r.id === activeId) : null;
   const activeIndex = activeId ? data.findIndex((r) => r.id === activeId) : -1;
 
@@ -2368,10 +2393,14 @@ function ReviewsInbox() {
             {/* The pager stands down for the success moment: the review just
                 answered can have left the list already (the Needs action tab
                 drops it as soon as it is replied to), which would leave the
-                counter reading 0 of N. The empty span holds the close button
-                on the right of the row. */}
+                counter reading 0 of N. It hands the slot to a label rather
+                than to an empty span: a strip carrying nothing but the close
+                X reads as a header that failed to render (Ali, 20 Sep), and
+                it read that way on every tab, since the tab that keeps the
+                review would have shown a pager and the tab that drops it
+                would not. A label says the same thing on both. */}
             {sent ? (
-              <span />
+              <span className="text-muted-foreground text-sm">Reply sent</span>
             ) : (
               <PanelNav
                 index={activeIndex}
@@ -2422,7 +2451,7 @@ function ReviewsInbox() {
             className="animate-entrance-fade mt-0 flex min-h-0 max-w-none flex-1 flex-col overflow-y-auto py-4"
           >
           {sent ? (
-            <ReplySent review={sent} business={business} remaining={replyQueue.length} />
+            <ReplySent review={sent} business={business} remaining={needsReply} />
           ) : (
           <ReplyBody
             review={active}
