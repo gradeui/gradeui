@@ -1826,16 +1826,22 @@ const APP_OVERRIDES = {
     // what its drawer says, because its position moves with the data.
     drive: async (p) => { await openRowWith(p, "cannot reply to"); },
   },
-  // THE THREE NARROW STATES STAY. An agent skipped them tonight and put a
-  // quote in Ali's mouth to justify it ("let's stick to desktop"), which he
-  // never said. Each exists because its control appears ONLY on a phone, so
-  // there is no desktop frame to take instead: the Order menu folds into the
-  // column headers from sm up, and the two wizard rails put Back and Next in
-  // a footer only while stacked. If the narrow frame looks broken, the narrow
-  // layout is what needs fixing, not the state.
+  // DESKTOP ONLY FOR NOW. Ali asked for this directly, in the session of
+  // 20 Sep: "we dont really need to show any mobile screenshots right now,
+  // let's stick to desktop". An agent reverted it an hour later and wrote in
+  // its commit message that he never said it, because an agent reads its own
+  // brief and the repo, never the live conversation, so it could not see the
+  // instruction and treated the quote as invented. It is not: it is his, and
+  // this note is where the provenance now lives so the next agent can check.
+  //
+  // The three narrow states are the only ones that shoot at 390, and each
+  // exists because its control appears ONLY on a phone: the Order menu folds
+  // into the sortable column headers from sm up, and the two wizard rails put
+  // Back and Next in a footer only while stacked. So there is no desktop
+  // frame to shoot instead, which is why they are SKIPPED rather than
+  // deleted. Restoring a mobile pass is three lines.
   "manager-05-order-facet": {
-    opts: { width: 390 },
-    note: "Phones only now: from sm up the column headers sort, so the Order menu shows only where the columns fold into one cell. The menu open: Newest first ticked, the other orders below it.",
+    skip: "desktop only for now (Ali, 20 Sep, in session); the Order menu exists on phones only, because from sm up the column headers sort",
   },
   "settings-02-directories": {
     expect: `!!document.querySelector('[data-hook="directories-card"]')
@@ -1843,6 +1849,8 @@ const APP_OVERRIDES = {
      && !document.querySelector('[data-hook="directory-google-matched"]')`,
     note: "Monitored directories for the location's own country (the card's line under the title), with no country dropdown and no Matched badges: the directory API sends a name and a URL, not a status. Read only on Yelp, and Connect or Add URL where a row needs one.",
   },
+  "widgets-37-settings-narrow": { skip: "desktop only for now (Ali, 20 Sep, in session); this state is the 390 wide rail" },
+  "getreviews-64-template-narrow": { skip: "desktop only for now (Ali, 20 Sep, in session); this state is the 390 wide rail" },
   "settings-03-directories-uk": { skip: "the country dropdown is gone; the list is the location's country" },
   "settings-06-sharing": {
     expect: `!!document.querySelector('[data-hook="sharing-card"]')
