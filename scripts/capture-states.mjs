@@ -1173,10 +1173,14 @@ const STATES = [
     await showcaseSheet(p, "carousel", "design");
     await scrollDesignSheetTo(p, '[data-hook="design-group-animation"]');
   }, expectDesignGroup("design-group-animation"),
-    // TALL: the group's last pair, show slide dots, had its No chopped in
-    // half by the bottom of the sheet, and the pair is the point of it.
-    "The Animation group, on the Carousel only: auto rotate slides, transition style, transition animation speed, show slide arrows and show slide dots, every one of them a Yes and No pair.",
-    { tall: true }],
+    // NOT TALL, and it is the one place in this file that says no. Every
+    // group in this sheet is taller than the band its pinned preview leaves,
+    // so the last row of each is cut and no scroll position fixes it. Growing
+    // the frame does not either: the preview is sized off the sheet, so it
+    // grows with the frame and pushes the group's own heading back under
+    // itself. Fixing this belongs in the sheet, not in the capture. Reported
+    // 20 Sep, with the sheet already being worked on.
+    "The Animation group, on the Carousel only: auto rotate slides, transition style, transition animation speed, show slide arrows and show slide dots, every one of them a Yes and No pair."],
   ["widgets-35-design-transition-slide", "widgets", async (p) => {
     await showcaseSheet(p, "carousel", "design");
     await scrollDesignSheetTo(p, '[data-hook="design-group-animation"]');
@@ -1764,10 +1768,8 @@ const STATES = [
     "The Contact details sheet: Wording above the form, Ask permission to quote them, and Permission wording."],
   ["getreviews-64-template-narrow", "getreviews", async (p) => { await templateEditor(p, "general"); },
     `!!document.querySelector('[data-hook="template-next-section"]')`,
-    // TALL as well as narrow: at 390 the General card is longer than the
-    // shell, so Rating type and everything under it sat behind the footer.
     "The template editor at 390 wide: the rail stacks above the card and the footer carries Back and Next between sections.",
-    { width: 390, tall: true }],
+    { width: 390 }],
 ];
 
 // --dump-states prints name/section/note as JSON and exits. Anything that
@@ -1904,7 +1906,10 @@ const APP_EXTRA = [
   },
     `!!document.querySelector('[data-hook="templates-empty-state"]')
      && !!document.querySelector('[data-hook="rules-empty-state"]')`,
-    "Reply templates on a new account: no templates and no auto-reply rules, each list saying what it is for, with New template and New rule still in their section headers."],
+    // TALL: the second empty state is the lower of the two, and its sentence
+    // stopped mid line at the fold, taking New rule with it.
+    "Reply templates on a new account: no templates and no auto-reply rules, each list saying what it is for, with New template and New rule still in their section headers.",
+    { tall: true }],
   ["settings-08-running", "settings", async (p) => { await press(p, '[data-hook="run-now"]'); await wait(900); },
     `document.querySelector('[data-hook="run-now"]')?.getAttribute('aria-busy') === 'true'`,
     "Run report now, pressed: the button spins and says Running until the run is done. Last run stays under it. The schedule sentence says manual runs come out of the plan's allowance, with a link to what the plan includes."],
@@ -1928,7 +1933,12 @@ const APP_EXTRA = [
     "Net Promoter Score in table view: each answer with responses and share, the total and the score."],
   ["getreviews-85-internal-feedback", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="all-feedback-card"]'); await parkCard(p, '[data-hook="all-feedback-card"]'); },
     `!!document.querySelector('[data-hook="feedback-table"]')`,
-    "Internal feedback: the responses table on the campaign page, feedback first, the customer's email muted and truncated, the filters in the sticky header and pagination pinned under it."],
+    // TALL: this card is the LAST on the page, so the scroller runs out
+    // before it reaches the top of the frame and the NPS card above stays
+    // in shot with its own sticky header across its gauge. parkCard cannot
+    // help a card that cannot get to the top; the page can, so take it.
+    "Internal feedback: the responses table on the campaign page, feedback first, the customer's email muted and truncated, the filters in the sticky header and pagination pinned under it.",
+    { tall: true }],
   ["getreviews-86-feedback-drawer", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="all-feedback-card"]'); await parkCard(p, '[data-hook="all-feedback-card"]'); await press(p, '[data-hook="feedback-row-2"]'); await wait(900); },
     `!!document.querySelector('[data-hook="feedback-drawer"]')`,
     "One response in the Review Manager's drawer: up / down and a count, Rating, Received, Review site and Testimonial, then the email and the feedback. No reply: internal feedback cannot be replied to."],
