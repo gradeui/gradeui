@@ -314,12 +314,18 @@ export function FacetedFilterMenu({
   );
 }
 
-export function SingleSelectMenu({ label, open, onOpenChange, options, value, onSelect, dataHook, panelWidth = "w-44" }) {
+export function SingleSelectMenu({ label, open, onOpenChange, options, value, onSelect, dataHook, panelWidth = "w-44", align = "left" }) {
   return (
     <FacetPopover
       label={label}
       open={open}
       onOpenChange={onOpenChange}
+      // Same "left" | "right" edge choice FacetedFilterMenu takes, and the
+      // same mapping onto Radix. The default stays "left" so every existing
+      // call site keeps the alignment it has. Without this, a panel wider
+      // than its trigger at the right-hand end of a row hangs off the card
+      // and Radix clamps it flush to the viewport with no gutter.
+      align={align === "right" ? "end" : "start"}
       panelWidth={panelWidth}
       dataHook={dataHook}
     >
