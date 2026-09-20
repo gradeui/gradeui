@@ -956,7 +956,7 @@ const STATES = [
      })()`,
     // TALL: the page is a preview card over a twenty row table, so a 900
     // crop stops three rows in and the pager never appears.
-    "Edit reviews on the List card opens Select reviews, full bleed on its own page. The Yelp notice, the showcase itself, then the table: its title and its four filters in a band that sticks, Auto select reviews at the far end of that band, a row per review carrying a Position and a Blacklist, and the pager counting them at the foot.",
+    "Edit reviews on the List card opens Select reviews, full bleed on its own page. The Yelp notice, then the showcase itself in a card capped at 16rem that scrolls inside itself, so the last review card in it is cut on purpose. Then the table: its title and its four filters in a band that sticks, Auto select reviews at the far end of that band, a row per review carrying a Position and a Blacklist, and the pager counting them at the foot.",
     { tall: true }],
   ["widgets-09-select-reviews-json", "widgets", async (p) => { await showcaseReviews(p, "json"); },
     `(() => {
@@ -996,7 +996,7 @@ const STATES = [
     // held these as a column of checkboxes behind Apply Filters; each is its
     // own menu now and applies on press, so the four states below are the
     // four columns that panel had.
-    "The Star Rating menu open: All ratings over the five the product offers, each with its own glyph. It stops at three stars, so a two or one star review can never be filtered into a showcase."],
+    "The Star Rating menu open: All ratings over the five the product offers, the star rows carrying their own glyphs and No rating carrying none, which is the point of it. The list stops at three stars, so a two or one star review can never be filtered into a showcase."],
   ["widgets-12-filter-date", "widgets", async (p) => {
     await showcaseFacet(p, "list", "filter-date");
     await blur(p);
@@ -1015,7 +1015,7 @@ const STATES = [
     `!!document.querySelector('[data-hook="filter-date-range"]')
      && !!document.querySelector('[data-hook="filter-date-start"]')
      && !!document.querySelector('[data-hook="filter-date-end"]')`,
-    "Custom date range chosen: Start and End appear in the filter band beside the menu, because two date fields are not menu options."],
+    "Custom date range chosen: two date fields with to between them appear in the filter band beside the menu, because two date fields are not menu options. They carry their names to a screen reader rather than on the page, so the band stays one row of controls."],
   ["widgets-14-filter-sources", "widgets", async (p) => {
     await showcaseFacet(p, "list", "filter-sources");
     await blur(p);
@@ -1028,7 +1028,7 @@ const STATES = [
        }
        return true;
      })()`,
-    "The Review Sources menu open: All sources, then the seven this location has data for, each with its own mark beside the name."],
+    "The Review Sources menu open: All sources, then the seven this location has data for. Each carries its own mark where the source has one, and the globe where it does not."],
   ["widgets-15-filter-feedback-score", "widgets", async (p) => {
     await showcaseFacet(p, "list", "filter-nps");
     await blur(p);
@@ -1063,7 +1063,7 @@ const STATES = [
        const opts = [...document.querySelectorAll('[role="option"]')];
        return opts.length > 3 && opts.some((o) => o.textContent.trim() === "-1");
      })()`,
-    "The Position select on one review, open: minus one for no position, then one place per review, so a review can be pinned to the top of the widget."],
+    "The Position select on one review, open: minus one for no position, then one place per review this showcase can publish, so a review can be pinned to the top of the widget. Twenty two options is a column the height of the page, which is what the product's own control does with a list this long."],
   ["widgets-19-blacklist-on", "widgets", async (p) => {
     await showcaseReviews(p, "list");
     await press(p, '[data-hook^="select-blacklist-"]');
@@ -1081,12 +1081,15 @@ const STATES = [
     // on its own is the second press.
     await showcaseFacet(p, "list", "filter-sources", ["filter-sources-all", "filter-sources-yelp"]);
     await escape(p);
-    await hover(p, '[data-hook^="select-unavailable-"]');
+    // THE SECOND ROW'S CHIP, NOT THE FIRST. A tooltip is drawn above its
+    // trigger, so hovering row one put it over row one's own review text and
+    // the frame showed the rule on top of the thing the rule is about.
+    await hover(p, 'tbody tr:nth-child(2) [data-hook^="select-unavailable-"]');
   },
     `!!document.querySelector('[data-hook^="select-unavailable-"]')
      && !document.querySelector('[data-hook^="select-blacklist-"]')
      && [...document.querySelectorAll('[role="tooltip"]')].some((t) => /cannot go in a showcase/.test(t.textContent))`,
-    "Filtered to Yelp alone: every row reads Unavailable where its Position would be, with no Blacklist beside it, and the tooltip repeats the notice's reason. Yelp does not allow its reviews to be republished."],
+    "Filtered to Yelp alone: every row reads Unavailable where its Position would be, with no Blacklist beside it, and the tooltip repeats the notice's reason. Yelp does not allow its reviews to be republished, so the widget above this has nothing to show."],
   ["widgets-21-no-reviews-in-filter", "widgets", async (p) => {
     // FEEDBACK SCORE: POSITIVE is the one filter in this data that is
     // guaranteed to match nothing. A score comes from a Get Reviews campaign
@@ -1108,7 +1111,7 @@ const STATES = [
      && /No reviews match/.test(document.querySelector('[data-hook="reviews-issue"]').textContent)`,
     // Save is the only thing that runs the check, and it lands you here
     // whichever of the two editor pages you pressed it on.
-    "Save with a filter that matches nothing: the alert sits at the top of Select reviews, above the filters it names, and says to widen the ratings, sources or dates."],
+    "Save with a filter that matches nothing: the alert sits at the top of Select reviews, above the filters it names, and says to widen the ratings, sources or dates. The preview says the same thing in its own words, and the pager counts nought of nought."],
 
   // WIDGET DESIGN, the page and the six part sheets.
   ["widgets-23-design-page-list", "widgets", async (p) => { await showcaseDesign(p, "list"); },
@@ -1150,7 +1153,7 @@ const STATES = [
   },
     `${expectDesignSheet("Preset", "design-preset-custom-tile")}
      && document.querySelector('#design-preset-custom')?.getAttribute("data-state") === "checked"`,
-    "One setting changed, and a Custom tile joins the three presets, already chosen. It is a readout rather than something to pick, and it goes again the moment a preset is chosen back."],
+    "One setting changed, and a Custom tile joins the three presets, already chosen. The Preset block behind the sheet says Custom on its summary line at the same moment, because the summaries are live. It is a readout rather than something to pick, and it goes again the moment a preset is chosen back."],
   ["widgets-27-design-sheet-layout", "widgets", async (p) => { await designSheet(p, "list", "layout"); },
     expectDesignSheet("Layout", "design-columns-field"),
     "The Layout block's Edit: widget max height, the three desktop layouts as glyphs, and how many reviews to show."],
@@ -1162,7 +1165,7 @@ const STATES = [
     "The Text block's Edit: the font, shown in its own face, then the text and link colours, the size, and the alignment."],
   ["widgets-30-design-sheet-reviews", "widgets", async (p) => { await designSheet(p, "list", "reviews"); },
     expectDesignSheet("Reviews", "design-date-format-field"),
-    "The Reviews block's Edit: what each review shows, the date format and the character count, then the review card's own background, radius, border and shadow."],
+    "The Reviews block's Edit: what each review shows, including whether the business details go into the page's Schema, then the date format and the character count, then the review card's own background, radius, border and shadow."],
   ["widgets-31-design-sheet-animation", "widgets", async (p) => { await designSheet(p, "carousel", "animation"); },
     expectDesignSheet("Animation", "design-auto-rotate-field"),
     // THE GROUP THAT COULD NOT BE SHOT WHOLE, SHOT WHOLE. As an accordion
@@ -1183,7 +1186,7 @@ const STATES = [
     // Answering Yes is safe for a still: the run asks for reduced motion and
     // the screen refuses to start auto rotate under it, so nothing is caught
     // mid-slide.
-    "Auto rotate slides answered Yes and the transition set to Slide, with the widget behind the sheet already carrying the change: edits are live, so Done only dismisses."],
+    "Auto rotate slides answered Yes and the transition set to Slide. Edits are live, so Done only dismisses, and the Preset block behind stays on Modern: the carousel settings are not a preset's business, so changing them does not make the look Custom."],
   ["widgets-33-leave-dialog", "widgets", async (p) => {
     await designSheet(p, "carousel", "preset");
     await press(p, '[data-hook="design-preset-bootstrap-label"]');
@@ -2129,7 +2132,9 @@ for (const [name, screen, , , note] of wanted) {
   notesBySection.get(sec).push({ name, note });
 }
 for (const [sec, rows] of notesBySection) {
-  const md = [`# ${sec} — captured states`, "",
+  // NO LONG DASHES IN ANYTHING WRITTEN FOR ALI, and this heading ships at
+  // the top of every section's NOTES.md.
+  const md = [`# ${sec}: captured states`, "",
     "Generated by `scripts/capture-states.mjs`. Edit the note beside the state",
     "definition in that file, not this file, or the two will drift.", ""];
   for (const r of rows) md.push(`### ${r.name}`, "", r.note, "");
