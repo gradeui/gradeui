@@ -532,13 +532,24 @@ const STATES = [
   // ── Review Manager ────────────────────────────────────────────────────
   // ROW INDICES ARE NOT ARBITRARY and must not be guessed. The five
   // failure codes are pinned to the first five reviews that are both
-  // repliable and still needing action, DERIVED in the screen from
-  // SEED_REVIEWS. That lands them on rows 0, 2, 4, 8, 10 — not 0..4 —
-  // because TripAdvisor rows and already-replied rows fall in between.
-  // Guessing 6 and 8 drove two of these into reviews with no simulated
-  // failure, so the send SUCCEEDED, the drawer closed, and the run
-  // captured a plain list that looked almost right (27 Aug). Every one
-  // of these now asserts on the failure copy before the shutter fires.
+  // repliable and still needing action, DERIVED in the screen from the
+  // rows the inbox is built with. Guessing 6 and 8 once drove two of
+  // these into reviews with no simulated failure, so the send SUCCEEDED,
+  // the drawer closed, and the run captured a plain list that looked
+  // almost right (27 Aug). Every one of these asserts on the failure copy
+  // before the shutter fires, which is what caught the drift below.
+  //
+  // THEY MOVE WHEN THE SEED MOVES. The inbox now comes from
+  // inboxRowsFor(location, persona) rather than the old SEED_REVIEWS, and
+  // that put the five on rows 0..4 for the `engaged` persona this suite
+  // shoots, where they used to sit on 0, 2, 4, 8, 10 (20 Sep). The list
+  // is unsorted and unfiltered at rest, so the visible row index is the
+  // seed index. Recompute rather than guess, from apps/brightlocal:
+  //   npx tsx -e 'import {inboxRowsFor} from "./lib/reviews-data";
+  //     const ok={google:1,facebook:1};
+  //     console.log(inboxRowsFor("minus-1-studios",{engagement:"engaged"})
+  //       .map(([s,,,,,st],i)=>({i,s,st}))
+  //       .filter(r=>ok[r.s]&&r.st==="needs").slice(0,5))'
   ["manager-01-list", "manager", async () => {},
     null,
     "Review Manager at rest: the tabs with their counts, the facet triggers, and one status badge per row (status is the state the review is in, never the delivery outcome)."],
@@ -576,13 +587,13 @@ const STATES = [
   ["manager-08-fail-disconnected", "manager", async (p) => { await sendOn(p, 0); },
     expectFailure("connection has expired"),
     "BLOCKING failure. The connection expired, so the composer is hidden: a reply box you cannot submit is furniture that invites wasted typing."],
-  ["manager-09-fail-rate-limited", "manager", async (p) => { await sendOn(p, 2); },
+  ["manager-09-fail-rate-limited", "manager", async (p) => { await sendOn(p, 1); },
     expectFailure("limiting replies"),
     "RECOVERABLE failure. The composer stays and the draft is preserved, because waiting a few minutes genuinely fixes this one."],
-  ["manager-10-fail-unknown", "manager", async (p) => { await sendOn(p, 4); },
+  ["manager-10-fail-unknown", "manager", async (p) => { await sendOn(p, 2); },
     expectFailure("rejected this reply"),
     "RECOVERABLE failure. Even the generic case says what to do next; never a bare 'something went wrong'."],
-  ["manager-11-fail-deleted-terminal", "manager", async (p) => { await sendOn(p, 8); },
+  ["manager-11-fail-deleted-terminal", "manager", async (p) => { await sendOn(p, 3); },
     expectFailure("no longer on"),
     "TERMINAL failure. The review is gone, so the action is Skip reply, not Retry, and Send is disabled. A retry that 'worked' would be a lie."],
   ["manager-12-fail-permission-seeded", "manager", async (p) => { await openRow(p, 10); },
@@ -600,19 +611,23 @@ const STATES = [
   // and still needing action, so each opens a composer. Row 10 is
   // deliberately NOT used: it arrives already failed, so its panel has no
   // composer and no AI button to read a counter from.
-  ["manager-14-ai-3-left", "manager", async (p) => { await openRow(p, 0); },
+  // NOT ROWS 0..4: those five now carry the seeded send failures, and one of
+  // them (the permission case) arrives already failed, so its row opens on a
+  // blocked composer with no allowance line under it. The AI states want
+  // ordinary repliable reviews, which start at row 5 (20 Sep).
+  ["manager-14-ai-3-left", "manager", async (p) => { await openRow(p, 5); },
     `/3 of 3 AI drafts left/.test(document.body.innerText)`,
     "Full AI allowance. The count sits under the composer as quiet helper text, not as a warning."],
   ["manager-15-ai-2-left", "manager", async (p) => {
-    await spendAi(p, 0); await openRow(p, 2);
+    await spendAi(p, 5); await openRow(p, 6);
   }, `/2 of 3 AI drafts left/.test(document.body.innerText)`,
     "One draft spent. The counter only moves on a review's first AI use, so re-inserting on the same review is free."],
   ["manager-16-ai-1-left", "manager", async (p) => {
-    await spendAi(p, 0); await spendAi(p, 2); await openRow(p, 4);
+    await spendAi(p, 5); await spendAi(p, 6); await openRow(p, 9);
   }, `/1 of 3 AI drafts left/.test(document.body.innerText)`,
     "Last draft. Still helper text: the state that needs explaining is running out, not being close to it."],
   ["manager-17-ai-used-up", "manager", async (p) => {
-    await spendAi(p, 0); await spendAi(p, 2); await spendAi(p, 4); await openRow(p, 8);
+    await spendAi(p, 5); await spendAi(p, 6); await spendAi(p, 9); await openRow(p, 8);
   }, `/No AI drafts left today/.test(document.body.innerText)`,
     "Allowance gone. This is the one state a person will want explained, so it escalates to an AlertInfo that says when it resets and what you can still do."],
 
@@ -705,9 +720,14 @@ const STATES = [
     await waitForHook(p, '[data-hook="widget-preview-drawer"]');
     await wait(900);
   },
+    // NOT THE DARK CHROME ANY MORE. This used to assert on a neutral-900
+    // panel, because a showcase carried its own dark mode. Showcase lost
+    // light and dark (Ali, 20 Sep: "in showcase we won't have dark and light
+    // mode"), so the only honest check left is that the frame rendered
+    // something rather than an empty box.
     `!!document.querySelector('[data-hook="widget-preview-drawer"][data-state="open"]')
-     && !!document.querySelector('[data-hook="preview-frame-sheet"] .bg-neutral-900')`,
-    "The Preview sheet for the List: the showcase in its saved dark mode and Edit showcase in the footer."],
+     && (document.querySelector('[data-hook="preview-frame-sheet"]')?.innerText.trim().length ?? 0) > 40`,
+    "The Preview sheet for the List: the showcase as the site shows it, with Edit showcase in the footer."],
   ["widgets-05-preview-sheet-carousel", "widgets", async (p) => {
     await press(p, '[data-hook="widget-carousel-view"]');
     await waitForHook(p, '[data-hook="widget-preview-drawer"]');

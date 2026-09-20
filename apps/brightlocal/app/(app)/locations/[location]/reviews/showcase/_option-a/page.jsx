@@ -32,7 +32,8 @@
 //   carries its mark from @brightlocal/proposal's SourceMark: the Sources
 //   row on the cards and every source option and trigger in the facets.
 //   "Have it much more like an actual list, like what would be displayed."
-//   The DataTable picker is gone; see ReviewList.
+//   The DataTable picker is gone; superseded on 20 Sep, when Select Reviews
+//   was rebuilt to the product's own model and became a DataTable again.
 //   "The filters should stick." The picker's bar is sticky inside the
 //   sheet's scroller.
 // FOURTH PASS, 7 SEP: three fixed showcases (List, Carousel, JSON feed), no
@@ -53,24 +54,39 @@
 //
 // ─── WHAT THIS PAGE IS ───
 // Build an embeddable widget that publishes chosen reviews on the customer's
-// own website, as a list, a carousel, or a raw JSON feed. Two ways to choose
-// the reviews, and the choice is the FIRST thing the wizard asks because it
-// changes every later step:
+// own website, as a list, a carousel, or a raw JSON feed.
 //
-//   HAND-PICKED  a fixed set, chosen by hand, that never changes on its own.
-//   LIVE FEED    a filter; new reviews that match are added automatically.
-//                Individual reviews can still be excluded by hand.
+// HOW THE REVIEWS ARE CHOSEN, AS THE PRODUCT DOES IT (Ali, 20 Sep, on a
+// screenshot of BrightLocal's Select Reviews step: match the product). One
+// model, not two:
+//
+//   FILTERS      Star Rating, Feedback Score, Date and Review Sources, set in
+//                one wide dropdown panel that does nothing until Apply
+//                Filters is pressed.
+//   AUTO SELECT  on by default: a new review that matches the filters joins
+//                the showcase on its own.
+//   PER REVIEW   Position orders a review inside the widget (-1 is no
+//                position); Blacklist keeps one out.
+//
+// The Hand-picked / Live feed pair this screen used to ask about was its own
+// invention and is gone, with the facet menus, the per-card tick box and the
+// Limit select. Yelp reviews are listed and cannot be used; the banner at the
+// top of the step says why.
 //
 // ─── VIEWS IN THIS ONE SCREEN ───
 // list → wizard → list, plus a widget detail page carrying the embed code.
 // Same in-screen view model as RM — Review Manager and RM — Review Builder: the
 // shell and PageHeader stay mounted, only the body swaps.
 //
-// WHY THE PICKER IS A LIST (7 Sep)
-// It was a DataTable, borrowed from Review Manager. Ali found it clumsy for
-// this job: choosing what goes on your website wants to look like the
-// website, so the picker is now the widget's own review cards with a box
-// beside each. See the review picker section.
+// WHY THE PICKER IS A TABLE AGAIN (20 Sep)
+// It was a DataTable, then a list of the widget's own review cards with a box
+// beside each (7 Sep: "have it much more like an actual list, like what would
+// be displayed"). That was the right answer to the question this screen was
+// asking then, which was "which of these do you want?". The product asks a
+// different one: every review carries a Position and a Blacklist, and a row
+// with two controls on it is a table. So it is a DataTable again, the same one
+// Review Manager uses, sortable headers and all. See the select reviews
+// section.
 //
 //
 // ─── FINDINGS AND OPEN QUESTIONS LIVE IN A REPORT ───
@@ -82,18 +98,20 @@
 // ─── ASSUMPTIONS, FOR ALI TO CHECK ───
 // 1. SOURCES ARE Google / Facebook / Trustpilot, with Yelp excluded from
 //    widgets. CONFIRMED by Ali, 27 Aug: Trustpilot is a real source and
-//    stays. Note this list therefore differs from Review Manager and Review
-//    Insights, which carry TripAdvisor and not Trustpilot. That is a data
-//    difference across the section, not an oversight in this screen.
-//    The Yelp exclusion is still the researcher's prototype, stated there
-//    as a policy limit, and still needs confirming.
+//    stays. SUPERSEDED on the source list (the pool carries the Tracker's
+//    seven), and the Yelp half is now CONFIRMED by the product itself: the
+//    banner on Select Reviews is BrightLocal's own wording for it.
 // 2. FACEBOOK HAS NO STARS. Per the audit (section 3.1.1) Facebook returns
 //    "Recommended" and "Not recommended", not a 1 to 5 score, so those rows
-//    show a thumb rather than stars and the rating facet offers both.
+//    show a thumb rather than stars. The product's Star Rating filter offers
+//    Recommended and NOT its opposite, so a "Not recommended" review can be
+//    read in the table and can never reach a showcase.
 // 3. WIDGETS ARE NAMED BY THE USER. The prototype auto-named them by format,
 //    which gives you three widgets called "List widget". A name field with a
 //    sensible default costs one input and makes the dashboard readable.
-// 4. THE 50-REVIEW CAP on a hand-picked widget is the prototype's number.
+// 4. THE 50-REVIEW CAP is gone with hand-picking. How many reviews reach the
+//    page is Widget Design's "Number of reviews to show" and nothing else,
+//    which is the one cap the real product has.
 //
 // ─── HOUSE RULES OBSERVED ───
 // Cards get max-w-none. Badge has no success variant. Card-to-card spacing is
@@ -117,10 +135,8 @@ import {
 import {
   useDataTable,
   DataTable,
-  DataTableSearch,
+  DataTableColumnHeader,
   DataTablePagination,
-  DataTableSelectAllCheckbox,
-  DataTableSelectRowCheckbox,
 } from "@brightlocal/ui-components/data-table";
 import {
   Card,
@@ -147,11 +163,15 @@ import {
   InputGroupAddon,
 } from "@brightlocal/ui-components/input-group";
 import { Checkbox } from "@brightlocal/ui-components/checkbox";
-import { Switch } from "@brightlocal/ui-components/switch";
 import { Progress } from "@brightlocal/ui-components/progress";
 import { Rating } from "@brightlocal/ui-components/rating";
 import { RadioGroup, RadioGroupItem } from "@brightlocal/ui-components/radio-group";
 import { Slider } from "@brightlocal/ui-components/slider";
+// THE SWITCH IS BACK, for the two controls the product genuinely draws as
+// toggles: Auto select reviews in the toolbar, and Blacklist on every row. The
+// Widget Design panel still asks its questions as Yes / No radio pairs, which
+// is why SwitchRow did not come back with it.
+import { Switch } from "@brightlocal/ui-components/switch";
 import { ToggleGroup, ToggleGroupItem } from "@brightlocal/ui-components/toggle-group";
 import {
   Accordion,
@@ -222,6 +242,7 @@ import {
   Square,
   Columns2,
   Columns3,
+  Info,
   GoogleOriginal,
   FacebookOriginal,
   TrustpilotOriginal,
@@ -230,7 +251,6 @@ import { AppLayoutShell, ProposalSidebar, PageHeader, DateStamp, formatDate, Sou
 // SideSheetHeader, not SheetHeader: the DS barrel already exports a SheetHeader
 // (the Sheet family), and the contract check keys on the JSX name.
 import { SideSheetHeader } from "@brightlocal/side-sheet-header";
-import { FacetedFilterMenu, FacetPopover, FacetOptions, SingleSelectMenu } from "@brightlocal/facet-menu";
 import {
   Select,
   SelectTrigger,
@@ -265,55 +285,172 @@ const SOURCES = Object.fromEntries(
 );
 const SOURCE_LIST = Object.values(SOURCES);
 
-// THREE RATING OPTIONS, NOT SEVEN (Ali, 7 Sep: "we should only have 4 stars
-// and above, 5 stars and above, recommended, and if it is 'all ratings' it
-// should be selecting these items"). A widget can therefore never carry a 1
-// to 3 star review or a Not recommended, and that is the point: nobody wants
-// those on their homepage. The options OR together. "All ratings" ticks all
-// three, and an empty list means all three too, so there is no state in which
-// nothing matches on ratings alone.
-// ASSUMPTION: "4 stars and above" includes 5 stars. Ticking it alone shows 4
-// and 5 star reviews, and the card row omits "5 stars" when it is on, since
-// it is implied. A legacy "4" (the old per-star id) reads as "4plus".
+// THE PRODUCT'S OWN STAR RATING FILTER, OPTION FOR OPTION (Ali, 20 Sep, on a
+// screenshot of BrightLocal's Select Reviews step: "match the product"). Five
+// checkboxes under a Toggle All, and the list STOPS AT THREE STARS: the real
+// screen offers no two or one star option, so those reviews sit in the pool
+// and can never be filtered into a showcase. That is the same conclusion the
+// old three options reached ("nobody wants those on their homepage"), said
+// the way the product says it.
+//
+// ASSUMPTION: "No rating" is a review carrying neither stars nor a
+// recommendation, which is what a Get Reviews campaign answer looks like
+// before a customer marks it for public sharing. This location's pool has
+// none, so ticking it alone empties the table. Faithful to the screen, and
+// worth knowing before anyone reads that as a bug.
+// ASSUMPTION: Facebook's "Not recommended" matches NOTHING, because the panel
+// offers no option for it, exactly as a two star review matches nothing.
 const RATING_OPTIONS = [
-  { id: "5", label: "5 stars" },
-  { id: "4plus", label: "4 stars and above" },
-  { id: "rec", label: "Recommended (Facebook)" },
+  { id: "5", label: "5 Stars", score: 10 },
+  { id: "4", label: "4 Stars", score: 8 },
+  { id: "3", label: "3 Stars", score: 6 },
+  { id: "rec", label: "Recommended" },
+  { id: "none", label: "No rating" },
 ];
 const ALL_RATINGS = RATING_OPTIONS.map((o) => o.id);
 
-// The ticked options, in menu order, with the two rules above applied:
-// "4" becomes "4plus", ids that no longer exist drop, empty means all.
+// The ticked options, in panel order. A record written before this pass
+// carries the old ids, so "4plus" reads as 4 AND 5 stars and anything the
+// panel no longer offers drops.
+//
+// AN EMPTY LIST NOW MEANS NOTHING MATCHES, not everything. The old facet had
+// no way to show "none ticked", so empty had to stand for all; the panel has
+// a Toggle All checkbox sitting right above the five, and treating an empty
+// list as all would make that box lie about what it just did.
 function normaliseRatings(list) {
-  const on = ALL_RATINGS.filter((id) =>
-    (list ?? []).some((x) => x === id || (id === "4plus" && x === "4")),
-  );
-  return on.length ? on : ALL_RATINGS;
+  const on = new Set();
+  (list ?? []).forEach((x) => {
+    if (x === "4plus") {
+      on.add("4");
+      on.add("5");
+      return;
+    }
+    if (ALL_RATINGS.includes(x)) on.add(x);
+  });
+  return ALL_RATINGS.filter((id) => on.has(id));
 }
 
-// Does one review pass the ratings filter? OR across the ticked options.
+// Does one review pass the Star Rating filter? OR across the ticked options.
 function ratingMatches(review, ratings) {
   const on = normaliseRatings(ratings);
-  if (review.source === "facebook") return !!review.recommended && on.includes("rec");
-  if (typeof review.rating !== "number") return false;
-  return (on.includes("5") && review.rating === 5) || (on.includes("4plus") && review.rating >= 4);
+  if (typeof review.rating === "number") return on.includes(String(review.rating));
+  if (review.recommended === true) return on.includes("rec");
+  if (review.recommended === false) return false;
+  return on.includes("none");
 }
 
-// Labels for the card row: ticked options, minus "5 stars" when "4 stars and
-// above" already implies it.
-function ratingLabels(ratings) {
+// The card's Ratings row: the words, not the count. All five ticked is the
+// state a reader should not have to decode from a list of five labels.
+function ratingLabel(ratings) {
   const on = normaliseRatings(ratings);
-  return RATING_OPTIONS.filter((o) => on.includes(o.id) && !(o.id === "5" && on.includes("4plus"))).map(
-    (o) => o.label,
-  );
+  if (on.length === ALL_RATINGS.length) return "All ratings";
+  if (on.length === 0) return "None";
+  return RATING_OPTIONS.filter((o) => on.includes(o.id))
+    .map((o) => o.label)
+    .join(", ");
 }
 
-const PERIODS = [
-  { id: "all", label: "All time", days: null },
-  { id: "30", label: "Last 30 days", days: 30 },
-  { id: "90", label: "Last 90 days", days: 90 },
-  { id: "365", label: "Last 12 months", days: 365 },
+// FEEDBACK SCORE (NPS): three radios, the product's own words.
+//
+// ASSUMPTION, AND IT IS A BIG ONE: no review in this prototype's pool carries
+// a feedback score. They come from Get Reviews campaigns, which this data set
+// does not model. So All and None both show every review and Positive shows
+// none, and the table's empty line says so rather than reading as a bug. The
+// alternative was inventing a score per review, which would be a product enum
+// we have never seen a real value of.
+const NPS_OPTIONS = [
+  { id: "all", label: "All" },
+  { id: "none", label: "None" },
+  { id: "positive", label: "Positive" },
 ];
+const npsOf = (widget) => (NPS_OPTIONS.some((o) => o.id === widget.nps) ? widget.nps : "all");
+function npsMatches(review, nps) {
+  if (nps === "all") return true;
+  const score = typeof review.nps === "number" ? review.nps : null;
+  if (nps === "none") return score === null;
+  return score !== null && score >= 9;
+}
+
+// THE PRODUCT'S DATE LIST. "Last month" is the previous CALENDAR month, which
+// is the only reading that leaves it saying something "Last 30 days" does not.
+// A legacy "90" reads as All time, since the panel no longer offers it.
+const DATE_OPTIONS = [
+  { id: "all", label: "All time" },
+  { id: "7", label: "Last 7 days", days: 7 },
+  { id: "30", label: "Last 30 days", days: 30 },
+  { id: "lastmonth", label: "Last month" },
+  { id: "182", label: "Last 6 months", days: 182 },
+  { id: "365", label: "Last 12 months", days: 365 },
+  { id: "custom", label: "Custom date range" },
+];
+const dateOptionOf = (widget) =>
+  DATE_OPTIONS.find((o) => o.id === widget.period) ?? DATE_OPTIONS[0];
+
+// The pool's own today, not the machine's clock: every row carries both its
+// ISO day and how many days ago it was, so the two together name the day this
+// data set was generated against. Windows are measured from that, or a
+// prototype frozen at 9 Sep 2026 would drift out of "Last 7 days" overnight.
+let POOL_TODAY = "2026-09-09";
+function shiftIso(iso, days) {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+const isoOf = (review) => review.iso || shiftIso(POOL_TODAY, -review.daysAgo);
+
+// First and last day of the calendar month before the pool's today.
+function lastMonthRange() {
+  const d = new Date(`${POOL_TODAY}T00:00:00Z`);
+  const y = d.getUTCFullYear();
+  const m = d.getUTCMonth();
+  return [
+    new Date(Date.UTC(y, m - 1, 1)).toISOString().slice(0, 10),
+    new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10),
+  ];
+}
+
+function dateMatches(widget, review) {
+  const option = dateOptionOf(widget);
+  if (option.id === "all") return true;
+  if (option.id === "custom") {
+    const day = isoOf(review);
+    if (widget.dateStart && day < widget.dateStart) return false;
+    if (widget.dateEnd && day > widget.dateEnd) return false;
+    return true;
+  }
+  if (option.id === "lastmonth") {
+    const [from, to] = lastMonthRange();
+    const day = isoOf(review);
+    return day >= from && day <= to;
+  }
+  return review.daysAgo <= option.days;
+}
+
+// The card's Date row. A custom range says the range, because "Custom date
+// range" on its own is the name of a control rather than a fact.
+function dateLabel(widget) {
+  const option = dateOptionOf(widget);
+  if (option.id !== "custom") return option.label;
+  const from = widget.dateStart ? formatDate(widget.dateStart) : "the start";
+  const to = widget.dateEnd ? formatDate(widget.dateEnd) : "today";
+  return `${from} to ${to}`;
+}
+
+// REVIEW SOURCES ARE AN EXPLICIT LIST, same rule as the ratings above: the
+// panel has a Toggle All box, so the record holds what is ticked. An absent
+// list (a record written before this pass) reads as all of them; an empty one
+// is a choice, and matches nothing.
+const sourcesOf = (widget) => (Array.isArray(widget.sources) ? widget.sources : SOURCE_IDS);
+
+// YELP IS IN THE DATA AND CANNOT BE USED. Their terms forbid reusing reviews
+// off-site, so a Yelp review is listed in Select Reviews, with its date, stars
+// and text, and carries no Position and no Blacklist: there is no choice to
+// make about it. The banner at the top of the step is where that is explained,
+// which is why the rows are shown rather than quietly filtered away.
+const UNAVAILABLE_SOURCES = ["yelp"];
+const isUsable = (review) => !UNAVAILABLE_SOURCES.includes(review.source);
+const UNAVAILABLE_TIP =
+  "Yelp does not allow its reviews to be republished, so this one cannot go in a showcase.";
 
 // THREE SHOWCASES, FIXED (Ali, 7 Sep: "drop create new, and just call them
 // three things, this keeps the scope tight and easier to port"). Matches the
@@ -350,8 +487,6 @@ const FORMATS = {
 };
 const FORMAT_ORDER = ["list", "carousel", "json"];
 
-const MAX_HAND_PICKED = 50;
-
 // Same three sizes as the review panel in Review Manager and the editors in
 // Reply Templates, so every per-item overlay on RM is the same surface.
 //   phone  (< 640) bottom sheet, full width, none of this applies
@@ -362,6 +497,16 @@ const DRAWER_WIDTH =
   "data-[vaul-drawer-direction=right]:sm:w-[clamp(24rem,65vw,40rem)] " +
   "data-[vaul-drawer-direction=right]:lg:w-[clamp(24rem,50vw,40rem)] " +
   "data-[vaul-drawer-direction=right]:sm:max-w-[40rem]";
+
+// THE ONE EXCEPTION, for Select Reviews. Its table is six columns wide and
+// the real product gives that step the whole page, so the panel runs to 64rem
+// where there is room for it. Same floor and the same shape as above, so it
+// still reads as the same object; it just stops squeezing a table into half a
+// phone's worth of width. See SectionSheet.
+const REVIEWS_DRAWER_WIDTH =
+  "data-[vaul-drawer-direction=right]:sm:w-[clamp(24rem,92vw,64rem)] " +
+  "data-[vaul-drawer-direction=right]:lg:w-[clamp(24rem,78vw,64rem)] " +
+  "data-[vaul-drawer-direction=right]:sm:max-w-[64rem]";
 
 // THE SAME POOL AS REVIEW TRACKER, BY CONSTRUCTION (coordinator, 7 Sep:
 // "Thirty reviews at 3.8 does not demonstrate a showcase, and the Tracker's
@@ -552,6 +697,11 @@ function selectShowcaseReviews(location, persona) {
   POOL_TOTAL = REVIEWS.length;
   const stars = REVIEWS.filter((r) => typeof r.rating === "number").map((r) => r.rating);
   POOL_AVERAGE = stars.length ? stars.reduce((a, b) => a + b, 0) / stars.length : 0;
+  // The day this pool was generated against, recovered from any one row: its
+  // own ISO day plus how many days ago it was. The date filter measures every
+  // window from here rather than from the clock. See POOL_TODAY.
+  const first = REVIEWS[0];
+  if (first?.iso) POOL_TODAY = shiftIso(first.iso, first.daysAgo);
 }
 
 /* ============================== widget design ============================= */
@@ -612,6 +762,19 @@ const DESIGN_DEFAULTS = {
   reviewShadowBlur: 3,
   reviewShadowSpread: 0,
   reviewShadowColor: "#E0E0E0",
+};
+
+// THE PRODUCT'S OWN THUMBNAILS (Ali, 20 Sep, saved out of BrightLocal's
+// Widget Design screen into apps/brightlocal/public/widget-presets/). Each is
+// a square crop of that preset's review card, so the tiles are the real
+// artwork rather than a drawing of it. "classical.jpg" is their filename for
+// the preset this file calls Classic; the map is here so that one mismatch
+// sits in a single place.
+const PRESET_THUMBS = {
+  modern: "/widget-presets/modern.jpg",
+  classic: "/widget-presets/classical.jpg",
+  bootstrap: "/widget-presets/bootstrap.jpg",
+  custom: "/widget-presets/custom.jpg",
 };
 
 const DESIGN_PRESETS = {
@@ -775,70 +938,70 @@ function blankWidget() {
     // display, which is the same function the page header's Last updated
     // line uses, so RM has ONE date format instead of one per screen.
     updated: "2026-08-27T10:15",
-    // SENSIBLE DEFAULTS (Ali, 7 Sep: "NOT Any rating, just 4 and 5 stars,
-    // something like 4 stars and above. I dont see a case where anyone will
-    // want to show 1 star reviews. A limit by default of 5. Live by default
-    // as it has the least friction"). So a new widget is a live feed of the
-    // location's 4 star and above reviews, capped at five, and renders a
-    // real widget before anything is touched. Every one of these is one
-    // click away from different.
-    // ASSUMPTION: the default pairs "4 stars and above" with Facebook's
-    // Recommended. It is that source's only positive rating, so leaving it
-    // out would silently drop every Facebook review from the default feed.
-    mode: "feed",
     format: "list",
-    picked: [],
-    sources: [],
-    ratings: ["4plus", "rec"],
-    period: "all",
-    // A CAP BY DEFAULT (Ali, 2 Sep: "if it's live reviews, this could be a
-    // VERY large list"). It was "all", which on a live feed means a widget
-    // that grows without bound: a business collecting four reviews a week
-    // has two hundred on its homepage inside a year, and nobody chose that.
+    // ONE MODEL, THE PRODUCT'S (Ali, 20 Sep: "match the product", on a
+    // screenshot of Select Reviews). Hand-picked versus Live feed is gone,
+    // and with it `mode`, `picked` and the Limit select: the real screen has
+    // no such choice. Every showcase is a filter, a per-review Position and a
+    // per-review Blacklist, and how many of them reach the page is Widget
+    // Design's "Number of reviews to show" and nothing else. That also
+    // settles the two-controls-for-one-fact assumption WidgetPreview used to
+    // carry: there is one cap now, and it is the one the product has.
     //
-    // FIVE, not ten (Ali, 3 Sep). Five is the right default for the two
-    // formats this actually renders as: a carousel shows one at a time, so
-    // the cap is how long the loop is before it repeats, and five is a loop
-    // somebody might watch to the end; a list of five fits a homepage
-    // section without pushing the rest of the page down. Ten was a round
-    // number rather than an argument. "No limit" is still one select away.
-    limit: 5,
-    // Reviews a LIVE FEED leaves out by hand (the live product's per-review
-    // Blacklist toggle). Ids; honoured by resolveReviews so the preview and
-    // every count follow. Unused by a hand-picked set.
-    excluded: [],
+    // EVERYTHING TICKED TO START, which is what the panel's two Toggle All
+    // boxes show on a showcase nobody has filtered yet. The old default
+    // ("4 stars and above" plus Recommended) was this screen's own opinion
+    // about what belongs on a homepage; the product's default is everything
+    // it is allowed to offer, and three stars is as low as that goes.
+    ratings: ALL_RATINGS,
+    nps: "all",
+    period: "all",
+    dateStart: "",
+    dateEnd: "",
+    sources: SOURCE_IDS,
+    // ON BY DEFAULT, as the real toolbar has it: a review that arrives
+    // tomorrow and matches these filters joins the showcase on its own.
+    autoSelect: true,
+    // Reviews kept out by hand, by id (the product's per-review Blacklist
+    // toggle). Honoured by resolveReviews, so the preview and every count on
+    // the card follow it.
+    blacklist: [],
+    // Where a review sits in the widget, by id. -1 is the product's "no
+    // position", and that is simply the absence of a key here; 1 is first.
+    positions: {},
     design: {
       // MODERN IS THE STARTING LOOK, and Modern is DESIGN_DEFAULTS with the
       // soft shadow on, so a new showcase carries exactly the values the
       // Widget Design fields show as their defaults.
       ...DESIGN_PRESETS.modern.values,
-      // See CarouselWidget. Loop on, autoplay off, both controls on: the
-      // carousel looks exactly as it did before these existed. Not part of a
-      // preset, so picking one never disturbs it.
-      carousel: { loop: true, autoplay: false, every: 4, arrows: true, dots: true },
+      // See CarouselWidget. The real screen's own defaults: no auto rotate, a
+      // two-second fade, arrows and dots both on. Not part of a preset, so
+      // picking one never disturbs it.
+      carousel: { autoRotate: false, transition: "fade", speed: 2, arrows: true, dots: true },
     },
   };
 }
 
-// The three showcases, one per format, ids equal to the format. The old
-// seeds' settings map straight across: "Best of the year" is the List
-// (hand-picked five-star reviews, on the Classic preset, which is where the
-// old square corners and 140-character snippets now live), "Homepage
-// carousel" is the Carousel (live feed, Google, four stars and up, last 12
-// months, on Modern), "Site feed" is the JSON feed (live feed, defaults).
+// The three showcases, one per format, ids equal to the format. Each keeps
+// the character it always had, said in the product's model: the List is the
+// five-star one (it used to be a hand-picked set of five-star reviews, and
+// there is no hand-picking any more, so the filter says it instead), the
+// Carousel is Google over the last twelve months, the JSON feed is the
+// defaults. Two of the three also carry a Position and a Blacklist, because a
+// screen where every row reads -1 and Off never shows what those columns do.
 function seedWidgets() {
   const base = blankWidget();
+  const fiveStar = REVIEWS.filter((r) => r.rating === 5 && isUsable(r)).slice(0, 3);
   return [
     {
       ...base,
       id: "list",
       updated: "2026-07-04T09:25",
-      mode: "picked",
       format: "list",
-      // Up to five, not always five: an account with three five-star reviews
-      // showed "5 chosen by hand" and previewed five farm-park reviews it did
-      // not have (Showcase audit, 10 Sep).
-      picked: REVIEWS.filter((r) => r.rating === 5).slice(0, 5).map((r) => r.id),
+      ratings: ["5"],
+      // Three reviews pinned to the top of the widget, in the order someone
+      // chose rather than the order they arrived in.
+      positions: Object.fromEntries(fiveStar.map((r, i) => [r.id, i + 1])),
       // Square, hairline-bordered, snippets: the look this seed always had,
       // said as a preset now rather than as three loose keys.
       design: { ...base.design, ...DESIGN_PRESETS.classic.values },
@@ -847,55 +1010,80 @@ function seedWidgets() {
       ...base,
       id: "carousel",
       updated: "2026-08-21T16:40",
-      mode: "feed",
       format: "carousel",
       // "google" and "trustpilot" before the pool moved to the Tracker's
       // split; Trustpilot is not in that split, so it drops rather than being
       // swapped for a source nobody chose.
       sources: ["google"],
-      ratings: ["4plus", "rec"],
+      ratings: ["5", "4", "rec"],
       period: "365",
+      // One review kept off the site by hand, so the Blacklist row on the
+      // card has a number other than nought to report.
+      blacklist: REVIEWS.filter((r) => r.source === "google" && r.rating === 4)
+        .slice(0, 1)
+        .map((r) => r.id),
       design: { ...base.design, ...DESIGN_PRESETS.modern.values },
     },
     {
       ...base,
       id: "json",
-      mode: "feed",
       format: "json",
-      ratings: ["4plus", "rec"],
+      // A feed nobody is watching arrive: the one showcase with auto select
+      // off, so the toolbar's toggle has both states on the screen.
+      autoSelect: false,
     },
   ];
 }
 
 /* ================================= helpers ================================ */
 
-// The set of reviews a widget resolves to. Hand-picked widgets are their own
-// list; live feeds are the filter, minus anything excluded by hand.
-// Does a review pass a live feed's FILTERS (sources, ratings, period)? The
-// hand exclusions are applied on top, separately, so the card can say how
-// many matching reviews were left out.
-function feedMatches(widget, r) {
-  const period = PERIODS.find((p) => p.id === widget.period);
-  if (widget.sources.length && !widget.sources.includes(r.source)) return false;
+// Does one review pass the SELECT REVIEWS FILTERS? The four the panel holds,
+// AND'd: Star Rating, Feedback Score, Date, Review Sources. The Blacklist and
+// the Yelp rule are applied on top, separately, so the card can say how many
+// reviews a person kept out by hand.
+function filterMatches(widget, r) {
   if (!ratingMatches(r, widget.ratings)) return false;
-  if (period?.days && r.daysAgo > period.days) return false;
+  if (!npsMatches(r, npsOf(widget))) return false;
+  if (!dateMatches(widget, r)) return false;
+  if (!sourcesOf(widget).includes(r.source)) return false;
   return true;
 }
-const excludedOf = (widget) => widget.excluded ?? [];
+const blacklistOf = (widget) => widget.blacklist ?? [];
+const positionsOf = (widget) => widget.positions ?? {};
 
+// THE ROWS SELECT REVIEWS LISTS: everything the filters leave, Yelp included,
+// because a Yelp review is shown as unavailable rather than hidden. The
+// widget itself takes a narrower set; see resolveReviews.
+const filteredReviews = (widget) => REVIEWS.filter((r) => filterMatches(widget, r));
+
+// POSITION DECIDES THE ORDER (the product's per-review select, -1 by
+// default). A review with a position sits at that place, lowest first; every
+// other review keeps the pool's newest-first order behind them. Two reviews
+// given the same number keep their pool order relative to each other, since
+// Array.prototype.sort is stable.
+// ASSUMPTION: a position beyond the number of reviews the widget shows simply
+// sorts last among the positioned ones rather than being rejected. The real
+// screen offers a plain select and says nothing about the out-of-range case.
+function orderByPosition(list, widget) {
+  const pos = positionsOf(widget);
+  const placed = list.filter((r) => pos[r.id] > 0).sort((a, b) => pos[a.id] - pos[b.id]);
+  const rest = list.filter((r) => !(pos[r.id] > 0));
+  return [...placed, ...rest];
+}
+
+// The set of reviews a widget publishes: what the filters leave, minus Yelp,
+// minus the blacklist, in Position order, capped by Widget Design's own
+// "Number of reviews to show". That cap is applied LAST, after the ordering,
+// so a review pinned to position 1 is in the widget whatever its date.
 function resolveReviews(widget) {
-  if (widget.mode === "picked") return REVIEWS.filter((r) => widget.picked.includes(r.id));
-  // The cap is applied LAST, after every filter, and the list is already in
-  // newest-first order, so "Newest 5" is the five most recent reviews that
-  // match rather than five arbitrary ones. See the limit control on the
-  // reviews step.
-  const capped = (list) =>
-    typeof widget.limit === "number" ? list.slice(0, widget.limit) : list;
-  return capped(REVIEWS.filter((r) => feedMatches(widget, r) && !excludedOf(widget).includes(r.id)));
+  const usable = filteredReviews(widget).filter(
+    (r) => isUsable(r) && !blacklistOf(widget).includes(r.id),
+  );
+  return orderByPosition(usable, widget).slice(0, widget.design.count);
 }
 
 // KEY/VALUE ROWS, NOT AN INTERPUNCT STRING (Ali, 2 Sep: "having all the
-// options in a row with interpuncts is not very visual at all — I'd
+// options in a row with interpuncts is not very visual at all, I'd
 // probably have them as key value pairs").
 //
 // "Live feed: 5 star, 4 star, recommended · Google, Trustpilot · last 12
@@ -912,68 +1100,54 @@ function resolveReviews(widget) {
 // so the three cards line up row for row and the eye can run straight down a
 // column instead of re-reading each card's shape.
 //
-// A hand-picked showcase has no filter, so the four feed-only rows say "Not
-// used" rather than vanishing, and its Limit is the size of the set it was
-// handed. Nothing disappears, so nothing below it moves.
-const NOT_USED = "Not used";
-function widgetRows(widget) {
-  const picked = widget.mode === "picked";
+// WHAT THE ROWS SAY NOW is the Select Reviews model and only that: the four
+// filters, whether auto select is on, how many reviews were blacklisted, and
+// how many are on the site today. "Chosen by", "Limit" and "Left out" went
+// with hand-picking. `reviews` is the resolved set, passed in where the
+// caller already has it so a card and its settings page cannot disagree.
+function widgetRows(widget, reviews = resolveReviews(widget)) {
+  const sources = sourcesOf(widget);
+  const blacklisted = blacklistOf(widget).length;
   return [
-    // The ticked rating options by label; see ratingLabels for why "5 stars"
-    // drops out when "4 stars and above" is on.
-    { k: "Ratings", v: picked ? NOT_USED : ratingLabels(widget.ratings).join(", ") },
+    { k: "Ratings", v: ratingLabel(widget.ratings) },
+    {
+      k: "Feedback score",
+      v: NPS_OPTIONS.find((o) => o.id === npsOf(widget)).label,
+    },
+    { k: "Date", v: dateLabel(widget) },
     {
       k: "Sources",
       // MARKS BESIDE NAMES (Ali, 7 Sep: "on sources, can we include the
-      // logo?"). Chosen sources show mark and name each, in the fixed source
-      // order rather than click order; "Any source" shows the words alone,
-      // because marks stand for a choice and "any" is the absence of one.
-      // SourceMark is the registry's, not a local drawing.
-      v: picked ? (
-        NOT_USED
-      ) : (
-        <span className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-          {widget.sources.length ? (
-            SOURCE_LIST.filter((s) => widget.sources.includes(s.id)).map((s) => (
+      // logo?"). Ticked sources show mark and name each, in the fixed source
+      // order rather than click order; "All sources" shows the words alone,
+      // because marks stand for a choice and "all of them" is the absence of
+      // one. SourceMark is the registry's, not a local drawing.
+      v:
+        sources.length === SOURCE_IDS.length ? (
+          <span>All sources</span>
+        ) : sources.length === 0 ? (
+          <span>None</span>
+        ) : (
+          <span className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+            {SOURCE_LIST.filter((s) => sources.includes(s.id)).map((s) => (
               <span key={s.id} className="flex items-center gap-1.5">
                 <SourceMark source={s.id} />
                 {s.label}
               </span>
-            ))
-          ) : (
-            <span>Any source</span>
-          )}
-        </span>
-      ),
+            ))}
+          </span>
+        ),
     },
+    { k: "Auto select", v: widget.autoSelect === false ? "Off" : "On" },
+    // Always rendered, "Blacklisted 0" included, so the row count never
+    // changes as reviews are kept out and let back in.
     {
-      k: "Period",
-      v: picked ? NOT_USED : (PERIODS.find((x) => x.id === widget.period)?.label ?? "All time"),
+      k: "Blacklisted",
+      v: `${blacklisted} review${blacklisted === 1 ? "" : "s"}`,
     },
-    // The cap belongs on the card: "Showing now" says how many there are
-    // TODAY, which on a live feed is not the same as how many there can be.
-    // "5 reviews", not "Newest 5" (Ali, 7 Sep: "easier to read"). Newest
-    // first is still how the cap is applied; it is just not in the label.
-    // Hand-picked has no cap to state, so the row carries the size of the set
-    // instead and the two kinds of showcase still line up.
-    {
-      k: "Limit",
-      v: picked
-        ? `${widget.picked.length} chosen by hand`
-        : typeof widget.limit === "number"
-          ? `${widget.limit} reviews`
-          : "No limit",
-    },
-    // Always rendered, "Left out: 0" included, so the row count never
-    // changes as reviews are unticked and re-ticked.
-    {
-      k: "Left out",
-      v: picked
-        ? NOT_USED
-        : String(
-            REVIEWS.filter((r) => excludedOf(widget).includes(r.id) && feedMatches(widget, r)).length,
-          ),
-    },
+    // "Showing now" says how many are on the site TODAY, which is not the
+    // same as how many the filters allow: the Widget Design count caps it.
+    { k: "Showing now", v: `${reviews.length} review${reviews.length === 1 ? "" : "s"}` },
   ];
 }
 
@@ -1017,41 +1191,9 @@ function embedSnippet(widget) {
 
 /* ============================== small pieces ============================== */
 
-function ChoiceCards({ name, value, onChange, options, columns = 1, labelledBy }) {
-  return (
-    <RadioGroup
-      dataHook={`${name}-radio-group`}
-      variant="box"
-      value={value ?? ""}
-      onValueChange={onChange}
-      aria-labelledby={labelledBy}
-    >
-      <div
-        className={
-          columns === 3
-            ? "grid gap-3 sm:grid-cols-3"
-            : columns === 2
-              ? "grid gap-3 sm:grid-cols-2"
-              : "grid gap-3"
-        }
-      >
-        {options.map((o) => (
-          <Field key={o.id} orientation="horizontal" variant="box">
-            <RadioGroupItem id={`${name}-${o.id}`} value={o.id} />
-            <FieldContent>
-              <FieldLabel htmlFor={`${name}-${o.id}`} dataHook={`${name}-${o.id}-label`}>
-                {o.label}
-              </FieldLabel>
-              {o.caption ? (
-                <FieldDescription dataHook={`${name}-${o.id}-desc`}>{o.caption}</FieldDescription>
-              ) : null}
-            </FieldContent>
-          </Field>
-        ))}
-      </div>
-    </RadioGroup>
-  );
-}
+// ChoiceCards is gone with the Hand-picked / Live feed pair it drew. Select
+// Reviews has one model now, so there is no axis left to offer as two cards
+// (Ali, 20 Sep: match the product).
 
 // BackRow is gone. It rendered "← Review Showcase" above the widget detail,
 // which is a back link doing a breadcrumb's job in a worse place: it sat
@@ -1157,7 +1299,7 @@ function reviewDate(review, format) {
 // one thing in the widget the colour settings do not reach: they are the DS
 // component as it ships.
 
-function PreviewReview({ review, design, skin, leading = null, contentClassName = "" }) {
+function PreviewReview({ review, design, skin }) {
   // TRUNCATION IS A NUMBER NOW (Ali, 20 Sep): the real screen offers 140 or
   // 280 characters, so the cut is design.chars and the tail is a "Read More"
   // anchor, not a button, because on the customer's site it opens the review
@@ -1167,8 +1309,8 @@ function PreviewReview({ review, design, skin, leading = null, contentClassName 
   const text = clipped ? `${review.text.slice(0, design.chars - 3).trimEnd()}…` : review.text;
   const sourceName = SOURCES[review.source].label;
   const stamp = reviewDate(review, design.dateFormat);
-  const body = (
-    <>
+  return (
+    <div className="p-4" style={skin.card}>
       {/* A flex row cannot inherit text-align, so the alignment setting is
           handed to it as a justify-content. */}
       <div
@@ -1228,18 +1370,6 @@ function PreviewReview({ review, design, skin, leading = null, contentClassName 
           </>
         ) : null}
       </p>
-    </>
-  );
-  return (
-    <div className="p-4" style={skin.card}>
-      {leading ? (
-        <div className="flex items-center gap-3">
-          {leading}
-          <div className={`min-w-0 flex-1 ${contentClassName}`}>{body}</div>
-        </div>
-      ) : (
-        body
-      )}
     </div>
   );
 }
@@ -1264,7 +1394,7 @@ const hasHeader = (design) => design.summary !== "none" || headerTitle(design).l
 // Selected. ALL is the location's whole pool, which is what a summary on a
 // website normally means, and is what this row always said before. SELECTED
 // is the reviews this showcase actually publishes, which is the honest number
-// for a hand-picked set where the pool's average would be a different claim.
+// for a narrow filter, where the pool's average would be a different claim.
 // The average is over star ratings only, since Facebook recommendations carry
 // no score; the total counts every review.
 function summaryOf(design, reviews) {
@@ -1307,17 +1437,38 @@ function WidgetHeader({ design, skin, reviews }) {
   );
 }
 
-// 6. CAROUSEL SETTINGS (Ali, 7 Sep). Read through carouselOf so a record
-// saved before these existed behaves as the defaults.
-// 4 seconds is embla-carousel-autoplay's default delay (4000 ms), so the
-// interval choices start there and the default matches the plugin.
-const CAROUSEL_DEFAULTS = { loop: true, autoplay: false, every: 4, arrows: true, dots: true };
-const AUTOPLAY_EVERY = [4, 6, 8, 10];
+// 6. CAROUSEL SETTINGS, THE PRODUCT'S FIVE (Ali, 20 Sep, from a screenshot of
+// the real product's carousel settings). Auto rotate, transition style,
+// transition animation speed, slide arrows, slide dots, in that order and
+// with those defaults. Read through carouselOf so a record saved before this
+// pass (loop / autoplay / every) behaves as the new defaults rather than
+// carrying settings nothing offers any more.
+//
+// THERE IS NO LOOP CONTROL. The real screen does not offer one, so the
+// carousel simply always wraps: reaching the last slide and stopping dead is
+// not a behaviour anyone can now ask for.
+// ASSUMPTION: always-wrap is our reading of a screen with no such control.
+const CAROUSEL_DEFAULTS = { autoRotate: false, transition: "fade", speed: 2, arrows: true, dots: true };
+const TRANSITION_OPTIONS = [
+  { id: "fade", label: "Fade" },
+  { id: "slide", label: "Slide" },
+];
+// The slider's ends, named once so the control, the clamp and the summary
+// row cannot disagree.
+const SPEED_MIN = 1;
+const SPEED_MAX = 10;
 const carouselOf = (design) => {
   const c = { ...CAROUSEL_DEFAULTS, ...(design.carousel ?? {}) };
-  // A stored interval that is no longer offered (an older draft's 5) snaps
-  // to the default rather than leaving the select blank.
-  return AUTOPLAY_EVERY.includes(c.every) ? c : { ...c, every: CAROUSEL_DEFAULTS.every };
+  // A speed from outside the slider's range (an older draft's 4 is fine, its
+  // absence is not) comes back inside it, so the thumb always has somewhere
+  // to sit.
+  const speed = Number.isFinite(c.speed)
+    ? Math.min(SPEED_MAX, Math.max(SPEED_MIN, Math.round(c.speed)))
+    : CAROUSEL_DEFAULTS.speed;
+  const transition = TRANSITION_OPTIONS.some((o) => o.id === c.transition)
+    ? c.transition
+    : CAROUSEL_DEFAULTS.transition;
+  return { ...c, speed, transition };
 };
 
 // DOTS WITH A HIT AREA APART FROM THE DOT (Ali, 7 Sep: "the dots will need a
@@ -1345,17 +1496,65 @@ const CAROUSEL_DOTS_STYLE = `
 }
 `;
 
-// The carousel format of the widget. Its own component because autoplay
+// FADE, ALSO BY HAND (Ali, 20 Sep: "Transition style: Fade / Slide"). Embla
+// ships a fade plugin and the DS does not bundle it, so this is that plugin's
+// trick written out in CSS: freeze the track, stack every page on top of the
+// first, and cross-fade whichever page is selected.
+//
+// EVERY TRANSFORM HERE IS !important, AND HAS TO BE. Embla writes transforms
+// inline on two elements: the track, as it scrolls, and INDIVIDUAL SLIDES, as
+// the loop wraps them from one end to the other. Both would fight a transform
+// we set from React, and embla writes last, so the stack would come apart the
+// first time the carousel wrapped. An important rule in a stylesheet beats a
+// plain inline style, which is what makes this stable; it is also the only
+// way to reach the track, which is DS internals with no hook of its own.
+// Opacity is safe inline, because embla never touches it.
+const CAROUSEL_FADE_SCOPE = '[data-hook="widget-carousel-shell"][data-transition="fade"]';
+const CAROUSEL_FADE_STYLE = `
+${CAROUSEL_FADE_SCOPE} [data-slot="carousel-content"] > div {
+  transform: none !important;
+}
+${CAROUSEL_FADE_SCOPE} [data-slot="carousel-item"] {
+  transition: opacity 400ms ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  ${CAROUSEL_FADE_SCOPE} [data-slot="carousel-item"] {
+    transition: none;
+  }
+}
+`;
+
+// Where each slide stacks: page 1 back over page 0, page 2 over that, so every
+// page sits in the same place and only opacity separates them. Each slide
+// keeps its own column within its page, so two and three columns fade as a
+// set. One rule per slide rather than one inline style per slide, for the
+// !important reason above; the count is the Layout group's own cap, so this is
+// fifty rules at the very most and five in the ordinary case.
+const carouselFadeRules = (count, columns) =>
+  Array.from({ length: count }, (_, i) => {
+    const offset = -100 * columns * Math.floor(i / columns);
+    return `${CAROUSEL_FADE_SCOPE} [data-slot="carousel-item"]:nth-child(${i + 1}) { transform: translateX(${offset}%) !important; }`;
+  }).join("\n");
+
+// The carousel format of the widget. Its own component because auto rotate
 // needs the Embla api and a little state, and WidgetPreview is the ONE place
 // the widget renders, so the settings card, the Preview sheet and the picker
 // all get the same behaviour.
 //
-// AUTOPLAY BY HAND. The DS ships embla-carousel-react but not the autoplay
+// AUTO ROTATE BY HAND. The DS ships embla-carousel-react but not the autoplay
 // plugin, so this is the plugin's behaviour in an effect: scrollNext on an
 // interval, paused while the pointer or focus is inside, stopped for good
 // once the user takes the wheel (a drag, an arrow, a dot), and never started
 // under prefers-reduced-motion. Swapping in embla-carousel-autoplay via the
 // Carousel's `plugins` prop is the production route.
+//
+// THE SPEED IS THE GAP BETWEEN SLIDES, not the length of the animation
+// (Ali, 20 Sep: "auto rotate advances at the chosen speed"). The label says
+// "Transition animation speed", which could as easily mean how long the fade
+// itself takes, so this is worth saying out loud.
+// ASSUMPTION: seconds between advances. If it is the animation's own
+// duration, the interval below and the 400ms in CAROUSEL_FADE_STYLE swap
+// jobs. The fade is a fixed 400ms either way for now.
 //
 // IT HONOURS THE LAYOUT GROUP TOO. "Widget max height" and "Desktop layout
 // display" are offered in the panel for a Carousel and stated on its settings
@@ -1369,25 +1568,42 @@ const CAROUSEL_DOTS_STYLE = `
 // offered the two controls.
 function CarouselWidget({ widget, reviews, skin }) {
   const c = carouselOf(widget.design);
+  const fade = c.transition === "fade";
   const [api, setApi] = useState(null);
   const [paused, setPaused] = useState(false);
   const [stopped, setStopped] = useState(false);
+  // WHICH PAGE IS SHOWING. Only the fade needs it: with the track frozen
+  // nothing moves, so the slides themselves have to be told which of them is
+  // the current one. Embla's snap index IS the page index here, because a
+  // fade scrolls a whole column set at a time (see `opts` below).
+  const [snap, setSnap] = useState(0);
+  useEffect(() => {
+    if (!api) return;
+    const sync = () => setSnap(api.selectedScrollSnap());
+    sync();
+    api.on("select", sync);
+    api.on("reInit", sync);
+    return () => {
+      api.off("select", sync);
+      api.off("reInit", sync);
+    };
+  }, [api]);
   useEffect(() => {
     if (!api) return;
     const stop = () => setStopped(true);
     api.on("pointerDown", stop);
     return () => api.off("pointerDown", stop);
   }, [api]);
-  // Switching autoplay (or its interval) on again is a fresh start.
+  // Switching auto rotate (or its speed) on again is a fresh start.
   useEffect(() => {
     setStopped(false);
-  }, [c.autoplay, c.every]);
+  }, [c.autoRotate, c.speed]);
   useEffect(() => {
-    if (!api || !c.autoplay || paused || stopped) return;
+    if (!api || !c.autoRotate || paused || stopped) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const t = setInterval(() => api.scrollNext(), c.every * 1000);
+    const t = setInterval(() => api.scrollNext(), c.speed * 1000);
     return () => clearInterval(t);
-  }, [api, c.autoplay, c.every, paused, stopped]);
+  }, [api, c.autoRotate, c.speed, paused, stopped]);
   const controls = c.arrows || c.dots;
   return (
     <div
@@ -1396,18 +1612,32 @@ function CarouselWidget({ widget, reviews, skin }) {
       // "-shell": the dashboard card for the Carousel showcase is
       // data-hook="widget-carousel" (widget-<id>), so the box needs its own.
       data-hook="widget-carousel-shell"
+      // The transition hangs on this plain div rather than on the DS
+      // Carousel, so CAROUSEL_FADE_STYLE has a hook it owns to scope from.
+      data-transition={c.transition}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
     >
-      <style>{CAROUSEL_DOTS_STYLE}</style>
+      <style>
+        {`${CAROUSEL_DOTS_STYLE}${CAROUSEL_FADE_STYLE}${fade ? carouselFadeRules(reviews.length, skin.columns) : ""}`}
+      </style>
       {hasHeader(widget.design) ? (
         <div className="mb-3">
           <WidgetHeader design={widget.design} skin={skin} reviews={reviews} />
         </div>
       ) : null}
-      <Carousel dataHook="widget-carousel-preview" opts={{ loop: c.loop }} setApi={setApi}>
+      {/* ALWAYS LOOPING, because the real screen has no Loop control to say
+          otherwise. A fade scrolls a whole page at a time (slidesToScroll),
+          which is what makes the stacked pages below line up and what makes
+          one dot mean one page; a slide keeps the shipped one-at-a-time
+          stepping. */}
+      <Carousel
+        dataHook="widget-carousel-preview"
+        opts={{ loop: true, slidesToScroll: fade ? skin.columns : 1 }}
+        setApi={setApi}
+      >
         {/* The cap wraps the SLIDES, not the shell: the header above and the
             arrows and dots below stay where they are while only the reviews
             move, which is the same reading the list takes of this setting. It
@@ -1420,24 +1650,42 @@ function CarouselWidget({ widget, reviews, skin }) {
                 showcase shows is the Layout group's own control now, and
                 WidgetPreview has already applied it. A second cap here would
                 be a number nobody set. */}
-            {reviews.map((r) => (
-              <CarouselItem
-                key={r.id}
-                className="flex"
-                // Overrides the DS item's own basis-full. One column is 100%,
-                // which is the shipped behaviour untouched; two and three
-                // stand that many slides side by side, and embla still
-                // advances one at a time.
-                style={{ flexBasis: `${100 / skin.columns}%` }}
-              >
-                <PreviewReview review={r} design={widget.design} skin={skin} />
-              </CarouselItem>
-            ))}
+            {reviews.map((r, i) => {
+              // The page this slide belongs to, and so where it stacks and
+              // whether it is the visible one. Both are only read while
+              // fading; a slide keeps embla's own layout untouched.
+              const page = Math.floor(i / skin.columns);
+              return (
+                <CarouselItem
+                  key={r.id}
+                  className="flex"
+                  // Overrides the DS item's own basis-full. One column is 100%,
+                  // which is the shipped behaviour untouched; two and three
+                  // stand that many slides side by side, and on a slide embla
+                  // still advances one at a time.
+                  style={{
+                    flexBasis: `${100 / skin.columns}%`,
+                    // Where it stacks is in the stylesheet; which page is lit
+                    // is here, because it changes with every advance. The
+                    // pages underneath are still there, so a link on one of
+                    // them must not be clickable through the one on top.
+                    ...(fade
+                      ? {
+                          opacity: page === snap ? 1 : 0,
+                          pointerEvents: page === snap ? "auto" : "none",
+                        }
+                      : null),
+                  }}
+                >
+                  <PreviewReview review={r} design={widget.design} skin={skin} />
+                </CarouselItem>
+              );
+            })}
           </CarouselContent>
         </div>
-        {/* Arrows and dots each switchable; with both off the row is not
-            drawn at all, which is the user's choice. Pressing either stops
-            autoplay, as the plugin would. */}
+        {/* Arrows and dots each answer their own Yes / No; with both No the
+            row is not drawn at all, which is the user's choice. Pressing
+            either stops auto rotate, as the plugin would. */}
         {controls ? (
           <div
             className="mt-3 flex items-center justify-center gap-3"
@@ -1466,23 +1714,18 @@ function CarouselWidget({ widget, reviews, skin }) {
 // empty drawer below it.
 function WidgetPreview({ widget, reviews, full }) {
   const skin = previewSkin(widget.design);
-  // HOW MANY REVIEWS, from the Layout group's own control (Ali, 20 Sep). It
-  // caps whatever the Reviews section resolved, so a showcase shows the
-  // smaller of the two numbers.
-  // ASSUMPTION: this sits on top of the Reviews section's Limit, which is the
-  // live feed's own cap. That is two controls for one fact, because the real
-  // Widget Design screen has "Number of reviews to show" and our Reviews
-  // section already had a Limit, and the smaller of the two always wins. Worth
-  // deciding rather than leaving: Limit is 5 on all three seeds and 5 by
-  // default on a new showcase, so the 1-to-50 slider only shows a difference
-  // below 5 and is inert for its whole upper range. The real product has the
-  // slider and no Limit, which is the argument for dropping ours. Flag.
+  // HOW MANY REVIEWS, from the Layout group's own control (Ali, 20 Sep), and
+  // it is now the ONLY cap: the Reviews section's Limit select went with the
+  // Hand-picked / Live feed pair, because the product's Select Reviews step
+  // has no such control. resolveReviews already applies this number, so the
+  // slice here only matters for the few callers that hand this component a
+  // list of their own.
   const shown = reviews.slice(0, widget.design.count);
 
   if (shown.length === 0) {
     return (
       <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-        No reviews match yet. Widen the filter, or pick some reviews.
+        No reviews match yet. Widen the filters in Select Reviews.
       </div>
     );
   }
@@ -1535,376 +1778,641 @@ function WidgetPreview({ widget, reviews, full }) {
   );
 }
 
-/* ============================== review picker ============================= */
+/* ============================== select reviews ============================ */
 
-// A LIST OF THE REVIEWS THEMSELVES, NOT A TABLE (Ali, 7 Sep: "when we choose
-// the reviews for the widget, have it much more like an actual list, like
-// what would be displayed. So more like the preview. Feels clumsy right
-// now"). Every row is PreviewReview, the SAME component the widget preview
-// draws, in the widget's own design and on the widget's own shell, so a
-// review looks identical in the picker and in the preview. A DS Checkbox at
-// the left edge is the one control: hand-picked, ticking adds it to
-// `picked`; live feed, unticking leaves it out (`removed`). Nothing leaves
-// the list when its box changes, a left-out review only fades, so ticking
-// never moves anything else.
+// THE PRODUCT'S SELECT REVIEWS STEP, NOT OURS (Ali, 20 Sep, with a screenshot
+// of the real screen: "match the product"). What was here was this screen's
+// own invention: a Hand-picked / Live feed pair, four facet menus and a tick
+// box on each review card. BrightLocal has one model and it is simpler to
+// explain: a filter panel says which reviews are eligible, Auto select decides
+// whether new matching reviews join on their own, and every review in the
+// resulting table carries a Position and a Blacklist toggle. So the cards are
+// a DataTable, like every other list of reviews in this prototype, and the
+// mode cards, the facets, the Limit select and the 50-review cap are gone.
 //
-// THE BAR STICKS (Ali, 7 Sep: "the filters should stick"). The facets
-// and the running count sit in one bar pinned to the top of the
-// sheet's scroller while the list scrolls under it. It is a DIRECT CHILD of
-// the DrawerBody (the scroller) because a sticky element cannot travel
-// outside its parent's box, which is the bug the Builder hit today. That is
-// also why ReviewList returns a fragment and the reviews sheet drops
-// DrawerBody's padding: the bar and the list carry their own.
-//
-// The count opens the bar's second row, so it is in the same place whatever
-// the mode and it never moves when a box is ticked.
+// THE BANNER IS THE PRODUCT'S OWN WORDS, verbatim, and it earns its place:
+// it is the only thing on the screen that explains why Yelp reviews are
+// listed and cannot be chosen. Dismissible, because it is a standing rule
+// rather than an error, and it goes through the DS AlertInfo's `action` slot
+// so the close button is the one the DS ships.
+const YELP_NOTICE =
+  "Due to Yelp's strict rules on review reuse, reviews from Yelp are not available for use in Showcase Reviews widgets and feeds. In addition to this, any feedback gathered via a 'Get Reviews' campaign that has not been marked for public sharing by a customer will not be available.";
 
-// The trigger label for a facet: the value when one is chosen, with its mark
-// when that value is a source, and a count when several are.
-function sourceFacetLabel(sources) {
-  if (sources.length === 0) return "All sources";
-  if (sources.length === 1) {
-    return (
-      <span className="flex items-center gap-1.5">
-        <SourceMark source={sources[0]} />
-        {SOURCES[sources[0]].label}
-      </span>
-    );
-  }
-  return `${sources.length} sources`;
-}
+// "in your list widget", "in your carousel widget", "in your feed widget".
+// The JSON feed is "feed" here rather than "JSON feed", because the sentence
+// already says widget and "your JSON feed widget" is two nouns for one thing.
+const TYPE_WORD = { list: "list", carousel: "carousel", json: "feed" };
 
-function ratingFacetLabel(ratings) {
-  const on = normaliseRatings(ratings);
-  if (on.length === ALL_RATINGS.length) return "All ratings";
-  if (on.length === 1) return RATING_OPTIONS.find((o) => o.id === on[0]).label;
-  return `${on.length} ratings`;
-}
+// The tooltip on Auto select, saying what the toggle does rather than what it
+// is. The product's own promise: leave it on and the showcase keeps itself up
+// to date.
+const AUTO_SELECT_TIP =
+  "Leave this on and any new review matching the filters joins this showcase on its own. Turn it off and the showcase stays as it is today.";
 
-// The glyph beside each rating option, as Review Manager's rating menu draws
-// them: FeedbackScore from the registry. Stars take a score out of ten (the
-// component halves it), Recommended is the thumbs-up.
+// The glyph beside each Star Rating option, as Review Manager's rating menu
+// draws them: FeedbackScore from the registry. Stars take a score out of ten
+// (the component halves it), Recommended is the thumbs-up, and "No rating"
+// has nothing to draw, which is the point of it.
 function ratingGlyph(id) {
   if (id === "rec") return <FeedbackScore type="thumbs" score={10} />;
-  return <FeedbackScore type="stars" score={id === "5" ? 10 : 8} />;
+  const option = RATING_OPTIONS.find((o) => o.id === id);
+  return option?.score ? <FeedbackScore type="stars" score={option.score} /> : null;
 }
 
-// "5 reviews", not "Newest 5" (Ali, 7 Sep: "easier to read"), and "No
-// limit" rather than the old select's "All matching reviews", because that is
-// what the Limit row on the card already calls it.
-const LIMIT_OPTIONS = [
-  { id: "all", label: "No limit" },
-  { id: "3", label: "3 reviews" },
-  { id: "5", label: "5 reviews" },
-  { id: "10", label: "10 reviews" },
-  { id: "20", label: "20 reviews" },
-];
-
-// One review in the picker: the review card with a DS Checkbox INSIDE it, at
-// the left edge and centred on the card (PreviewReview's `leading` slot), so
-// the box is attached to the thing it controls. The whole card is the click
-// target; clicks that start on the box itself are left to the box, or one
-// click would toggle twice.
-//
-// BOTH MODES SELECT (Ali, 7 Sep: "in the live feed we would select to
-// exclude"; the live product has a per-review Blacklist toggle). Hand-picked:
-// tick to include. Live feed: every match is ticked, untick to leave it out
-// (`excluded`). An unselected review's CONTENT is knocked back to half
-// opacity while the box keeps full contrast (Ali: "lower opacity, but not on
-// the checkbox"); nothing else changes, so a tick never moves a card. The
-// DS Tooltip on the box says which behaviour it has; the box is focusable,
-// so the tooltip is reachable by keyboard too.
-const PICK_TIP = {
-  feed: "Included in the feed. Untick to leave this review out.",
-  picked: "Tick to include this review.",
+// HOW FAR THE POSITION SELECT COUNTS. The real screen offers one option per
+// result; with 1,116 reviews in this location's pool that is a select nobody
+// can use, so it stops at fifty.
+// ASSUMPTION: fifty is ours, not the product's. It is also the top of Widget
+// Design's "Number of reviews to show", so every position the select offers
+// is one a widget could actually reach.
+const POSITION_MAX = 50;
+// AND THE NUMBER ALREADY ON THE ROW IS ALWAYS ONE OF THEM. The list counts
+// what the CURRENT filters leave, while the number on a row was set under
+// whatever filter was in force at the time, so narrowing the filters can
+// leave a row carrying a position the list no longer offers. Radix draws
+// nothing at all for a value with no matching item and there is no
+// placeholder behind it, so the trigger would go blank: the number is then
+// unreadable and unrecoverable except by picking a different one. One extra
+// option in a case nobody will hit, and the product's one-option-per-result
+// rule holds everywhere else.
+const positionValues = (count, current) => {
+  const n = Math.min(Math.max(count, 1), POSITION_MAX);
+  const values = Array.from({ length: n }, (_, i) => i + 1);
+  if (current > n) values.push(current);
+  return [-1, ...values];
 };
-function PickerRow({ review, design, skin, checked, disabled, mode, onChange }) {
-  // DS Checkbox ships `self-start mt-0.5` (right for a label row, where the
-  // box tops the first line), which beat the card row's items-center and
-  // left the box 14px above centre. self-center and mt-0 put it where the
-  // row asks. Measured, not guessed. The Tooltip trigger is a span round the
-  // box, not the box itself: a Slot merge drops a Button's data-hook (DS
-  // finding, 19 Aug) and the same risk applies here, and React's onFocus
-  // bubbles from the box to the span, so focus still opens the tip.
-  const box = (
+
+// One line in a filter column: the DS Checkbox, an optional glyph, and the
+// name. The same shape for a star rating and for a review source, so the four
+// columns read as one panel rather than as four lists. The alignment fix is
+// CheckRow's, for the same measured reason: the DS horizontal Field is a grid
+// with align-items start, so both cells need self-center.
+function FilterCheckRow({ id, label, glyph = null, checked, onChange }) {
+  return (
+    <Field orientation="horizontal" dataHook={`${id}-field`}>
+      <Checkbox
+        id={id}
+        dataHook={id}
+        className="mt-0 self-center"
+        checked={checked}
+        onCheckedChange={(v) => onChange(!!v)}
+      />
+      <FieldContent className="self-center">
+        <FieldLabel htmlFor={id} dataHook={`${id}-label`} className="flex items-center gap-2">
+          {glyph}
+          {label}
+        </FieldLabel>
+      </FieldContent>
+    </Field>
+  );
+}
+
+// ONE WIDE PANEL, FOUR COLUMNS, AND NOTHING HAPPENS UNTIL Apply Filters
+// (Ali, 20 Sep, from the screenshot). The draft lives here and is re-seeded
+// from the showcase every time the panel opens, so closing it without
+// pressing Apply is a cancel and needs no second button to say so.
+//
+// The columns are an inline grid rather than `lg:grid-cols-4`: this screen
+// renders in Studio as well as in the app, and the preview's precompiled
+// stylesheet only carries the utilities these screens already use. auto-fit
+// also means the panel folds to two columns and then one on a narrow viewport
+// without a media query to maintain.
+function FilterMenu({ widget, setWidget }) {
+  const [open, setOpen] = useState(false);
+  const seed = () => ({
+    ratings: normaliseRatings(widget.ratings),
+    nps: npsOf(widget),
+    period: dateOptionOf(widget).id,
+    dateStart: widget.dateStart ?? "",
+    dateEnd: widget.dateEnd ?? "",
+    sources: sourcesOf(widget),
+  });
+  const [draft, setDraft] = useState(seed);
+  const patch = (p) => setDraft((d) => ({ ...d, ...p }));
+  const toggleIn = (list, id) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
+  const allRatings = draft.ratings.length === ALL_RATINGS.length;
+  const allSources = draft.sources.length === SOURCE_IDS.length;
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        if (o) setDraft(seed());
+        setOpen(o);
+      }}
+    >
+      <PopoverTrigger asChild>
+        {/* rounded-sm text-sm font-normal, the same override the registry's
+            facet triggers carry: a filter dropdown is a FIELD, not an action,
+            and Button's own base would put a 12px semibold pill beside the
+            14px Auto select label next to it. */}
+        <Button
+          variant="outline"
+          size="sm"
+          dataHook="picker-filter"
+          className="rounded-sm text-sm font-normal"
+        >
+          <SlidersHorizontal className="size-4" />
+          Filter
+          <ChevronDown className="size-3.5 opacity-60" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="p-0"
+        style={{ width: "min(64rem, calc(100vw - 2rem))" }}
+        dataHook="picker-filter-panel"
+      >
+        <div
+          className="p-4"
+          style={{
+            display: "grid",
+            gap: "1.5rem",
+            gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
+          }}
+        >
+          <Field dataHook="filter-ratings-field">
+            <FieldLabel htmlFor="filter-ratings-all" dataHook="filter-ratings-label">
+              Star Rating
+            </FieldLabel>
+            <div className="flex flex-col gap-2">
+              {/* Toggle All is checked only when all five are. The DS Checkbox
+                  draws no third state, so a half-ticked list reads as off
+                  rather than as a box that looks ticked and is not. */}
+              <FilterCheckRow
+                id="filter-ratings-all"
+                label="Toggle All"
+                checked={allRatings}
+                onChange={() => patch({ ratings: allRatings ? [] : ALL_RATINGS })}
+              />
+              {RATING_OPTIONS.map((o) => (
+                <FilterCheckRow
+                  key={o.id}
+                  id={`filter-rating-${o.id}`}
+                  label={o.label}
+                  glyph={ratingGlyph(o.id)}
+                  checked={draft.ratings.includes(o.id)}
+                  onChange={() => patch({ ratings: toggleIn(draft.ratings, o.id) })}
+                />
+              ))}
+            </div>
+          </Field>
+
+          {/* RadioField is the kit's own labelled radio group, the one the
+              date format and the character count in Widget Design use, so a
+              one-of-many question looks the same wherever it is asked. */}
+          <RadioField
+            id="filter-nps"
+            label="Feedback Score (NPS)"
+            value={draft.nps}
+            options={NPS_OPTIONS}
+            onChange={(v) => patch({ nps: v })}
+          />
+
+          <div className="flex flex-col gap-3">
+            <RadioField
+              id="filter-date"
+              label="Date"
+              value={draft.period}
+              options={DATE_OPTIONS}
+              onChange={(v) => patch({ period: v })}
+            />
+            {/* Under the Custom option, which is the last one in the list, so
+                "under it" and "after the group" are the same place. A native
+                date input rather than a DS date picker: the DS ships a
+                Calendar but no field that pairs with it, and two hand-built
+                popover calendars is a lot of machinery for a filter nobody
+                has asked to demonstrate.
+                STACKED, NOT SIDE BY SIDE, AND NOT INDENTED. Measured in the
+                sandbox at 1280: the panel's four tracks come out 229.5px, and
+                two-up inside one of them with a gap and a 24px indent left
+                each field 97px against the 148px "dd/mm/yyyy" and the
+                calendar button need. The placeholder was cut mid-word and the
+                picker button sat off the end, so the only way to set a range
+                was to type blind. One under the other gives each the column's
+                full width; the indent went with it because the fields already
+                sit under the Custom radio and say what they are. */}
+            {draft.period === "custom" ? (
+              <div className="flex flex-col gap-3" data-hook="filter-date-range">
+                <Field dataHook="filter-date-start-field">
+                  <FieldLabel htmlFor="filter-date-start" dataHook="filter-date-start-label">
+                    Start
+                  </FieldLabel>
+                  <Input
+                    id="filter-date-start"
+                    dataHook="filter-date-start"
+                    type="date"
+                    value={draft.dateStart}
+                    onChange={(e) => patch({ dateStart: e.target.value })}
+                  />
+                </Field>
+                <Field dataHook="filter-date-end-field">
+                  <FieldLabel htmlFor="filter-date-end" dataHook="filter-date-end-label">
+                    End
+                  </FieldLabel>
+                  <Input
+                    id="filter-date-end"
+                    dataHook="filter-date-end"
+                    type="date"
+                    value={draft.dateEnd}
+                    onChange={(e) => patch({ dateEnd: e.target.value })}
+                  />
+                </Field>
+              </div>
+            ) : null}
+          </div>
+
+          <Field dataHook="filter-sources-field">
+            <FieldLabel htmlFor="filter-sources-all" dataHook="filter-sources-label">
+              Review Sources
+            </FieldLabel>
+            {/* OUR SOURCES, NOT THE PRODUCT'S EIGHTY. The real panel lists
+                every site BrightLocal tracks; this prototype has data for the
+                Tracker's seven, so those are what is offered. Each keeps its
+                mark beside the name (Ali, 7 Sep: "on sources, can we include
+                the logo?"), from the registry's SourceMark. */}
+            <div className="flex flex-col gap-2">
+              <FilterCheckRow
+                id="filter-sources-all"
+                label="Toggle All"
+                checked={allSources}
+                onChange={() => patch({ sources: allSources ? [] : SOURCE_IDS })}
+              />
+              {/* ONE COLUMN, ALTHOUGH THE PRODUCT'S IS TWO. Measured in the
+                  sandbox at 1280: the panel's four tracks come out 229.5px,
+                  so two-up gives each source 108.75px, and our names do not
+                  live there. "TripAdvisor" needs 131px and has no space to
+                  break at, so its text ran across the panel's right border;
+                  "Yahoo! Local", "Apple Maps" and "Bing Places" each wrapped
+                  to two lines. The real panel gets away with two columns
+                  because it is listing eighty short names across a whole
+                  page. Seven names one under the other is one row taller than
+                  the Date radios beside it and every one of them fits. */}
+              <div className="grid gap-y-2">
+                {SOURCE_LIST.map((s) => (
+                  <FilterCheckRow
+                    key={s.id}
+                    id={`filter-source-${s.id}`}
+                    label={s.label}
+                    glyph={<SourceMark source={s.id} />}
+                    checked={draft.sources.includes(s.id)}
+                    onChange={() => patch({ sources: toggleIn(draft.sources, s.id) })}
+                  />
+                ))}
+              </div>
+            </div>
+          </Field>
+        </div>
+        <div className="flex justify-end border-t p-3">
+          <Button
+            variant="primary"
+            size="sm"
+            dataHook="picker-filter-apply"
+            onClick={() => {
+              setWidget((w) => ({ ...w, ...draft }));
+              setOpen(false);
+            }}
+          >
+            Apply Filters
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// A YELP ROW'S ONE CELL. It sits where the Position select would be, because
+// the absence of a choice belongs where the choice would have been; the
+// Blacklist cell next to it is empty, since keeping out a review that can
+// never go in is not a thing to ask anyone. The tooltip repeats the banner's
+// reason for anyone who dismissed it.
+function UnavailableChip({ id }) {
+  return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="flex self-center" data-hook={`picker-check-wrap-${review.id}`}>
-          <Checkbox
-            id={`pick-${review.id}`}
-            dataHook={`picker-check-${review.id}`}
-            className="mt-0 self-center"
-            checked={checked}
-            disabled={disabled}
-            onCheckedChange={(v) => onChange(!!v)}
-            aria-label={`${checked ? "Leave out" : "Include"} the review from ${review.name}`}
-          />
+        <span className="flex" data-hook={`select-unavailable-${id}`}>
+          <Badge variant="outline">Unavailable</Badge>
         </span>
       </TooltipTrigger>
-      <TooltipContent>{PICK_TIP[mode] ?? PICK_TIP.picked}</TooltipContent>
+      <TooltipContent>{UNAVAILABLE_TIP}</TooltipContent>
     </Tooltip>
-  );
-  return (
-    <div
-      role="presentation"
-      data-hook={`picker-row-${review.id}`}
-      data-selected={checked ? "true" : "false"}
-      onClick={
-        disabled
-          ? undefined
-          : (e) => {
-              if (e.target.closest('[role="checkbox"]')) return;
-              onChange(!checked);
-            }
-      }
-      className={disabled ? "cursor-not-allowed" : "cursor-pointer"}
-    >
-      <PreviewReview
-        review={review}
-        design={design}
-        skin={skin}
-        leading={box}
-        contentClassName={`transition-opacity ${checked ? "" : "opacity-50"}`}
-      />
-    </div>
   );
 }
 
-// Returns a FRAGMENT: [sticky bar, list]. Mount it directly inside the
-// scroller; see the note at the top of this section.
-function ReviewList({ widget, setWidget }) {
-  const picked = widget.mode === "picked";
-  // In feed mode the facets ARE the widget; in picked mode they only narrow
-  // the browsing list, so they live in local state and never touch the widget.
-  const [browseSources, setBrowseSources] = useState([]);
-  const [browseRatings, setBrowseRatings] = useState([]);
-  const sources = picked ? browseSources : widget.sources;
-  const ratings = picked ? browseRatings : widget.ratings;
-  const toggleIn = (list, id) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
-  const onSource = (id) =>
-    picked
-      ? setBrowseSources((s) => toggleIn(s, id))
-      : setWidget((w) => ({ ...w, sources: toggleIn(w.sources, id) }));
-  // Ratings toggle against the NORMALISED list, so unticking one of an
-  // implicit "all three" leaves the other two on rather than flipping the
-  // list from empty to one. Unticking the last one lands on empty, which
-  // reads as all three again; that is the stated rule, not a bug.
-  const onRating = (id) =>
-    picked
-      ? setBrowseRatings((s) => toggleIn(normaliseRatings(s), id))
-      : setWidget((w) => ({ ...w, ratings: toggleIn(normaliseRatings(w.ratings), id) }));
-  const clearSources = () => (picked ? setBrowseSources([]) : setWidget((w) => ({ ...w, sources: [] })));
-  // "All ratings" TICKS all three (Ali, 7 Sep), it does not clear.
-  const clearRatings = () =>
-    picked ? setBrowseRatings(ALL_RATINGS) : setWidget((w) => ({ ...w, ratings: ALL_RATINGS }));
-  const ratingsOn = normaliseRatings(ratings);
-  const period = PERIODS.find((p) => p.id === widget.period);
+// A YELP ROW IS KNOCKED BACK CELL BY CELL, NOT ROW BY ROW. DataTable's own
+// getRowClassName says it in one line and DOES NOTHING IN STUDIO: the sandbox
+// loads @brightlocal/ui-components@2.25.0 from esm.sh (the pin in the
+// registry, `version: "2.25.0"`) while the app runs 2.27.0, and 2.25.0's
+// DataTable has no such prop, so not one row carried the class there. Worth
+// knowing well past this one line: ANY prop the DS shipped after 2.25.0 works
+// in the app and is silently dropped in Studio, which is where this screen is
+// reviewed. The cells carry it instead, which both versions render.
+// Position and Blacklist are left alone: those two cells hold the Unavailable
+// chip and nothing at all, and dimming a chip whose whole job is to be read
+// would be working against it.
+const dimmed = (review) => (isUsable(review) ? undefined : { opacity: 0.5 });
 
-  const matching = useMemo(
-    () =>
-      REVIEWS.filter((r) => {
-        if (sources.length && !sources.includes(r.source)) return false;
-        if (!ratingMatches(r, ratings)) return false;
-        if (!picked && period?.days && r.daysAgo > period.days) return false;
-        return true;
-      }),
-    [sources, ratings, period, picked],
+// Returns a FRAGMENT: [banner, heading, sticky toolbar, table]. Mount it
+// directly inside the scroller; the toolbar is `sticky top-0` and a sticky
+// element cannot travel outside its parent's box, which is why the reviews
+// sheet drops DrawerBody's padding and everything here carries its own.
+// TooltipProvider renders no element of its own, so wrapping the fragment in
+// it leaves the toolbar a direct child of the scroller.
+function SelectReviews({ widget, setWidget }) {
+  const [notice, setNotice] = useState(true);
+  const [sorting, setSorting] = useState([{ id: "date", desc: true }]);
+  // Everything the filters leave, Yelp included: a Yelp review is listed and
+  // marked unavailable rather than quietly dropped, which is what the banner
+  // is there to explain.
+  //
+  // THE FILTER FIELDS ARE THE DEPENDENCIES, not the whole showcase. Setting a
+  // Position rewrites the record, and a memo keyed on the record would rebuild
+  // this list, which would send the page reset below back to page one every
+  // time somebody ordered a review on page three. Apply Filters is the only
+  // thing that hands over new `ratings` and `sources` arrays, so identity is
+  // exactly the right test here.
+  const rows = useMemo(
+    () => filteredReviews(widget),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [widget.ratings, widget.nps, widget.period, widget.dateStart, widget.dateEnd, widget.sources],
   );
-  // THE NEWEST 100, not 1,116 cards (coordinator, 7 Sep). The facets are the
-  // only way to narrow the list; when more than 100 still match, the list
-  // holds the newest 100 and the count line says so, in its fixed place.
-  const PICKER_LIMIT = 100;
-  const shown = matching.slice(0, PICKER_LIMIT);
-  const truncNote = matching.length > PICKER_LIMIT ? `, showing the newest ${PICKER_LIMIT}` : "";
+  const usableCount = useMemo(() => rows.filter(isUsable).length, [rows]);
+  const positions = positionsOf(widget);
+  const blacklist = blacklistOf(widget);
 
-  const skin = previewSkin(widget.design);
-  const chosen = widget.picked.length;
-  const atCap = picked && chosen >= MAX_HAND_PICKED;
-  // Feed: "17 match, 2 left out, 5 shown". "left out" only when there are
-  // any; the cap note only when it bites (fifteen can match and five be on
-  // the site, and both numbers are true).
-  const leftOut = matching.filter((r) => excludedOf(widget).includes(r.id)).length;
-  const inWidget = matching.length - leftOut;
-  // "in the showcase", not "on your site" (Showcase audit, 10 Sep): the hub
-  // card says "On your site 0" and means placed on the website, so the same
-  // words here for "will appear in the widget" taught the reader nothing.
-  const capNote =
-    typeof widget.limit === "number" && widget.limit < inWidget ? `, ${widget.limit} in the showcase` : "";
-  const count = picked
-    ? chosen > MAX_HAND_PICKED
-      ? `${chosen} of ${MAX_HAND_PICKED} chosen. Remove ${chosen - MAX_HAND_PICKED} before you save.`
-      : atCap
-        ? `${chosen} of ${MAX_HAND_PICKED} chosen, the maximum. Untick one to swap in another.`
-        : `${chosen} of ${MAX_HAND_PICKED} chosen${truncNote}`
-    : `${fmtCount(matching.length)} ${matching.length === 1 ? "matches" : "match"}${leftOut ? `, ${leftOut} left out` : ""}${truncNote}${capNote}`;
+  const setPosition = (id, value) =>
+    setWidget((w) => {
+      const next = { ...positionsOf(w) };
+      // -1 is the product's "no position", and here that is the absence of a
+      // key rather than a stored -1, so a record only carries the positions
+      // somebody actually set.
+      if (value > 0) next[id] = value;
+      else delete next[id];
+      return { ...w, positions: next };
+    });
+  const setBlacklisted = (id, on) =>
+    setWidget((w) => ({
+      ...w,
+      blacklist: on ? [...blacklistOf(w), id] : blacklistOf(w).filter((x) => x !== id),
+    }));
+
+  // A recommendation sorts among the stars, Recommended as 5 and Not
+  // recommended as 1, the same rank Review Manager uses, so Rating puts
+  // praise at one end either way.
+  const ratingRank = (r) => (typeof r.rating === "number" ? r.rating : r.recommended ? 5 : 1);
+  // An unpositioned review sorts after every positioned one. A large number
+  // rather than Infinity: two of those subtract to NaN and the sort collapses.
+  const positionRank = (r) => (positions[r.id] > 0 ? positions[r.id] : 9999);
+
+  const columns = useMemo(
+    () => [
+      {
+        id: "date",
+        accessorFn: (r) => r.date,
+        enableGlobalFilter: false,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Date" dataHook="col-date" />,
+        // daysAgo counts back from the pool's today, so a smaller number is newer.
+        sortingFn: (a, b) => b.original.daysAgo - a.original.daysAgo,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-sm whitespace-nowrap" style={dimmed(row.original)}>
+            {row.original.date}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "source",
+        enableGlobalFilter: false,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Source" dataHook="col-source" />,
+        sortingFn: (a, b) => SOURCES[a.original.source].label.localeCompare(SOURCES[b.original.source].label),
+        cell: ({ row }) => (
+          <span className="flex items-center gap-2" style={dimmed(row.original)}>
+            <SourceMark source={row.original.source} />
+            <span className="text-sm whitespace-nowrap">{SOURCES[row.original.source].label}</span>
+          </span>
+        ),
+      },
+      {
+        accessorKey: "rating",
+        enableGlobalFilter: false,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Rating" dataHook="col-rating" />,
+        sortingFn: (a, b) => ratingRank(a.original) - ratingRank(b.original),
+        cell: ({ row }) =>
+          typeof row.original.rating === "number" ? (
+            <span className="flex items-center gap-2" style={dimmed(row.original)}>
+              <Rating value={row.original.rating} dataHook={`select-rating-${row.original.id}`} />
+              <span className="text-sm tabular-nums">{row.original.rating}</span>
+            </span>
+          ) : (
+            // Facebook carries a recommendation rather than a score, so the
+            // number a star row shows is the word instead.
+            <span className="flex items-center gap-1.5 text-sm whitespace-nowrap" style={dimmed(row.original)}>
+              {row.original.recommended ? (
+                <ThumbsUp className="text-primary size-4" />
+              ) : (
+                <ThumbsDown className="text-muted-foreground size-4" />
+              )}
+              {row.original.recommended ? "Recommended" : "Not recommended"}
+            </span>
+          ),
+      },
+      {
+        id: "text",
+        // name + text, so the reviewer stays searchable if a search is ever
+        // added here: the name is only drawn inside this cell.
+        accessorFn: (r) => `${r.name} ${r.text}`,
+        header: () => "Review",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div className="flex min-w-0 flex-col gap-1 py-1" style={dimmed(row.original)}>
+            <span className="line-clamp-2 text-sm">{row.original.text}</span>
+            <span className="text-muted-foreground text-xs">Reviewer: {row.original.name}</span>
+          </div>
+        ),
+      },
+      {
+        id: "position",
+        // AN ACCESSOR, ALTHOUGH THE CELL NEVER READS IT. TanStack only lets a
+        // column sort when it has one (getCanSort ANDs on `!!accessorFn`), so
+        // a display column with a sortingFn would have drawn a plain header
+        // and swallowed the click. Same reason on Blacklist below.
+        accessorFn: (r) => positionRank(r),
+        enableGlobalFilter: false,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Position" dataHook="col-position" />
+        ),
+        sortingFn: (a, b) => positionRank(a.original) - positionRank(b.original),
+        cell: ({ row }) =>
+          isUsable(row.original) ? (
+            <Select
+              value={String(positions[row.original.id] ?? -1)}
+              onValueChange={(v) => setPosition(row.original.id, Number(v))}
+            >
+              <SelectTrigger
+                dataHook={`select-position-${row.original.id}`}
+                aria-label={`Position of the review from ${row.original.name}`}
+                style={{ width: "5.5rem" }}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {positionValues(usableCount, positions[row.original.id] ?? -1).map((v) => (
+                  <SelectItem key={v} value={String(v)}>
+                    {v}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <UnavailableChip id={row.original.id} />
+          ),
+      },
+      {
+        id: "blacklist",
+        accessorFn: (r) => (blacklist.includes(r.id) ? 1 : 0),
+        enableGlobalFilter: false,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Blacklist" dataHook="col-blacklist" />
+        ),
+        sortingFn: (a, b) =>
+          (blacklist.includes(a.original.id) ? 1 : 0) - (blacklist.includes(b.original.id) ? 1 : 0),
+        cell: ({ row }) =>
+          isUsable(row.original) ? (
+            <Switch
+              dataHook={`select-blacklist-${row.original.id}`}
+              aria-label={`Keep the review from ${row.original.name} out of this showcase`}
+              checked={blacklist.includes(row.original.id)}
+              onCheckedChange={(v) => setBlacklisted(row.original.id, !!v)}
+            />
+          ) : null,
+      },
+    ],
+    [positions, blacklist, usableCount],
+  );
+
+  const table = useDataTable({
+    columns,
+    data: rows,
+    getRowId: (row) => row.id,
+    sorting,
+    onSortingChange: setSorting,
+    enablePagination: true,
+    // TWENTY, the same page as Review Manager's table, so a page of reviews
+    // is the same length wherever you read one.
+    pageSize: 20,
+  });
+
+  // A NEW FILTER STARTS AT PAGE ONE. Applying one that leaves three reviews
+  // while you are on page four otherwise shows an empty table under a count
+  // line reading "Showing 61-3 of 3 results".
+  useEffect(() => {
+    table.setPageIndex(0);
+  }, [rows, table]);
+
+  const pagination = table.getState().pagination;
+  const total = table.getRowCount();
+  const start = total === 0 ? 0 : pagination.pageIndex * pagination.pageSize + 1;
+  const end = Math.min(total, (pagination.pageIndex + 1) * pagination.pageSize);
 
   return (
-    <>
-      {/* HOW THE REVIEWS ARE CHOSEN, FIRST (Ali, 7 Sep: "hand picked or live
-          are kind of just part of the Which reviews appear"). It was the
-          second row of General. Above the bar, in the scroller, so the bar
-          takes the top the moment it reaches it. Switching keeps whatever
-          was picked or excluded, as the wizard did. */}
-      <div className="px-4 pt-4 pb-3" data-hook="picker-mode">
-        {/* NO VISIBLE LABEL (Ali, 7 Sep: "'Reviews chosen by' is a really
-            annoying label, is there a better way to explain this?"). The two
-            cards explain themselves once their captions say what happens:
-            "Select individual reviews" against "Updated automatically". A
-            label naming the axis was a third thing to read that added no
-            meaning. Assistive tech still gets a name for the group from the
-            sr-only legend below. */}
-        <p id="widget-mode-legend" className="sr-only">
-          How reviews are chosen
+    <TooltipProvider>
+      {notice ? (
+        <div className="px-4 pt-4" data-hook="picker-notice">
+          <AlertInfo
+            dataHook="reviews-yelp-notice"
+            description={YELP_NOTICE}
+            action={
+              <Button
+                variant="ghost"
+                size="sm"
+                iconOnly
+                dataHook="reviews-yelp-notice-dismiss"
+                aria-label="Dismiss"
+                onClick={() => setNotice(false)}
+              >
+                <X className="size-4" />
+              </Button>
+            }
+          />
+        </div>
+      ) : null}
+
+      <div className="flex flex-col gap-1 px-4 pt-4" data-hook="picker-heading">
+        <h3 className="text-base font-medium">Select Reviews</h3>
+        <p className="text-muted-foreground text-sm">
+          Select the reviews you would like to showcase in your {TYPE_WORD[widget.format]} widget.
         </p>
-        <ChoiceCards
-          name="widget-mode"
-          value={widget.mode}
-          onChange={(v) => setWidget((w) => ({ ...w, mode: v }))}
-          columns={2}
-          labelledBy="widget-mode-legend"
-          options={[
-            { id: "picked", label: "Hand-picked", caption: "Select individual reviews" },
-            { id: "feed", label: "Live feed", caption: "Updated automatically" },
-          ]}
-        />
       </div>
 
-      {/* ONE ROW OF DROPDOWNS, then the count (Ali, 7 Sep: "just have the
-          dropdowns all in a row"). Sources and Ratings in both modes; Period
-          and Limit join the row for a live feed. The count keeps its own
-          fixed line under the row in both modes. The row may wrap on a
-          phone, but never because a box was ticked. */}
+      {/* THE TOOLBAR STICKS (Ali, 7 Sep: "the filters should stick"). Filter
+          and Auto select on the left, the count on the right, pinned to the
+          top of the sheet's scroller while the table runs under it. It is a
+          DIRECT CHILD of the scroller because a sticky element cannot travel
+          outside its parent's box. The count keeps the "picker-count" hook
+          the old running total had. */}
       <div
-        className="bg-background sticky top-0 z-10 flex flex-col gap-2 border-b px-4 py-3"
+        className="bg-background sticky top-0 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-4 py-3"
         data-hook="picker-bar"
       >
-        <div className="flex flex-wrap items-center gap-2" data-hook="picker-facets">
-          {/* ONE facet component across RM (@brightlocal/facet-menu), with the
-              source's own mark on each row (Ali, 7 Sep: "on sources, can we
-              include the logo?"). */}
-          <FacetedFilterMenu
-            label={sourceFacetLabel(sources)}
-            dataHook="picker-facet-sources"
-            options={SOURCE_LIST.map((s) => ({
-              id: s.id,
-              label: s.label,
-              leading: <SourceMark source={s.id} />,
-              count: REVIEWS.filter((r) => r.source === s.id).length,
-            }))}
-            isChecked={(id) => sources.includes(id)}
-            isAllSelected={sources.length === 0}
-            onAll={clearSources}
-            onOption={onSource}
-            allLabel="All sources"
-            allCount={REVIEWS.length}
+        <FilterMenu widget={widget} setWidget={setWidget} />
+        <div className="flex items-center gap-2" data-hook="picker-auto-select">
+          <Switch
+            id="picker-auto-select-switch"
+            dataHook="picker-auto-select-switch"
+            checked={widget.autoSelect !== false}
+            onCheckedChange={(v) => setWidget((w) => ({ ...w, autoSelect: !!v }))}
           />
-          {/* SAME FACET AS SOURCES (Ali, 7 Sep: "the ratings dropdown looks
-              different to our other facets"), with a rating glyph per row
-              as Review Manager draws them. w-80, not w-72: beside five
-              stars, "4 stars and above" wrapped at 72 (measured). The
-              counts are per option and overlap by design: "4 stars and
-              above" counts the 5 star reviews too. */}
-          <FacetedFilterMenu
-            label={ratingFacetLabel(ratings)}
-            dataHook="picker-facet-ratings"
-            panelWidth="w-80"
-            options={RATING_OPTIONS.map((o) => ({
-              id: o.id,
-              label: o.label,
-              leading: ratingGlyph(o.id),
-              count: REVIEWS.filter((r) => ratingMatches(r, [o.id])).length,
-            }))}
-            isChecked={(id) => ratingsOn.includes(id)}
-            isAllSelected={ratingsOn.length === ALL_RATINGS.length}
-            onAll={clearRatings}
-            onOption={onRating}
-            allLabel="All ratings"
-            allCount={REVIEWS.filter((r) => ratingMatches(r, ALL_RATINGS)).length}
-          />
-          {/* Period and limit belong to the FEED: a hand-picked set has no
-              window and its limit is the number of reviews picked.
-              FacetPopover + FacetOptions select="single" for the period,
-              because FacetedFilterMenu does not forward `select`. */}
-          {picked ? null : (
-            <FacetPopover label={period?.label ?? "All time"} dataHook="picker-facet-period" panelWidth="w-48">
-              <FacetOptions
-                select="single"
-                dataHook="picker-facet-period"
-                options={PERIODS.map((p) => ({
-                  id: p.id,
-                  label: p.label,
-                  count: REVIEWS.filter((r) => !p.days || r.daysAgo <= p.days).length,
-                }))}
-                isChecked={(id) => widget.period === id}
-                onOption={(id) => setWidget((w) => ({ ...w, period: id }))}
-              />
-            </FacetPopover>
-          )}
-          {picked ? null : (
-            <SingleSelectMenu
-              label={LIMIT_OPTIONS.find((o) => o.id === String(widget.limit ?? "all"))?.label ?? "No limit"}
-              dataHook="picker-limit"
-              options={LIMIT_OPTIONS}
-              value={String(widget.limit ?? "all")}
-              onSelect={(id) => setWidget((w) => ({ ...w, limit: id === "all" ? "all" : Number(id) }))}
-            />
-          )}
+          <FieldLabel htmlFor="picker-auto-select-switch" dataHook="picker-auto-select-label">
+            Auto select reviews
+          </FieldLabel>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="What auto select does"
+                data-hook="picker-auto-select-info"
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex cursor-pointer items-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              >
+                <Info className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{AUTO_SELECT_TIP}</TooltipContent>
+          </Tooltip>
         </div>
-        <p className="text-muted-foreground h-5 text-sm tabular-nums" data-hook="picker-count" aria-live="polite">
-          {count}
+        <span className="grow" />
+        <p className="text-muted-foreground text-sm tabular-nums" data-hook="picker-count" aria-live="polite">
+          Showing {start}-{end} of {fmtCount(total)} results
         </p>
       </div>
 
-      {/* The list sits on the widget's own shell (same classes as the list
-          format of WidgetPreview), so the cards are on the ground they will
-          be published on. */}
       <div className="px-4 py-4" data-hook="picker-list">
-        {shown.length === 0 ? (
-          <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-            No reviews match.
+        {/* SIX COLUMNS NEED ROOM. minWidth turns the DS table's own wrapper
+            into a scroll region rather than letting the review text column
+            compress to a word a line, and the sheet is widened for this step
+            besides; see SectionSheet. */}
+        <DataTable
+          table={table}
+          dataHook="select-reviews-table"
+          minWidth="46rem"
+          scrollRegionLabel="Reviews to choose from"
+          noResultsMessage={
+            npsOf(widget) === "positive"
+              ? "No reviews match these filters. A feedback score comes from a Get Reviews campaign, and this location has none."
+              : "No reviews match these filters."
+          }
+        />
+        {total > 0 ? (
+          <div className="border-t px-1 py-2">
+            <DataTablePagination
+              table={table}
+              dataHook="select-reviews-pagination"
+              ariaLabel="Review pagination"
+              // The toolbar above already counts the results, in a fixed
+              // place that does not move as pages turn.
+              showRowCount={false}
+            />
           </div>
-        ) : (
-          <TooltipProvider>
-          <div className="flex flex-col gap-3 p-4" style={skin.shell}>
-            {shown.map((r) =>
-              picked ? (
-                <PickerRow
-                  key={r.id}
-                  review={r}
-                  design={widget.design}
-                  skin={skin}
-                  mode="picked"
-                  checked={widget.picked.includes(r.id)}
-                  disabled={atCap && !widget.picked.includes(r.id)}
-                  onChange={(on) =>
-                    setWidget((w) => ({
-                      ...w,
-                      picked: on ? [...w.picked, r.id] : w.picked.filter((x) => x !== r.id),
-                    }))
-                  }
-                />
-              ) : (
-                <PickerRow
-                  key={r.id}
-                  review={r}
-                  design={widget.design}
-                  skin={skin}
-                  mode="feed"
-                  checked={!excludedOf(widget).includes(r.id)}
-                  onChange={(on) =>
-                    setWidget((w) => ({
-                      ...w,
-                      excluded: on ? excludedOf(w).filter((x) => x !== r.id) : [...excludedOf(w), r.id],
-                    }))
-                  }
-                />
-              ),
-            )}
-          </div>
-          </TooltipProvider>
-        )}
+        ) : null}
       </div>
-    </>
+    </TooltipProvider>
   );
 }
 
@@ -1923,7 +2431,6 @@ function ReviewList({ widget, setWidget }) {
 // already"). Embed code opens the Embed sheet, which keeps the code box,
 // Copy and the numbered steps.
 function WidgetCard({ widget, onView, onEdit, onEmbed }) {
-  const count = resolveReviews(widget).length;
   const format = FORMATS[widget.format];
   return (
     // gap-4, matching the campaign cards (Ali, 3 Sep: "gaps in the cards
@@ -1949,11 +2456,7 @@ function WidgetCard({ widget, onView, onEdit, onEmbed }) {
         {/* One fact per row, hairline between, value right-aligned. The
             same rows as the settings page's Reviews card. See widgetRows. */}
         <dl className="divide-border flex flex-col divide-y text-sm">
-          {[
-            { k: "Chosen by", v: widget.mode === "picked" ? "Hand-picked" : "Live feed" },
-            ...widgetRows(widget),
-            { k: "Showing now", v: `${count} review${count === 1 ? "" : "s"}` },
-          ].map((row) => (
+          {widgetRows(widget).map((row) => (
             <div key={row.k} className="flex items-baseline justify-between gap-3 py-1.5">
               <dt className="text-muted-foreground shrink-0">{row.k}</dt>
               <dd className="text-right">{row.v}</dd>
@@ -2021,9 +2524,8 @@ function WidgetsDashboard({ widgets, onView, onEdit, onEmbed }) {
 // builder ... so a left rail, I think it works better"). The four wizard
 // steps become four rail sections. Nothing is sequenced and nothing gates
 // anything: every setting already holds a working value, so Save is enabled
-// from the first render, and only the two things that can genuinely be wrong
-// (a hand-picked set with nothing in it, a filter that matches nothing) are
-// checked when it is pressed.
+// from the first render, and the one thing that can genuinely be wrong (a set
+// of filters that matches nothing) is checked when it is pressed.
 //
 // COPIED FROM THE REVIEW BUILDER'S TEMPLATE EDITOR, not re-derived: the rail
 // (plain buttons with tablist semantics: icon, label, subtext, active state),
@@ -2149,14 +2651,9 @@ const GROUP_HEADING_CLASS = "text-muted-foreground text-xs font-medium";
 const asGroups = (rows) => (rows.length && rows[0].rows ? rows : [{ id: "all", heading: null, rows }]);
 
 function sectionRows(id, widget, reviews) {
-  if (id === "reviews") {
-    const count = reviews.length;
-    return [
-      { k: "Chosen by", v: widget.mode === "picked" ? "Hand-picked" : "Live feed" },
-      ...widgetRows(widget),
-      { k: "Showing now", v: `${count} review${count === 1 ? "" : "s"}` },
-    ];
-  }
+  // The SAME rows as the hub card, from the same function, built off the
+  // resolved set this page already has in hand.
+  if (id === "reviews") return widgetRows(widget, reviews);
   if (id === "design") {
     if (widget.format === "json") return null;
     const d = widget.design;
@@ -2261,13 +2758,18 @@ function sectionRows(id, widget, reviews) {
       groups.push({
         id: "animation",
         heading: "Animation",
+        // One row per control, in the panel's order, so the card and the
+        // sheet cannot disagree about what a carousel is doing. The keys drop
+        // the panel's colons: these rows already read as key and value.
         rows: [
-          { k: "Loop", v: c.loop ? "On" : "Off" },
-          { k: "Autoplay", v: c.autoplay ? `Every ${c.every} seconds` : "Off" },
+          { k: "Auto rotate slides", v: c.autoRotate ? "Yes" : "No" },
           {
-            k: "Controls",
-            v: c.arrows && c.dots ? "Arrows and dots" : c.arrows ? "Arrows" : c.dots ? "Dots" : "None",
+            k: "Transition style",
+            v: TRANSITION_OPTIONS.find((o) => o.id === c.transition)?.label ?? "Fade",
           },
+          { k: "Transition animation speed", v: `${c.speed} second${c.speed === 1 ? "" : "s"}` },
+          { k: "Show slide arrows", v: c.arrows ? "Yes" : "No" },
+          { k: "Show slide dots", v: c.dots ? "Yes" : "No" },
         ],
       });
     }
@@ -2281,9 +2783,9 @@ function sectionRows(id, widget, reviews) {
 // not two. What it holds, and only this: a Copy button in its own row above
 // the code (never over it: the old absolute button sat on the text), the code
 // in a box that wraps or scrolls on its own, and three short steps. No card
-// round it, no Format / Chosen by / Showing rows; the card the reader came
-// from already says those. `disabled` is the unsaved state: the shape of the
-// code is visible, nothing can be copied.
+// round it, no Format or Showing rows; the card the reader came from already
+// says those. `disabled` is the unsaved state: the shape of the code is
+// visible, nothing can be copied.
 // What Copy copies, for a showcase: the feed URL for JSON (one line, no
 // markup), the snippet for List and Carousel. Used by EmbedCode and by the
 // dashboard cards' Copy code button, so both copy the same text.
@@ -2367,22 +2869,18 @@ function EmbedCode({ widget, disabled = false, steps = true, hook = "embed-code"
 // renders as the DS warning Alert INSIDE the Reviews card, above its rows,
 // with a title and one specific sentence, where the rail has already jumped;
 // not as a bare line under the page. See App for when it clears.
+// ONE CHECK LEFT. The two hand-picked ones (nothing chosen, more than fifty
+// chosen) went with hand-picking itself; a showcase whose filters match
+// nothing is the only state left that cannot be saved into something useful.
 function issueFor(widget, reviews) {
-  if (widget.mode === "picked" && widget.picked.length === 0) return "none";
-  if (widget.mode === "picked" && widget.picked.length > MAX_HAND_PICKED) return "cap";
-  if (widget.mode === "feed" && reviews.length === 0) return "match";
+  if (reviews.length === 0) return "match";
   return null;
 }
 const ISSUE_COPY = {
-  none: { title: "No reviews chosen", body: () => "Open Reviews and tick at least one, or switch to Live feed." },
-  cap: {
-    title: "Too many reviews",
-    body: (w) =>
-      `A hand-picked showcase holds up to ${MAX_HAND_PICKED} reviews. Untick ${w.picked.length - MAX_HAND_PICKED} to save.`,
-  },
   match: {
     title: "No reviews match",
-    body: () => "Widen the ratings, sources or period so at least one review matches.",
+    body: () =>
+      "Open Select Reviews and widen the ratings, sources or dates so at least one review matches.",
   },
 };
 
@@ -2478,41 +2976,19 @@ function SectionCard({ section, widget, reviews, onEdit, issue = null }) {
 // The controls that used to be the wizard's step bodies, one component per
 // sheet. Module scope, not inner declarations: a component declared inside
 // another remounts on every render and drops input focus. The reviews sheet
-// has no body component of its own: ReviewList mounts straight into the
-// DrawerBody so its bar can stick (see the review picker section).
+// has no body component of its own: SelectReviews mounts straight into the
+// DrawerBody so its toolbar can stick (see the select reviews section).
 // One write path for the carousel settings, merging over the defaults.
 function patchCarousel(setWidget, patch) {
   setWidget((w) => ({ ...w, design: { ...w.design, carousel: { ...carouselOf(w.design), ...patch } } }));
 }
 
-// ONE SWITCH ROW FOR EVERY SWITCH (Ali, 7 Sep: "these labels next to the
-// switches aren't lined up"). The DS horizontal Field aligns its cells to
-// the start, which tops a 14px leading-none label against a 20px switch.
-// self-center on both cells puts the two on one centre line; every switch on
-// the screen goes through here so there are no per-row differences.
-function SwitchRow({ id, label, checked, onChange }) {
-  return (
-    <Field orientation="horizontal" dataHook={`${id}-field`}>
-      <Switch
-        id={id}
-        dataHook={id}
-        className="mt-0 self-center"
-        checked={checked}
-        onCheckedChange={(v) => onChange(!!v)}
-      />
-      {/* Measured: the horizontal Field is a GRID with align-items start, so
-          its 14px content cell sat at the top of the 20px switch row, 3px
-          above centre, and items-center on the Field lost to the DS's own
-          orientation variant. self-center on the two grid items is what
-          actually lines them up. */}
-      <FieldContent className="self-center">
-        <FieldLabel htmlFor={id} dataHook={`${id}-label`}>
-          {label}
-        </FieldLabel>
-      </FieldContent>
-    </Field>
-  );
-}
+// NO SWITCH ROW ANY MORE. The animation group was the last switch on the
+// screen and the real product asks those five as Yes / No pairs, so SwitchRow
+// (and the DS Switch with it) went out with the Loop and Autoplay controls.
+// The alignment fix it carried lives on in CheckRow below, which hit the same
+// thing: the DS horizontal Field is a grid with align-items start, so both
+// cells need self-center or a 14px label sits above a 20px control.
 
 /* ---------------------------- design field kit ---------------------------- */
 
@@ -2621,9 +3097,9 @@ function SliderField({ id, label, value, min, max, suffix = "", onChange }) {
   );
 }
 
-// ONE CHECKBOX ROW, the same shape as SwitchRow above it and for the same
-// measured reason (the horizontal Field is a grid with align-items start, so
-// both cells need self-center). Checkboxes rather than switches because on the
+// ONE CHECKBOX ROW, with the alignment fix SwitchRow used to carry for the
+// same measured reason (the horizontal Field is a grid with align-items
+// start, so both cells need self-center). Checkboxes rather than switches because on the
 // real screen these REVEAL a group of fields rather than turning a thing on.
 function CheckRow({ id, label, checked, onChange }) {
   return (
@@ -2722,6 +3198,28 @@ function RadioField({ id, label, value, options, onChange }) {
   );
 }
 
+// YES AND NO, NOT A SWITCH (Ali, 20 Sep: the product "uses Yes/No radio
+// pairs here, not switches"). A switch states one thing and lets you turn it
+// off; the real screen asks a question and puts both answers on the page, so
+// these go through the same RadioField as the date format and the character
+// count above and stack the way those do. The record still holds a boolean,
+// so nothing downstream has to know which control set it.
+const YES_NO_OPTIONS = [
+  { id: "yes", label: "Yes" },
+  { id: "no", label: "No" },
+];
+function YesNoField({ id, label, value, onChange }) {
+  return (
+    <RadioField
+      id={id}
+      label={label}
+      value={value ? "yes" : "no"}
+      options={YES_NO_OPTIONS}
+      onChange={(v) => onChange(v === "yes")}
+    />
+  );
+}
+
 // THE FOUR SHADOW NUMBERS AND ITS COLOUR, once, for the container's shadow and
 // the review card's alike. `prefix` picks which set of keys it writes:
 // "shadow" or "reviewShadow". Two-up rather than four-up because "Spread" in
@@ -2752,39 +3250,30 @@ function ShadowFields({ hook, prefix, design, set }) {
   );
 }
 
-// A PRESET TILE'S THUMBNAIL: the preset's own values, drawn as a tiny review
-// card through the SAME previewSkin the real widget uses. So the tile cannot
-// drift from what picking it does, and the three looks differ on the tile for
-// the same reasons they differ on the site: corners, borders, shadow, ground.
-// aria-hidden, because the tile's name is what is being chosen.
-function PresetThumb({ values }) {
-  const skin = previewSkin(values);
+// A PRESET TILE'S THUMBNAIL: BrightLocal's own artwork for that preset, not a
+// drawing of it (Ali, 20 Sep, having saved the four images out of the real
+// product). A hand-drawn miniature could only ever be our idea of what Modern
+// looks like; theirs is what their customers already recognise, down to the
+// dashed outline that stands for Custom.
+//
+// alt="", because the image repeats what the tile's name says underneath and
+// the radio is what is being chosen. A plain <img>: this screen renders in
+// Studio as well as in the app, and next/image exists in only one of those.
+//
+// The size is an inline style rather than aspect-square and object-cover: the
+// preview's precompiled stylesheet only carries the utilities these screens
+// already use, and a class that is missing from it does nothing at all rather
+// than failing loudly (measured on the old Every select, where w-32 computed
+// to the full 607px). The images are square, so "cover" crops nothing.
+function PresetThumb({ id, src }) {
   return (
-    <div
-      aria-hidden="true"
-      className="flex h-14 flex-col justify-center overflow-hidden p-1.5"
-      style={{ ...skin.shell, fontSize: "10px" }}
-    >
-      <div className="flex flex-col gap-1 p-1.5" style={skin.card}>
-        <div className="flex items-center gap-0.5">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <span
-              key={i}
-              className="block size-1 rounded-[1px]"
-              style={{ background: skin.name.color, opacity: 0.7 }}
-            />
-          ))}
-        </div>
-        <span
-          className="block h-1 w-full rounded-[1px]"
-          style={{ background: skin.name.color, opacity: 0.3 }}
-        />
-        <span
-          className="block h-1 w-2/3 rounded-[1px]"
-          style={{ background: skin.name.color, opacity: 0.18 }}
-        />
-      </div>
-    </div>
+    <img
+      src={src}
+      alt=""
+      data-hook={`design-preset-${id}-thumb`}
+      className="block w-full"
+      style={{ aspectRatio: "1 / 1", objectFit: "cover", borderRadius: "0.25rem" }}
+    />
   );
 }
 
@@ -2792,15 +3281,16 @@ function PresetThumb({ values }) {
 // named looks at the top of the panel, outside the groups, each showing what
 // it does rather than naming it. CUSTOM IS NOT SOMETHING YOU PICK: it appears,
 // already chosen, the moment one setting differs from the preset you were on,
-// and it goes again the moment you pick a preset back. Its thumbnail is the
-// live design, so it shows what you have actually made.
+// and it goes again the moment you pick a preset back. Its tile carries the
+// product's dashed-outline artwork, which is exactly what it means: a look
+// that is yours rather than one of theirs.
 //
 // A DS RadioGroup, not a row of buttons: one of these is always true, which is
 // what a radio group is for, and it comes with the arrow-key behaviour.
 function PresetTiles({ design, value, onChange }) {
   const tiles = [
-    ...PRESET_ORDER.map((id) => ({ id, label: DESIGN_PRESETS[id].label, values: DESIGN_PRESETS[id].values })),
-    ...(value === "custom" ? [{ id: "custom", label: "Custom", values: design }] : []),
+    ...PRESET_ORDER.map((id) => ({ id, label: DESIGN_PRESETS[id].label })),
+    ...(value === "custom" ? [{ id: "custom", label: "Custom" }] : []),
   ];
   return (
     <Field dataHook="design-preset-field">
@@ -2820,7 +3310,7 @@ function PresetTiles({ design, value, onChange }) {
         <div className="grid grid-cols-2 gap-3">
           {tiles.map((t) => (
             <Field key={t.id} variant="box" dataHook={`design-preset-${t.id}-tile`}>
-              <PresetThumb values={t.values} />
+              <PresetThumb id={t.id} src={PRESET_THUMBS[t.id]} />
               <div className="flex items-center gap-2">
                 <RadioGroupItem id={`design-preset-${t.id}`} value={t.id} />
                 <FieldLabel htmlFor={`design-preset-${t.id}`} dataHook={`design-preset-${t.id}-label`}>
@@ -2836,7 +3326,7 @@ function PresetTiles({ design, value, onChange }) {
 }
 
 // Returns a FRAGMENT: [sticky live preview, controls]. Mounted directly in
-// the sheet's scroller so the preview can stick (see ReviewList for the
+// the sheet's scroller so the preview can stick (see SelectReviews for the
 // same rule).
 function DesignSheetBody({ widget, setWidget }) {
   const c = carouselOf(widget.design);
@@ -3210,65 +3700,55 @@ function DesignSheetBody({ widget, setWidget }) {
             <AccordionItem value="animation">
               <AccordionTrigger data-hook="design-group-animation">Animation</AccordionTrigger>
               <AccordionContent className="flex flex-col gap-5 pt-1">
-                {/* KEPT, NOT REBUILT. The real Widget Design screen has no
-                    carousel settings, but our Carousel showcase is a carousel
-                    and its loop, autoplay and controls are real behaviour, so
-                    they stay where they were rather than being deleted along
-                    with Mode and the branding line.
-                    ASSUMPTION: Ali may want these somewhere else, or gone. */}
-                <SwitchRow
-                  id="design-loop"
-                  label="Loop"
-                  checked={c.loop}
-                  onChange={(v) => patchCarousel(setWidget, { loop: v })}
+                {/* THE PRODUCT'S OWN FIVE, IN ITS ORDER (Ali, 20 Sep, from a
+                    screenshot of the real product's carousel settings). Loop
+                    and the Every select are gone: neither exists on that
+                    screen, and a control nobody can reach is worse than a
+                    default. What replaced them all answers in the preview
+                    above, which is the point of this group sitting under it.
+
+                    THE LABELS CARRY THE SCREEN'S COLONS, and the four groups
+                    above carry none, so this group reads differently beside
+                    them.
+                    ASSUMPTION: the colon is the product's, quoted rather than
+                    tidied away. If it came from the note and not the screen,
+                    dropping it is five edits and nothing else moves. */}
+                <YesNoField
+                  id="design-auto-rotate"
+                  label="Auto rotate slides:"
+                  value={c.autoRotate}
+                  onChange={(v) => patchCarousel(setWidget, { autoRotate: v })}
                 />
-                <SwitchRow
-                  id="design-autoplay"
-                  label="Autoplay"
-                  checked={c.autoplay}
-                  onChange={(v) => patchCarousel(setWidget, { autoplay: v })}
+                <RadioField
+                  id="design-transition"
+                  label="Transition style:"
+                  value={c.transition}
+                  options={TRANSITION_OPTIONS}
+                  onChange={(v) => patchCarousel(setWidget, { transition: v })}
                 />
-                {/* The "Every" select is always drawn and merely disabled while
-                    Autoplay is off, so switching Autoplay changes an emphasis
-                    rather than reflowing the sheet. */}
-                <Field dataHook="design-every-field">
-                  <FieldLabel htmlFor="design-every" dataHook="design-every-label">
-                    Every
-                  </FieldLabel>
-                  {/* 8rem (the w-32 step) and left-aligned under its label. As
-                      an inline style because the preview's precompiled
-                      stylesheet carries no w-32 (measured: the class computed
-                      to the full 607px), and an unavailable utility is worse
-                      than a value. */}
-                  <div style={{ width: "8rem" }}>
-                    <Select
-                      value={String(c.every)}
-                      disabled={!c.autoplay}
-                      onValueChange={(v) => patchCarousel(setWidget, { every: Number(v) })}
-                    >
-                      <SelectTrigger id="design-every" dataHook="design-every" className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AUTOPLAY_EVERY.map((s) => (
-                          <SelectItem key={s} value={String(s)}>
-                            {s} seconds
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </Field>
-                <SwitchRow
+                {/* NOT DISABLED WHILE AUTO ROTATE IS NO, which is what the old
+                    Every select did. The real screen offers five plain
+                    controls, and greying one out would be a rule we invented;
+                    it also reads as the animation's own duration to anyone who
+                    takes the label at its word (see CarouselWidget). */}
+                <SliderField
+                  id="design-transition-speed"
+                  label="Transition animation speed (seconds):"
+                  value={c.speed}
+                  min={SPEED_MIN}
+                  max={SPEED_MAX}
+                  onChange={(n) => patchCarousel(setWidget, { speed: n })}
+                />
+                <YesNoField
                   id="design-arrows"
-                  label="Show arrows"
-                  checked={c.arrows}
+                  label="Show slide arrows:"
+                  value={c.arrows}
                   onChange={(v) => patchCarousel(setWidget, { arrows: v })}
                 />
-                <SwitchRow
+                <YesNoField
                   id="design-dots"
-                  label="Show dots"
-                  checked={c.dots}
+                  label="Show slide dots:"
+                  value={c.dots}
                   onChange={(v) => patchCarousel(setWidget, { dots: v })}
                 />
               </AccordionContent>
@@ -3306,17 +3786,25 @@ const SHEET_TYPE_SCALE = `
 // and embed sheets on this screen (DRAWER_WIDTH), so every panel on RM reads
 // as the same object.
 //
-// THE REVIEWS SHEET DROPS THE BODY PADDING. ReviewList's bar is `sticky
+// THE REVIEWS SHEET DROPS THE BODY PADDING. SelectReviews' toolbar is `sticky
 // top-0` and has to be a direct child of this scroller with nothing between
-// it and the edge, so the bar and the list carry their own padding there.
+// it and the edge, so the toolbar and the table carry their own padding there.
+//
+// AND IT IS WIDER THAN THE REST. Select Reviews is a full-width step in the
+// real product, and its table is six columns: Date, Source, Rating, the
+// review, Position and Blacklist. At the 40rem every other panel on RM uses,
+// the review column is about eight words a line and the two controls fall off
+// the end. So that one section gets its own clamp, still bounded so it never
+// covers the settings card it was opened from.
 function SectionSheet({ section, widget, setWidget, narrow, onClose }) {
   if (!section) return null;
+  const reviews = section.id === "reviews";
   return (
     <Drawer open onOpenChange={(o) => (o ? null : onClose())} direction={narrow ? "bottom" : "right"}>
       <style>{SHEET_TYPE_SCALE}</style>
       <DrawerContent
         dataHook="section-sheet-panel"
-        className={`flex flex-col ${narrow ? "" : "h-full"} ${DRAWER_WIDTH}`}
+        className={`flex flex-col ${narrow ? "" : "h-full"} ${reviews ? REVIEWS_DRAWER_WIDTH : DRAWER_WIDTH}`}
         style={narrow ? { marginTop: 0, maxHeight: "92svh" } : undefined}
       >
         {/* ONE SHEET HEADER ACROSS RM: SideSheetHeader from the registry
@@ -3333,8 +3821,8 @@ function SectionSheet({ section, widget, setWidget, narrow, onClose }) {
           className="mx-0 mt-0 flex min-h-0 max-w-none grow flex-col gap-0 overflow-y-auto p-0"
           style={{ scrollbarWidth: "thin", scrollbarColor: "var(--border) transparent" }}
         >
-          {section.id === "reviews" ? (
-            <ReviewList widget={widget} setWidget={setWidget} />
+          {reviews ? (
+            <SelectReviews widget={widget} setWidget={setWidget} />
           ) : (
             <DesignSheetBody widget={widget} setWidget={setWidget} />
           )}
