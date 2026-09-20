@@ -71,6 +71,11 @@ import { reviewSummaryFor } from "@/lib/review-summary";
 // in about a second on the way somewhere else: the headline is the number
 // that decides whether you go, and the breakdown is only there to stop the
 // headline being ambiguous. Four parts turns a signpost into a report.
+// THE QR BANNER IS OFF (Ali, 20 Sep: "the QR code was extra from me",
+// and the prototype is now "like the current project, no extra features").
+// Flip to true to bring it back, here and in the Builder hub.
+const SHOW_QR_BANNER = false;
+
 const HUB_CARDS = [
   {
     title: "Review Manager",
@@ -328,7 +333,7 @@ export default function ReviewsPage() {
           {/* The QR code sits at the foot for an account that has not asked
               yet (Ali, 11 Sep: "meaningful and fun for a fresh starter, it
               ties them in to the service"). */}
-          {stats.campaignsAll === 0 ? <QrBanner /> : null}
+          {SHOW_QR_BANNER && stats.campaignsAll === 0 ? <QrBanner /> : null}
         </GlobalLayoutContentBody>
       </AppLayoutShell>
     </SidebarProvider>

@@ -89,26 +89,6 @@
       "ms": 900
     },
     {
-      "caption": "5. And the QR code, generated on the page.",
-      "ms": 1800,
-      "chapter": "The QR code",
-      "chapterSlug": "qr",
-      "chapterLine": "Generated on the page, sized for the till or the door."
-    },
-    {
-      "click": "[data-hook=qr-banner-code]",
-      "waitFor": "[data-hook=qr-generator]",
-      "ms": 4400
-    },
-    {
-      "click": "[data-hook=qr-size-A5]",
-      "ms": 3000
-    },
-    {
-      "key": "Escape",
-      "ms": 900
-    },
-    {
       "go": "/locations/minus-one-studios/reviews/showcase",
       "bg": "green",
       "caption": "6. The Showcase, and what the reviews are worth.",

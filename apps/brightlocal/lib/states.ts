@@ -364,14 +364,6 @@ export const STATES: ScreenState[] = [
     path: `${M}/reviews/builder?view=success`,
   },
   {
-    id: "builder-11-qr",
-    section: "builder",
-    title: "The QR code",
-    note: "Generated on the page, sized for the till, the table or the door, with the caption and the colour editable. The code is live and scannable; the line printed under it is Google's own review URL, which is what the customer's card would carry.",
-    path: `${M}/reviews/builder`,
-    steps: [{ click: "[data-hook=qr-banner-code]", waitFor: "[data-hook=qr-generator]", wait: 1000 }],
-  },
-  {
     id: "builder-12-empty",
     section: "builder",
     title: "No campaigns yet",

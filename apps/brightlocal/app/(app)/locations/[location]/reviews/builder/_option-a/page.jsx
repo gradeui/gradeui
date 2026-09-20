@@ -1780,6 +1780,12 @@ const TABLE_LOOK =
 // the pagination equivalent of a progress bar for a one-second task.
 const PAGE_SIZE = 10;
 
+// THE QR BANNER IS OFF (Ali, 20 Sep: "can we hide the QR banner?"). Flip to
+// true to bring it back. It is the only way into the QR generator, and the
+// popovers walkthrough has a section that opens it, so anything that needs
+// the generator needs this on (or its own way in).
+const SHOW_QR_BANNER = false;
+
 // Every page number while there are few; first, last and a window round the
 // current one with ellipses once there are many. The DS ships usePagination
 // for the real thing; this is enough to see the control.
@@ -6802,7 +6808,7 @@ export default function RMReviewBuilderPage() {
       >
         <GlobalLayoutContentBody className="gap-4">
           {view === "hub" ? <BeaconPageStrip page="builder" /> : null}
-          {view === "hub" ? <QrBanner compact /> : null}
+          {view === "hub" && SHOW_QR_BANNER ? <QrBanner compact /> : null}
           {view === "hub" ? (
             <CampaignsPage
               campaigns={campaigns}

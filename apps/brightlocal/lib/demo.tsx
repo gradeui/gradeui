@@ -92,10 +92,28 @@ declare global {
   }
 }
 
+// ONE-TIME MOVE TO THE NEW DEFAULT (Ali, 20 Sep: the default mode is "De
+// facto plus proposed fixes"). A browser that has been here before has the
+// old default, "modified", saved, and a stored value beats a new default
+// for ever. This flag flips that one saved value once, so a deliberate
+// choice made after today still sticks.
+const ENGINE_DEFAULT_KEY = "grade-bl-engine-default-v2";
+
 function readStored(): Partial<DemoSettings> | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as DemoSettings;
+    if (raw) {
+      const stored = JSON.parse(raw) as DemoSettings;
+      if (!window.localStorage.getItem(ENGINE_DEFAULT_KEY)) {
+        window.localStorage.setItem(ENGINE_DEFAULT_KEY, "done");
+        if (stored.engine === "modified") {
+          stored.engine = "native-fixed";
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+        }
+      }
+      return stored;
+    }
+    window.localStorage.setItem(ENGINE_DEFAULT_KEY, "done");
     const legacy = window.localStorage.getItem(LEGACY_KEY);
     if (!legacy) return null;
     const { insights: _dropped, ...rest } = JSON.parse(legacy) as DemoSettings;
@@ -149,7 +167,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     personaId: DEFAULT_PERSONA_ID,
     look: "authored",
     variants: {},
-    engine: "modified",
+    engine: "native-fixed",
     upsell: true,
     fixItForMe: false,
     beaconTone: "neutral",
@@ -168,7 +186,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       personaId: DEFAULT_PERSONA_ID,
       look: "authored",
       variants: {},
-      engine: "modified",
+      engine: "native-fixed",
       upsell: true,
       fixItForMe: false,
       beaconTone: "neutral",

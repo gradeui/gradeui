@@ -219,7 +219,7 @@ export const RECORDED: RecordedVideo[] = [
   },
   {
     "slug": "insights-popovers",
-    "duration": 93.87,
+    "duration": 82.37,
     "chapters": [
       {
         "id": "insights-popovers--01-popovers",
@@ -227,7 +227,7 @@ export const RECORDED: RecordedVideo[] = [
         "title": "Insights with additional data",
         "description": "The eight dialogs, in order, with nothing else in the way.",
         "t": 0,
-        "end": 2.61,
+        "end": 2.65,
         "thumb": "/videos/thumbs/insights-popovers--01-popovers.jpg"
       },
       {
@@ -235,8 +235,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "summary",
         "title": "The summary",
         "description": "One headline, one line, and the findings you can open.",
-        "t": 2.61,
-        "end": 20.13,
+        "t": 2.65,
+        "end": 20.23,
         "thumb": "/videos/thumbs/insights-popovers--02-summary.jpg"
       },
       {
@@ -244,8 +244,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "plan",
         "title": "The plan",
         "description": "This week's goal, and what auto-reply would have written.",
-        "t": 20.13,
-        "end": 30.92,
+        "t": 20.23,
+        "end": 31.56,
         "thumb": "/videos/thumbs/insights-popovers--03-plan.jpg"
       },
       {
@@ -253,8 +253,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "tracker",
         "title": "The Tracker",
         "description": "The trend across every review site, and what moved it.",
-        "t": 30.92,
-        "end": 43.08,
+        "t": 31.56,
+        "end": 43.57,
         "thumb": "/videos/thumbs/insights-popovers--04-tracker.jpg"
       },
       {
@@ -262,100 +262,86 @@ export const RECORDED: RecordedVideo[] = [
         "card": "builder",
         "title": "The Builder",
         "description": "Asking is the only thing that moves the count.",
-        "t": 43.08,
-        "end": 54.1,
+        "t": 43.57,
+        "end": 54.08,
         "thumb": "/videos/thumbs/insights-popovers--05-builder.jpg"
       },
       {
-        "id": "insights-popovers--06-qr",
-        "card": "qr",
-        "title": "The QR code",
-        "description": "Generated on the page, sized for the till or the door.",
-        "t": 54.1,
-        "end": 66.16,
-        "thumb": "/videos/thumbs/insights-popovers--06-qr.jpg"
-      },
-      {
-        "id": "insights-popovers--07-showcase",
+        "id": "insights-popovers--06-showcase",
         "card": "showcase",
         "title": "The Showcase",
         "description": "Your best reviews, and what they are worth on your own site.",
-        "t": 66.16,
-        "end": 76.63,
-        "thumb": "/videos/thumbs/insights-popovers--07-showcase.jpg"
+        "t": 54.08,
+        "end": 65.57,
+        "thumb": "/videos/thumbs/insights-popovers--06-showcase.jpg"
       },
       {
-        "id": "insights-popovers--08-trial",
+        "id": "insights-popovers--07-trial",
         "card": "trial",
         "title": "On a trial",
         "description": "Three days left, and what the trial has found so far.",
-        "t": 76.63,
-        "end": 83.55,
-        "thumb": "/videos/thumbs/insights-popovers--08-trial.jpg"
+        "t": 65.57,
+        "end": 71.98,
+        "thumb": "/videos/thumbs/insights-popovers--07-trial.jpg"
       },
       {
-        "id": "insights-popovers--09-lapsed",
+        "id": "insights-popovers--08-lapsed",
         "card": "lapsed",
         "title": "After it ended",
         "description": "Nine days on, with reviews still arriving and nobody watching.",
-        "t": 83.55,
-        "end": 89.99,
-        "thumb": "/videos/thumbs/insights-popovers--09-lapsed.jpg"
+        "t": 71.98,
+        "end": 78.46,
+        "thumb": "/videos/thumbs/insights-popovers--08-lapsed.jpg"
       },
       {
-        "id": "insights-popovers--10-end",
+        "id": "insights-popovers--09-end",
         "card": "end",
         "title": "Insights exploration",
         "description": "What could be possible with contextual AI insights",
-        "t": 89.99,
-        "end": 93.87,
-        "thumb": "/videos/thumbs/insights-popovers--10-end.jpg"
+        "t": 78.46,
+        "end": 82.37,
+        "thumb": "/videos/thumbs/insights-popovers--09-end.jpg"
       }
     ],
     "transcript": [
       {
-        "t": 2.613,
-        "end": 15.957,
+        "t": 2.649,
+        "end": 16.054,
         "text": "1. The summary. One headline, one line, and the findings you can open."
       },
       {
-        "t": 15.957,
-        "end": 20.127,
+        "t": 16.054,
+        "end": 20.232,
         "text": "Every finding ends in the thing that fixes it."
       },
       {
-        "t": 20.132,
-        "end": 30.921,
+        "t": 20.236,
+        "end": 31.564,
         "text": "2. The plan, and what auto-reply would have written."
       },
       {
-        "t": 30.922,
-        "end": 43.083,
+        "t": 31.565,
+        "end": 43.575,
         "text": "3. The Tracker. The charts cycle on their own."
       },
       {
-        "t": 43.087,
-        "end": 54.097,
+        "t": 43.577,
+        "end": 54.085,
         "text": "4. The Builder. Asking is the only thing that moves the count."
       },
       {
-        "t": 54.1,
-        "end": 66.158,
-        "text": "5. And the QR code, generated on the page."
-      },
-      {
-        "t": 66.164,
-        "end": 76.631,
+        "t": 54.086,
+        "end": 65.572,
         "text": "6. The Showcase, and what the reviews are worth."
       },
       {
-        "t": 76.633,
-        "end": 83.555,
+        "t": 65.573,
+        "end": 71.977,
         "text": "7. Three days left on the trial, and what it found."
       },
       {
-        "t": 83.557,
-        "end": 89.991,
+        "t": 71.981,
+        "end": 78.456,
         "text": "8. And nine days after it ended."
       }
     ],
@@ -364,7 +350,7 @@ export const RECORDED: RecordedVideo[] = [
   },
   {
     "slug": "insights-walkthrough",
-    "duration": 82.63,
+    "duration": 82.03,
     "chapters": [
       {
         "id": "insights-walkthrough--01-walkthrough",
@@ -372,7 +358,7 @@ export const RECORDED: RecordedVideo[] = [
         "title": "Insights, page by page",
         "description": "Minus 1 Studios, eight months in. The same numbers on every screen.",
         "t": 0,
-        "end": 18.93,
+        "end": 19.06,
         "thumb": "/videos/thumbs/insights-walkthrough--01-walkthrough.jpg"
       },
       {
@@ -380,8 +366,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "manager",
         "title": "Review Manager",
         "description": "Every review in one inbox, and the plan for the ones waiting.",
-        "t": 18.93,
-        "end": 35.52,
+        "t": 19.06,
+        "end": 35.28,
         "thumb": "/videos/thumbs/insights-walkthrough--02-manager.jpg"
       },
       {
@@ -389,8 +375,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "tracker",
         "title": "Review Tracker",
         "description": "The trend across every review site, and what moved it.",
-        "t": 35.52,
-        "end": 53.01,
+        "t": 35.28,
+        "end": 52.16,
         "thumb": "/videos/thumbs/insights-walkthrough--03-tracker.jpg"
       },
       {
@@ -398,8 +384,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "builder",
         "title": "Review Builder",
         "description": "Ask by email, SMS and a code by the till.",
-        "t": 53.01,
-        "end": 60.42,
+        "t": 52.16,
+        "end": 59.15,
         "thumb": "/videos/thumbs/insights-walkthrough--04-builder.jpg"
       },
       {
@@ -407,8 +393,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "showcase",
         "title": "Review Showcase",
         "description": "Your best reviews on your own website, updating themselves.",
-        "t": 60.42,
-        "end": 67.27,
+        "t": 59.15,
+        "end": 66.28,
         "thumb": "/videos/thumbs/insights-walkthrough--05-showcase.jpg"
       },
       {
@@ -416,8 +402,8 @@ export const RECORDED: RecordedVideo[] = [
         "card": "roadmap",
         "title": "Insights & Actions",
         "description": "The next three months, one stage at a time.",
-        "t": 67.27,
-        "end": 78.77,
+        "t": 66.28,
+        "end": 78.15,
         "thumb": "/videos/thumbs/insights-walkthrough--06-roadmap.jpg"
       },
       {
@@ -425,50 +411,50 @@ export const RECORDED: RecordedVideo[] = [
         "card": "end",
         "title": "Insights exploration",
         "description": "What could be possible with contextual AI insights",
-        "t": 78.77,
-        "end": 82.63,
+        "t": 78.15,
+        "end": 82.03,
         "thumb": "/videos/thumbs/insights-walkthrough--07-end.jpg"
       }
     ],
     "transcript": [
       {
-        "t": 2.621,
-        "end": 10.837,
+        "t": 2.6390000000000002,
+        "end": 10.94,
         "text": "The hub. One trend per card, and what to do first."
       },
       {
-        "t": 10.837,
-        "end": 18.934,
+        "t": 10.94,
+        "end": 19.063,
         "text": "Each finding is a line you can open, then the thing that fixes it."
       },
       {
-        "t": 21.337,
-        "end": 30.335,
+        "t": 21.467,
+        "end": 30.13,
         "text": "The inbox, and this week's goal above it."
       },
       {
-        "t": 30.335,
-        "end": 35.516,
+        "t": 30.13,
+        "end": 35.282,
         "text": "The plan, and what auto-reply would have written on one of their own reviews."
       },
       {
-        "t": 37.922,
-        "end": 53.011,
+        "t": 37.686,
+        "end": 52.164,
         "text": "The trend, and what moved it."
       },
       {
-        "t": 55.415,
-        "end": 60.418,
+        "t": 54.569,
+        "end": 59.152,
         "text": "Asking is the only thing that moves the count."
       },
       {
-        "t": 62.821,
-        "end": 67.266,
+        "t": 61.57,
+        "end": 66.285,
         "text": "And the best of them belong on your own website."
       },
       {
-        "t": 69.669,
-        "end": 78.77,
+        "t": 68.69,
+        "end": 78.152,
         "text": "All of it as a plan, three stages at a time."
       }
     ],

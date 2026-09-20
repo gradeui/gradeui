@@ -594,6 +594,16 @@
       "why": "Builder (Ali, 17 Sep: \"Lets have them all as DataTables\"): the campaigns, templates and internal feedback tables use the DS DataTable with sortable DataTableColumnHeader headers like Review Manager, rows keep their order until a header is pressed, the feedback drawer steps in the order on screen, and no count sits by the Campaigns or Templates title because the pager counts the rows.",
       "find": "                  iconOnly\n                  dataHook=\"feedback-next\"\n                  onClick={() => setOpenId(String(rows[openIndex + 1].id))}\n                  disabled={openIndex >= rows.length - 1}\n                  ariaLabel=\"Next feedback\"\n                >\n                  <ChevronDown className=\"size-4\" />\n                </Button>\n                <span className=\"text-muted-foreground ml-1 text-sm tabular-nums\">\n                  {openIndex + 1} of {rows.length}\n                </span>\n              </div>\n",
       "replace": "                  iconOnly\n                  dataHook=\"feedback-next\"\n                  onClick={() => setOpenId(String(ordered[openIndex + 1].id))}\n                  disabled={openIndex >= ordered.length - 1}\n                  ariaLabel=\"Next feedback\"\n                >\n                  <ChevronDown className=\"size-4\" />\n                </Button>\n                <span className=\"text-muted-foreground ml-1 text-sm tabular-nums\">\n                  {openIndex + 1} of {ordered.length}\n                </span>\n              </div>\n"
+    },
+    {
+      "why": "Review Builder hub: the QR banner is hidden (Ali, 20 Sep: \"can we hide the QR banner?\"). Kept behind SHOW_QR_BANNER so it can come back, because the banner is the only way into the QR generator. The flag.",
+      "find": "const PAGE_SIZE = 10;\n",
+      "replace": "const PAGE_SIZE = 10;\n\n// THE QR BANNER IS OFF (Ali, 20 Sep: \"can we hide the QR banner?\"). Flip to\n// true to bring it back. It is the only way into the QR generator, and the\n// popovers walkthrough has a section that opens it, so anything that needs\n// the generator needs this on (or its own way in).\nconst SHOW_QR_BANNER = false;\n"
+    },
+    {
+      "why": "Review Builder hub: the QR banner is hidden (Ali, 20 Sep: \"can we hide the QR banner?\"). Kept behind SHOW_QR_BANNER so it can come back, because the banner is the only way into the QR generator. The banner.",
+      "find": "          {view === \"hub\" ? <QrBanner compact /> : null}\n",
+      "replace": "          {view === \"hub\" && SHOW_QR_BANNER ? <QrBanner compact /> : null}\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [
@@ -776,6 +786,16 @@
       "why": "Figma type rules (Ali, 17 Sep): the hub card number is a metric, Inter 24/28 at 500; text-3xl font-bold was 30/36 at 600, above the web maximum",
       "find": "<span className=\"text-3xl font-bold tracking-tight tabular-nums\">{card.headline}</span>",
       "replace": "<span className=\"text-metric\">{card.headline}</span>"
+    },
+    {
+      "why": "Reviews hub: the QR banner is hidden (Ali, 20 Sep: the QR code \"was extra from me\", and the brief is now \"make it like the current project, no extra features\"). Kept behind SHOW_QR_BANNER so it can come back. The flag.",
+      "find": "const HUB_CARDS = [",
+      "replace": "// THE QR BANNER IS OFF (Ali, 20 Sep: \"the QR code was extra from me\",\n// and the prototype is now \"like the current project, no extra features\").\n// Flip to true to bring it back, here and in the Builder hub.\nconst SHOW_QR_BANNER = false;\n\nconst HUB_CARDS = ["
+    },
+    {
+      "why": "Reviews hub: the QR banner is hidden (Ali, 20 Sep: the QR code \"was extra from me\", and the brief is now \"make it like the current project, no extra features\"). Kept behind SHOW_QR_BANNER so it can come back. The banner.",
+      "find": "          {stats.campaignsAll === 0 ? <QrBanner /> : null}\n",
+      "replace": "          {SHOW_QR_BANNER && stats.campaignsAll === 0 ? <QrBanner /> : null}\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/page.jsx": [
