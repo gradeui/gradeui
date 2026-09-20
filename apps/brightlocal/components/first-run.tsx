@@ -21,7 +21,7 @@ export function FirstRunBand({ page }: { page: NuggetPage }) {
   return (
     <section data-hook={`first-run-${page}`} className="flex flex-col gap-8 rounded-[20px] border bg-[var(--ds-tailwind-colors-base-white)] px-8 py-8 lg:px-10">
       <div className="flex flex-col items-start gap-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-label-sm font-semibold uppercase tracking-wide">
+        <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-label-sm font-semibold">
           <Sparkles className="size-3.5 text-[var(--ds-tailwind-colors-green-500)]" />
           Why it matters
         </span>

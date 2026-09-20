@@ -165,7 +165,7 @@ export default function SubscriptionPage() {
                   <li key={plan.id} className={`relative flex flex-col gap-3 rounded-[20px] p-5 ${isCurrent ? "bg-[var(--ds-tailwind-colors-neutral-950)] text-[var(--ds-tailwind-colors-base-white)]" : "bg-[var(--ds-tailwind-colors-neutral-100)]"}`} data-hook={`upgrade-step-${plan.id}`}>
                     <div className="flex items-center justify-between gap-2">
                       <span className={`inline-flex size-7 items-center justify-center rounded-full text-label-sm font-semibold ${isCurrent ? "bg-[var(--ds-tailwind-colors-base-white)] text-[var(--ds-tailwind-colors-neutral-950)]" : "border"}`}>{i + 1}</span>
-                      <span className="text-label-sm font-semibold uppercase tracking-wide">{plan.name}</span>
+                      <span className="text-label-sm font-semibold">{plan.name}</span>
                       <span className={`ml-auto text-label-sm ${isCurrent ? "opacity-70" : "text-muted-foreground"}`}>{isCurrent ? "You are here" : `$${plan.price}/mo`}</span>
                     </div>
                     <p className={`text-body ${isCurrent ? "" : ""}`}>{plan.strap}</p>
@@ -191,7 +191,7 @@ export default function SubscriptionPage() {
                   <CardContent className="flex h-full flex-col gap-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex flex-col gap-1">
-                        <p className="text-label-sm font-semibold uppercase tracking-wide">{plan.name}</p>
+                        <p className="text-label-sm font-semibold">{plan.name}</p>
                         <p className="text-body-sm text-muted-foreground">{plan.strap}</p>
                       </div>
                       {isCurrent ? <span className="rounded-sm border px-2 py-0.5 text-label-sm">{chosenPlan ? "Your choice" : "Your plan"}</span> : isReviews ? <span className="rounded-sm bg-[var(--ds-tailwind-colors-neutral-950)] px-2 py-0.5 text-label-sm font-semibold text-[var(--ds-tailwind-colors-base-white)]">Reviews live here</span> : null}

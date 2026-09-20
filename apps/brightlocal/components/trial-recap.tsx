@@ -122,7 +122,7 @@ export function TrialRecapModal() {
         </div>
           <div className="flex flex-col justify-between gap-8 bg-[var(--ds-tailwind-colors-neutral-950)] px-8 py-8 text-[var(--ds-tailwind-colors-base-white)]" data-hook="trial-recap-plan">
             <div className="flex flex-col gap-2">
-              <p className="text-label-sm font-semibold uppercase tracking-wide">{PLAN.name}</p>
+              <p className="text-label-sm font-semibold">{PLAN.name}</p>
               <p className="flex items-baseline gap-2">
                 <span className="text-display font-display leading-none">{PLAN.price}</span>
                 <span className="text-body-sm text-[var(--ds-tailwind-colors-neutral-400)]">{PLAN.per}</span>

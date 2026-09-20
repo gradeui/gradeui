@@ -32,7 +32,7 @@ export default function BeaconVoicesPage() {
           <div className="flex flex-col divide-y rounded-lg border">
             {VOICES.map((v) => (
               <div key={v.id} className={`grid gap-2 px-4 py-3 sm:grid-cols-[8rem_1fr] ${v.ships ? "" : "bg-muted/40"}`}>
-                <p className="text-label-sm font-semibold uppercase tracking-wide">{v.name}{v.ships ? "" : <span className="ml-1 font-normal normal-case text-muted-foreground">(fixture)</span>}</p>
+                <p className="text-label-sm font-semibold">{v.name}{v.ships ? "" : <span className="ml-1 font-normal text-muted-foreground">(fixture)</span>}</p>
                 <div className="flex flex-col gap-0.5">
                   <p className="text-body font-semibold text-balance">{s.lines[v.id].lede}</p>
                   {s.lines[v.id].detail ? <p className="text-body-sm text-muted-foreground text-pretty">{s.lines[v.id].detail}</p> : null}
