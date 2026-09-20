@@ -248,7 +248,7 @@ export const STATES: ScreenState[] = [
     id: "builder-01-campaigns",
     section: "builder",
     title: "Campaigns",
-    note: "Every campaign with its channel, its type, its status and what it brought in. The count in the header is read off the table rather than typed, so the two cannot disagree.",
+    note: "Every campaign with its channel, its type, its status and what it brought in. The pager under the table is the only count on the page, so it cannot disagree with the rows above it.",
     path: `${M}/reviews/builder`,
   },
   {

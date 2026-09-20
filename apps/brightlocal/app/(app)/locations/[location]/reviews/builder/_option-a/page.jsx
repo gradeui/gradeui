@@ -6797,15 +6797,17 @@ export default function RMReviewBuilderPage() {
   const headerByView = {
     hub: {
       title: "Review Builder",
-      // A NUMBER, NOT A SENTENCE (Ali, 7 Sep: "for each page header directly off
-      // the hub page, our page description can be used to display some information
-      // rather than yet more boring text"). The figure is read from the same data
-      // the page renders, never typed in, so it moves when the data does.
-      description: (
-        <span data-hook="page-stat">
-          <span className="text-foreground font-medium tabular-nums">{campaigns.length}</span> {campaigns.length === 1 ? "campaign" : "campaigns"}
-        </span>
-      ),
+      // A SENTENCE, NOT A NUMBER. This used to read "{campaigns.length}
+      // campaigns" (Ali, 7 Sep: "our page description can be used to display
+      // some information rather than yet more boring text"), but the count sat
+      // up here on the whole seed list while the three facets and the rows they
+      // leave behind live inside CampaignsPage, one level down. Filtering to
+      // Ended left the header saying 9 over a table of 2. The pager under the
+      // table already counts the filtered rows, which is why the count came off
+      // the Campaigns card title as well (Ali, 17 Sep: "we have pagination"), so
+      // the description says what the page is for rather than restating a total
+      // it cannot see. Same sentence as the fallback below, deliberately.
+      description: "Invite your visitors to leave a review by email, text or web link.",
     },
     // TEMPLATES IS A PAGE, so it names itself and the breadcrumb carries
     // "Review Builder" as its parent — the way home runs through the trail,
