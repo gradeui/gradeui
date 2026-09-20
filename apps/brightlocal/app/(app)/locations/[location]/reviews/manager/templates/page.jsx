@@ -84,6 +84,10 @@ import {
   Trash2,
   X,
   Zap,
+  // The empty state's glyph for a template. FileText is already what a
+  // template looks like everywhere else in this app (the campaign builder's
+  // "Save as template" and its Templates tab), so the two agree.
+  FileText,
   Clock,
   History,
   ChevronDown,
@@ -599,14 +603,30 @@ function TemplatesView({ templates, setTemplates, rules }) {
 
       <div className="flex flex-col gap-3">
         {/* THE DEFAULT VIEW FOR A NEW CUSTOMER, so it says what a template is
-            for and offers the one action. New template stays in the section
-            header, where it is on a full page, so the state does not repeat
-            it. */}
+            for and offers the one action.
+            20 Sep, IT NOW REPEATS THE HEADER ACTION (Ali). The earlier call
+            was that New template stays in the section header and the state
+            does not say it twice, which left two blocks of centred text in a
+            tall empty panel while the Review Manager's own empty state, the
+            same shared EmptyState, had an icon and buttons. On an empty page
+            the header button is chrome, sitting where it sits on a full page;
+            the thing being read is the middle of the panel, so the action
+            belongs there too.
+            outline, not the manager's primary: both panels on this page are
+            empty at once for a new account, and two filled green buttons on
+            one screen is the thing that was toned down in August. See the
+            section header note above. */}
         {templates.length === 0 ? (
           <EmptyState
+            icon={FileText}
             dataHook="templates-empty-state"
             title="No templates yet"
             description="A template is a reply you can reuse, with the reviewer's name and your business name filled in. Write one here and it is offered whenever you reply."
+            action={
+              <Button variant="outline" dataHook="templates-empty-new" onClick={() => startEdit(null)}>
+                New template
+              </Button>
+            }
           />
         ) : null}
         {templates.map((t) => {
@@ -992,11 +1012,24 @@ function AutoReplyView({ templates, rules, setRules }) {
           same way. */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3">
+          {/* Same shape as the templates state above, same reasoning: the
+              icon is this section's own glyph, and the action is outline so
+              the two empty panels a new account sees do not put two filled
+              green buttons on one screen.
+              New rule is offered even with no templates written yet. The
+              drawer already warns that nothing covers the ratings, so the
+              button leads somewhere honest rather than being withheld. */}
           {rules.length === 0 ? (
             <EmptyState
+              icon={Zap}
               dataHook="rules-empty-state"
               title="No auto-reply rules yet"
               description="A rule sends one of your templates on its own when a new review matches it, so a five star Google review can be answered the moment it arrives."
+              action={
+                <Button variant="outline" dataHook="rules-empty-new" onClick={() => startRule(null)}>
+                  New rule
+                </Button>
+              }
             />
           ) : null}
           {rules.map((rule) => {
@@ -1182,7 +1215,22 @@ function AutoReplyView({ templates, rules, setRules }) {
             closeHook="close-rule"
           />
 
-          <DrawerBody className="mt-0 flex max-w-none flex-col gap-5 overflow-y-auto py-4">
+          {/* gap-3, tighter than the template drawer next door, because this
+              is the body that does not fit. At 1280x900 its four sections
+              measure 704px and the gaps another 60, so 764px of content sits
+              in a 746px box and the last card under "Written for other
+              ratings" ended 18px below the cut. What showed was 2px of it,
+              its bottom border and its rounded corners, which reads as a
+              broken card rather than as a list that carries on.
+              PADDING CANNOT MOVE IT: the padding is inside the scroller, so
+              pushing it to 80px only made the scroll longer and left the card
+              where it was. The lever is the height of everything ABOVE the
+              card, and three gaps at 12px instead of 20 free 24px, which
+              clears the 18 with 6 to spare.
+              A longer template library still scrolls this body, and that is
+              right: past a screenful the cut lands mid list, where it says
+              there is more below instead of cutting a border in half. */}
+          <DrawerBody className="mt-0 flex max-w-none flex-col gap-3 overflow-y-auto py-4">
           {/* No source picker while there is one eligible source: a list of
               one tickable row implies a choice that does not exist. The scope
               is STATED instead, read off AUTO_REPLY_SOURCES, so the day
