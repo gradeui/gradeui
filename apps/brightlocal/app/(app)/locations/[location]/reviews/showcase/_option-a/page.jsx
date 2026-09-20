@@ -141,12 +141,24 @@ import {
   DropdownMenuSeparator,
 } from "@brightlocal/ui-components/dropdown-menu";
 import { Input } from "@brightlocal/ui-components/input";
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupAddon,
+} from "@brightlocal/ui-components/input-group";
 import { Checkbox } from "@brightlocal/ui-components/checkbox";
 import { Switch } from "@brightlocal/ui-components/switch";
-import { Separator } from "@brightlocal/ui-components/separator";
 import { Progress } from "@brightlocal/ui-components/progress";
 import { Rating } from "@brightlocal/ui-components/rating";
 import { RadioGroup, RadioGroupItem } from "@brightlocal/ui-components/radio-group";
+import { Slider } from "@brightlocal/ui-components/slider";
+import { ToggleGroup, ToggleGroupItem } from "@brightlocal/ui-components/toggle-group";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@brightlocal/ui-components/accordion";
 import {
   Field,
   FieldContent,
@@ -204,6 +216,12 @@ import {
   FileText,
   ListChecks,
   Palette,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Square,
+  Columns2,
+  Columns3,
   GoogleOriginal,
   FacebookOriginal,
   TrustpilotOriginal,
@@ -394,22 +412,32 @@ function buildReviews() {
     "Ellie V.", "Mark A.", "Charlotte B.", "Josh W.", "Debbie F.", "Fiona R.",
     "Greg H.", "Isla M.", "Noah J.", "Carys E.", "Emma T.", "Fraser D.",
   ];
+  // FIVE OF THESE RUN LONG ON PURPOSE (Ali, 20 Sep: "make it functionally the
+  // same"). "Reviews character count" offers 140 or 280, and a control that
+  // cannot cut anything is a control nobody can judge: every line here used to
+  // stop around 118 characters, so the cut never fired, the "Read More" tail
+  // never drew, and Link color had no surface anywhere in the widget. Three
+  // HIGH lines, one MID and one LOW now run past 280, and one HIGH and one MID
+  // sit in the band between 140 and 280, mixed in among the short ones. So a
+  // preview shows clipped and unclipped cards side by side, and moving the
+  // radio from 280 to 140 both shortens the long cards AND clips cards that
+  // were whole, which is the only way to see what the setting does.
   const HIGH = [
-    "Wonderful day out with the kids. The animal handlers were brilliant and everything felt well looked after.",
+    "Wonderful day out with the kids. The animal handlers were brilliant and everything felt well looked after, right down to the hand washing points by the barn door. We arrived at ten and did not leave until closing, and the children still wanted one more go on the tractor ride before we went. Parking was easy, the picnic benches were clean, and nobody rushed us at any point in the day.",
     "Fantastic from start to finish. The tractor ride and goat feeding were the highlights for our two.",
-    "Best farm park in the area by a mile. Clean, friendly and great value for a family ticket.",
-    "The children loved every minute. Lamb feeding, the sandpit and the maize maze. Staff could not have been more helpful.",
+    "Best farm park in the area by a mile. Clean, friendly and great value for a family ticket, and the staff actually seem pleased to see you. We have tried three others this year and keep coming back to this one.",
+    "The children loved every minute. Lamb feeding, the sandpit and the maize maze kept all three of them busy from the moment we walked in. Staff could not have been more helpful when our youngest lost a shoe in the straw bales, and one of them walked the whole barn with us until we found it. We have already booked to come back at half term.",
     "Lovely setting and really happy animals. The owl encounter made my daughter's whole week.",
-    "Great day with the grandchildren. Plenty of shade, good picnic spots and the pig racing is very funny.",
+    "Great day with the grandchildren. Plenty of shade, good picnic spots and the pig racing is very funny, even for the adults standing at the back. The cafe does a proper pot of tea and one of the girls carried it out to us so we did not lose our table. Three generations of us had a lovely afternoon and not one of us wanted to leave early.",
   ];
   const MID = [
     "Really good day out. Only small gripe was the queue at the cafe around lunchtime.",
-    "Lots to do and lovely staff. The car park fills up fast on weekends so arrive early.",
-    "The kids had a great time. Would be five stars if the ice cream kiosk took card.",
+    "Lots to do and lovely staff. The car park fills up fast on weekends so arrive early, and if you can come on a weekday you will have the run of the place. We lost about half an hour queueing for the tractor ride, which the children did not mind but I did, and the cafe had a long wait at lunchtime. Still good value for a family ticket.",
+    "The kids had a great time and we would happily come again. It would be five stars if the ice cream kiosk took card, because we had to walk back to the car for change and lost our place in the queue twice.",
     "Good honest family attraction with well kept animals. Bring wellies after rain.",
   ];
   const LOW = [
-    "The animals were lovely but a couple of the advertised attractions were closed on the day.",
+    "The animals were lovely but a couple of the advertised attractions were closed on the day, with nothing on the website or at the gate to warn us. We had promised the children the owl encounter and the soft play, and both were shut, so the afternoon turned into a long walk round the paddocks. A note at the ticket desk would have saved a lot of disappointment.",
     "Decent visit overall, though the cafe had run out of most of the kids' menu by early afternoon.",
     "Disappointing visit. Two attractions closed and the tractor ride cancelled with no notice.",
   ];
@@ -466,6 +494,11 @@ function buildReviews() {
     rating: r.rating,
     recommended: r.recommended,
     daysAgo: r.daysAgo,
+    // THE ISO DAY, KEPT (Ali, 20 Sep). The date format is a setting now
+    // (MMDDYYYY, DDMMYYYY or hidden), so the three parts have to survive to
+    // the point of display; `date` stays as the long form every other RM
+    // screen prints, for anything that still wants it.
+    iso: isoDate(r.daysAgo),
     date: shortDate(r.daysAgo),
     text: r.text,
   }));
@@ -505,6 +538,9 @@ function asShowcaseReview(r) {
     rating: typeof r.rating === "number" ? r.rating : null,
     recommended: r.rating === "up" ? true : r.rating === "down" ? false : null,
     daysAgo: r.daysAgo,
+    // The pool row's own ISO day, for the date-format setting; see the same
+    // field on the fallback builder above.
+    iso: typeof r.date === "string" ? r.date : "",
     date: formatDate(r.date),
     text: r.text,
   };
@@ -517,6 +553,217 @@ function selectShowcaseReviews(location, persona) {
   const stars = REVIEWS.filter((r) => typeof r.rating === "number").map((r) => r.rating);
   POOL_AVERAGE = stars.length ? stars.reduce((a, b) => a + b, 0) / stars.length : 0;
 }
+
+/* ============================== widget design ============================= */
+
+// THE REAL PRODUCT'S WIDGET DESIGN SCREEN, CONTROL FOR CONTROL (Ali, 20 Sep:
+// "I've been told to make it functionally the same", with screenshots of
+// BrightLocal's own Widget Design screen). Everything that screen can set has
+// a key here. The record is FLAT on purpose: a preset is then one value per
+// key, and "is this still a preset?" is one === per key rather than a walk
+// over nested objects.
+//
+// DESIGN_DEFAULTS is what each field falls back to, the numbers the
+// screenshots show. Each preset is those defaults with the handful of
+// differences that make it look like itself, so the three looks read as data
+// and no branch in the JSX has to know what "Classic" means.
+const DESIGN_DEFAULTS = {
+  // Layout
+  maxHeight: 960,
+  // A STRING, because a ToggleGroup's value is a string. Kept as one all the
+  // way through so a preset comparison never has to coerce.
+  columns: "1",
+  count: 25,
+  // Container
+  bg: "#FFFFFF",
+  radius: 5,
+  borderOn: false,
+  borderWidth: 1,
+  borderColor: "#DDDDDD",
+  shadowOn: false,
+  shadowX: 0,
+  shadowY: 2,
+  shadowBlur: 6,
+  shadowSpread: 0,
+  shadowColor: "#E0E0E0",
+  titleOn: true,
+  title: "Customer Reviews",
+  summary: "all",
+  // Text
+  font: "Roboto",
+  color: "#212529",
+  linkColor: "#007BFF",
+  size: 16,
+  align: "left",
+  // Reviews
+  showName: true,
+  showSource: true,
+  schema: true,
+  dateFormat: "mdy",
+  chars: 280,
+  reviewBg: "#FFFFFF",
+  reviewRadius: 4,
+  reviewBorderOn: false,
+  reviewBorderWidth: 1,
+  reviewBorderColor: "#DDDDDD",
+  reviewShadowOn: false,
+  reviewShadowX: 0,
+  reviewShadowY: 1,
+  reviewShadowBlur: 3,
+  reviewShadowSpread: 0,
+  reviewShadowColor: "#E0E0E0",
+};
+
+const DESIGN_PRESETS = {
+  modern: {
+    id: "modern",
+    label: "Modern",
+    // The look the showcase already had: rounded corners, a soft shadow, no
+    // borders. Every other value is the field default, so a showcase sitting
+    // on Modern shows the numbers the screenshots show.
+    values: { ...DESIGN_DEFAULTS, shadowOn: true, reviewShadowOn: true },
+  },
+  classic: {
+    id: "classic",
+    label: "Classic",
+    // Squarer, hairline borders, cards on a slightly grey ground, and the
+    // slab face carrying the heavier title. There is no separate title-font
+    // control on the real screen, so "serif-ish heavier title" has to come
+    // out of the one Font select, which is the job Slabo 27px is doing here.
+    values: {
+      ...DESIGN_DEFAULTS,
+      radius: 0,
+      reviewRadius: 0,
+      borderOn: true,
+      reviewBorderOn: true,
+      bg: "#F7F7F7",
+      font: "Slabo 27px",
+      linkColor: "#0056B3",
+      chars: 140,
+    },
+  },
+  bootstrap: {
+    id: "bootstrap",
+    label: "Bootstrap",
+    // The plainest of the three: square, 1px #DDDDDD everywhere, no shadow,
+    // and Bootstrap's own body colour and link blue, which the field defaults
+    // already carry.
+    values: {
+      ...DESIGN_DEFAULTS,
+      radius: 0,
+      reviewRadius: 0,
+      borderOn: true,
+      reviewBorderOn: true,
+      font: "Open Sans",
+    },
+  },
+};
+const PRESET_ORDER = ["modern", "classic", "bootstrap"];
+// EVERY SETTING BUT THE WORDS YOU TYPED. `title` is the one design key whose
+// value is the user's own copy rather than a setting, and all three presets
+// carry the same default title, so including it could only ever destroy: type
+// "What our customers say" and the tile would flip to Custom although nothing
+// about the look had changed, then picking Modern back to recover the look
+// would silently wipe the sentence. So the title is out of preset identity and
+// out of what a preset writes; everything else is in.
+const PRESET_KEYS = Object.keys(DESIGN_DEFAULTS).filter((k) => k !== "title");
+
+// WHICH TILE IS LIT. A preset is still chosen while every one of its values is
+// in place; the moment one differs the answer is "custom", which is how the
+// Custom tile earns its place rather than being a fourth thing on offer.
+// ASSUMPTION (Ali, 20 Sep: "picking a preset sets every control below to that
+// preset's values"): that is read literally, so a preset owns EVERY control in
+// the four groups, not just the styling. Worth saying out loud, because three
+// of those are not really a look:
+//   Layout    maxHeight, columns, count. Moving to two columns reads as
+//             Custom, and picking Modern again puts you back to one column.
+//   Reviews   showName, showSource, schema, dateFormat. So picking Classic
+//             re-ticks "Add business details to Schema" and resets the date
+//             format. Schema is an SEO decision rather than a look, and
+//             nobody would expect a look to switch it back on.
+// Both readings are defensible and this one is Ali's words taken at face
+// value. Flag if a preset should carry the styling alone and leave the layout
+// numbers and the Reviews content toggles where they were.
+const presetOf = (design) =>
+  PRESET_ORDER.find((id) => PRESET_KEYS.every((k) => design[k] === DESIGN_PRESETS[id].values[k])) ??
+  "custom";
+
+// The seven faces the real screen offers. They are Google fonts and nothing in
+// this prototype loads them, so each carries a stack that falls back to
+// something of the same character on a machine without it. The published
+// widget would load the face itself.
+const FONTS = [
+  { id: "Roboto", stack: '"Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif' },
+  { id: "Open Sans", stack: '"Open Sans", "Segoe UI", Arial, sans-serif' },
+  { id: "Lato", stack: '"Lato", "Trebuchet MS", Arial, sans-serif' },
+  { id: "Slabo 27px", stack: '"Slabo 27px", Rockwell, Georgia, serif' },
+  { id: "Roboto Condensed", stack: '"Roboto Condensed", "Arial Narrow", Arial, sans-serif' },
+  { id: "Oswald", stack: '"Oswald", "Arial Narrow", Impact, sans-serif' },
+  { id: "Montserrat", stack: '"Montserrat", "Gill Sans", Arial, sans-serif' },
+];
+const fontStack = (id) => (FONTS.find((f) => f.id === id) ?? FONTS[0]).stack;
+
+// The option lists the controls and the summary rows both read, so a label is
+// written once and a card can never disagree with the sheet.
+const COLUMN_OPTIONS = [
+  { id: "1", label: "One column", Icon: Square },
+  { id: "2", label: "Two columns", Icon: Columns2 },
+  { id: "3", label: "Three columns", Icon: Columns3 },
+];
+const ALIGN_OPTIONS = [
+  { id: "left", label: "Left", Icon: AlignLeft },
+  { id: "center", label: "Center", Icon: AlignCenter },
+  { id: "right", label: "Right", Icon: AlignRight },
+];
+const SUMMARY_OPTIONS = [
+  { id: "none", label: "None" },
+  { id: "all", label: "All" },
+  { id: "selected", label: "Selected" },
+];
+const DATE_FORMATS = [
+  { id: "mdy", label: "MMDDYYYY" },
+  { id: "dmy", label: "DDMMYYYY" },
+  { id: "hidden", label: "Hidden" },
+];
+const CHAR_COUNTS = [
+  { id: 140, label: "140 characters" },
+  { id: 280, label: "280 characters" },
+];
+const REVIEW_TOGGLES = [
+  { key: "showName", label: "Display reviewer's name" },
+  { key: "showSource", label: "Display review site icon" },
+  // Schema is markup on the published widget, not something a preview can
+  // draw, so it shows as a row on the settings card and nowhere else.
+  { key: "schema", label: "Add business details to Schema" },
+];
+// The four numbers a CSS shadow takes, in CSS order, so the fields read the
+// way the value reads. `key` builds the design key: "shadow" + "X" is
+// shadowX, "reviewShadow" + "Blur" is reviewShadowBlur.
+const SHADOW_PARTS = [
+  { id: "x", key: "X", label: "X" },
+  { id: "y", key: "Y", label: "Y" },
+  { id: "blur", key: "Blur", label: "Blur" },
+  { id: "spread", key: "Spread", label: "Spread" },
+];
+
+// A half-typed hex ("#21", "#2125") is not a colour yet, so the preview keeps
+// the field's default until it is one. Typing never blanks the widget.
+const HEX_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+const hex = (v, fallback) => (typeof v === "string" && HEX_RE.test(v.trim()) ? v.trim() : fallback);
+// The browser's own colour input only takes six digits, so a three-digit hex
+// is doubled out for it.
+const hex6 = (v, fallback) => {
+  const h = hex(v, fallback);
+  return h.length === 4 ? `#${h[1]}${h[1]}${h[2]}${h[2]}${h[3]}${h[3]}` : h;
+};
+const shadowCss = (on, x, y, blur, spread, color, fallbackColor) =>
+  on ? `${x}px ${y}px ${blur}px ${spread}px ${hex(color, fallbackColor)}` : "none";
+// The same shadow, said in words, for the settings card's rows.
+const shadowLabel = (on, x, y, blur, spread, color) =>
+  on ? `${x}, ${y}, ${blur}, ${spread} ${color}` : "None";
+// A flex row cannot inherit text-align, so alignment has to be handed to it
+// as a justify-content. One map, used wherever a row sits inside the widget.
+const JUSTIFY = { left: "flex-start", center: "center", right: "flex-end" };
 
 function blankWidget() {
   return {
@@ -561,20 +808,13 @@ function blankWidget() {
     // every count follow. Unused by a hand-picked set.
     excluded: [],
     design: {
-      theme: "light",
-      corners: "rounded",
-      length: "full",
-      showName: true,
-      showSource: true,
-      showDate: true,
-      // See WidgetBranding. Every seed inherits this through {...base.design}.
-      branding: true,
-      // See WidgetHeader. The title the live widgets carry, and the stats
-      // block on by default: standard on review widgets.
-      title: "Customer Reviews",
-      summary: true,
+      // MODERN IS THE STARTING LOOK, and Modern is DESIGN_DEFAULTS with the
+      // soft shadow on, so a new showcase carries exactly the values the
+      // Widget Design fields show as their defaults.
+      ...DESIGN_PRESETS.modern.values,
       // See CarouselWidget. Loop on, autoplay off, both controls on: the
-      // carousel looks exactly as it did before these existed.
+      // carousel looks exactly as it did before these existed. Not part of a
+      // preset, so picking one never disturbs it.
       carousel: { loop: true, autoplay: false, every: 4, arrows: true, dots: true },
     },
   };
@@ -582,9 +822,10 @@ function blankWidget() {
 
 // The three showcases, one per format, ids equal to the format. The old
 // seeds' settings map straight across: "Best of the year" is the List
-// (hand-picked five-star reviews, dark, square, snippets), "Homepage
-// carousel" is the Carousel (live feed, Google and Trustpilot, four stars and
-// up, last 12 months), "Site feed" is the JSON feed (live feed, defaults).
+// (hand-picked five-star reviews, on the Classic preset, which is where the
+// old square corners and 140-character snippets now live), "Homepage
+// carousel" is the Carousel (live feed, Google, four stars and up, last 12
+// months, on Modern), "Site feed" is the JSON feed (live feed, defaults).
 function seedWidgets() {
   const base = blankWidget();
   return [
@@ -598,7 +839,9 @@ function seedWidgets() {
       // showed "5 chosen by hand" and previewed five farm-park reviews it did
       // not have (Showcase audit, 10 Sep).
       picked: REVIEWS.filter((r) => r.rating === 5).slice(0, 5).map((r) => r.id),
-      design: { ...base.design, theme: "dark", corners: "square", length: "snippet" },
+      // Square, hairline-bordered, snippets: the look this seed always had,
+      // said as a preset now rather than as three loose keys.
+      design: { ...base.design, ...DESIGN_PRESETS.classic.values },
     },
     {
       ...base,
@@ -612,7 +855,7 @@ function seedWidgets() {
       sources: ["google"],
       ratings: ["4plus", "rec"],
       period: "365",
-      design: { ...base.design, theme: "light", corners: "rounded", length: "full" },
+      design: { ...base.design, ...DESIGN_PRESETS.modern.values },
     },
     {
       ...base,
@@ -663,24 +906,32 @@ function resolveReviews(widget) {
 // the campaign cards on Review Builder, which already read this way.
 //
 // Returns rows, not a string. The one-line form is gone from every caller.
+//
+// THE SAME ROWS ON EVERY CARD (Ali, 20 Sep: "each one of these cards should
+// basically be the same"). Seven rows in one order, whatever the showcase is,
+// so the three cards line up row for row and the eye can run straight down a
+// column instead of re-reading each card's shape.
+//
+// A hand-picked showcase has no filter, so the four feed-only rows say "Not
+// used" rather than vanishing, and its Limit is the size of the set it was
+// handed. Nothing disappears, so nothing below it moves.
+const NOT_USED = "Not used";
 function widgetRows(widget) {
-  if (widget.mode === "picked") {
-    return [
-      { k: "Reviews", v: `${widget.picked.length} chosen by hand` },
-    ];
-  }
+  const picked = widget.mode === "picked";
   return [
     // The ticked rating options by label; see ratingLabels for why "5 stars"
     // drops out when "4 stars and above" is on.
-    { k: "Ratings", v: ratingLabels(widget.ratings).join(", ") },
+    { k: "Ratings", v: picked ? NOT_USED : ratingLabels(widget.ratings).join(", ") },
     {
       k: "Sources",
       // MARKS BESIDE NAMES (Ali, 7 Sep: "on sources, can we include the
       // logo?"). Chosen sources show mark and name each, in the fixed source
-      // order rather than click order; "Any source" shows the marks of every
-      // source on offer and then the words, so the row says which sites
-      // "any" means. SourceMark is the registry's, not a local drawing.
-      v: (
+      // order rather than click order; "Any source" shows the words alone,
+      // because marks stand for a choice and "any" is the absence of one.
+      // SourceMark is the registry's, not a local drawing.
+      v: picked ? (
+        NOT_USED
+      ) : (
         <span className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
           {widget.sources.length ? (
             SOURCE_LIST.filter((s) => widget.sources.includes(s.id)).map((s) => (
@@ -690,25 +941,38 @@ function widgetRows(widget) {
               </span>
             ))
           ) : (
-            // Words only (Ali, 7 Sep: "on any sources not sure why we show 3
-            // icons"). Marks stand for chosen sources; "any" is the absence of
-            // a choice, so it gets no marks.
             <span>Any source</span>
           )}
         </span>
       ),
     },
-    { k: "Period", v: PERIODS.find((x) => x.id === widget.period)?.label ?? "All time" },
+    {
+      k: "Period",
+      v: picked ? NOT_USED : (PERIODS.find((x) => x.id === widget.period)?.label ?? "All time"),
+    },
     // The cap belongs on the card: "Showing now" says how many there are
     // TODAY, which on a live feed is not the same as how many there can be.
     // "5 reviews", not "Newest 5" (Ali, 7 Sep: "easier to read"). Newest
     // first is still how the cap is applied; it is just not in the label.
-    { k: "Limit", v: typeof widget.limit === "number" ? `${widget.limit} reviews` : "No limit" },
+    // Hand-picked has no cap to state, so the row carries the size of the set
+    // instead and the two kinds of showcase still line up.
+    {
+      k: "Limit",
+      v: picked
+        ? `${widget.picked.length} chosen by hand`
+        : typeof widget.limit === "number"
+          ? `${widget.limit} reviews`
+          : "No limit",
+    },
     // Always rendered, "Left out: 0" included, so the row count never
     // changes as reviews are unticked and re-ticked.
     {
       k: "Left out",
-      v: String(REVIEWS.filter((r) => excludedOf(widget).includes(r.id) && feedMatches(widget, r)).length),
+      v: picked
+        ? NOT_USED
+        : String(
+            REVIEWS.filter((r) => excludedOf(widget).includes(r.id) && feedMatches(widget, r)).length,
+          ),
     },
   ];
 }
@@ -802,20 +1066,86 @@ function ChoiceCards({ name, value, onChange, options, columns = 1, labelledBy }
 
 /* ============================= widget preview ============================= */
 
-// The one place the customer's own website is being painted rather than a
-// Grade surface, so the dark setting uses Tailwind neutrals directly. Every
-// other colour on this screen is a semantic token.
+// THE SKIN IS STYLE NOW, NOT CLASS NAMES (Ali, 20 Sep). The widget's colours,
+// radii, borders, shadows, face and size are numbers and hex the customer
+// types, so none of them can be a Tailwind utility: every one is an inline
+// style, built here, once, and read by every preview on the screen. This is
+// still the one surface that paints the CUSTOMER's website rather than a Grade
+// surface, which is why raw hex is right here and nowhere else on the page.
+//
+// SIZES ARE em, NOT text-sm. The Size control sets the widget's font-size in
+// pixels on the shell and everything inside is a multiple of it, so moving the
+// slider moves the whole widget instead of just the paragraph.
 function previewSkin(design) {
-  const dark = design.theme === "dark";
+  const d = design;
+  const text = hex(d.color, DESIGN_DEFAULTS.color);
   return {
-    shell: dark ? "bg-neutral-900" : "bg-neutral-50",
-    card: dark
-      ? "bg-neutral-800 border-neutral-700 text-neutral-100"
-      : "bg-white border-neutral-200 text-neutral-800",
-    meta: dark ? "text-neutral-400" : "text-neutral-500",
-    name: dark ? "text-white" : "text-neutral-900",
-    radius: design.corners === "rounded" ? "rounded-lg" : "rounded-none",
+    align: d.align,
+    columns: Number(d.columns) || 1,
+    shell: {
+      background: hex(d.bg, DESIGN_DEFAULTS.bg),
+      borderRadius: `${d.radius}px`,
+      // A transparent border while the border is off, so ticking the box
+      // paints a line instead of shifting the whole widget by a pixel.
+      border: d.borderOn
+        ? `${d.borderWidth}px solid ${hex(d.borderColor, DESIGN_DEFAULTS.borderColor)}`
+        : "1px solid transparent",
+      boxShadow: shadowCss(
+        d.shadowOn,
+        d.shadowX,
+        d.shadowY,
+        d.shadowBlur,
+        d.shadowSpread,
+        d.shadowColor,
+        DESIGN_DEFAULTS.shadowColor,
+      ),
+      fontFamily: fontStack(d.font),
+      fontSize: `${d.size}px`,
+      color: text,
+      textAlign: d.align,
+    },
+    card: {
+      background: hex(d.reviewBg, DESIGN_DEFAULTS.reviewBg),
+      borderRadius: `${d.reviewRadius}px`,
+      border: d.reviewBorderOn
+        ? `${d.reviewBorderWidth}px solid ${hex(d.reviewBorderColor, DESIGN_DEFAULTS.reviewBorderColor)}`
+        : "1px solid transparent",
+      boxShadow: shadowCss(
+        d.reviewShadowOn,
+        d.reviewShadowX,
+        d.reviewShadowY,
+        d.reviewShadowBlur,
+        d.reviewShadowSpread,
+        d.reviewShadowColor,
+        DESIGN_DEFAULTS.reviewShadowColor,
+      ),
+    },
+    // The name, the meta line and the title are the TEXT colour, not colours
+    // of their own: the real screen has one Color field, so inventing a
+    // second would be a value nobody could reach. The meta line is the same
+    // ink, knocked back.
+    name: { color: text, fontSize: "0.9375em", fontWeight: 600 },
+    rating: { color: text, fontSize: "0.875em" },
+    meta: { color: text, fontSize: "0.8125em", opacity: 0.65 },
+    title: { color: text, fontSize: "1.125em", fontWeight: 600 },
+    link: { color: hex(d.linkColor, DESIGN_DEFAULTS.linkColor) },
+    // THE REVIEWS SCROLL, NOT THE WHOLE BOX. "Widget max height" caps the
+    // list so the title and the summary stay put while the reviews move
+    // under them. ASSUMPTION: the real screen may cap the outer box instead,
+    // header and all.
+    scroller: { maxHeight: `${d.maxHeight}px`, overflowY: "auto" },
   };
+}
+
+// THE DATE IN THE CHOSEN FORMAT (Ali, 20 Sep). Every review carries an ISO
+// day, so MMDDYYYY and DDMMYYYY are two orderings of the same three parts and
+// Hidden draws nothing at all. A row with no ISO day falls back to the long
+// form it already had rather than showing a gap.
+function reviewDate(review, format) {
+  if (format === "hidden") return null;
+  const [y, m, day] = (typeof review.iso === "string" ? review.iso : "").split("-");
+  if (!y || !m || !day) return review.date ?? null;
+  return format === "dmy" ? `${day}/${m}/${y}` : `${m}/${day}/${y}`;
 }
 
 // THE DS Rating, NOT HAND-DRAWN STARS (Ali, 7 Sep: "we need to use our
@@ -823,51 +1153,65 @@ function previewSkin(design) {
 // its dist: a width-clipped overlay per star), so the header's 4.7 shows
 // four full stars and a seven-tenths fifth, and a review row shows whole
 // stars. It is what FeedbackScore draws on Review Manager and Review
-// Builder, so a star now looks the same on every RM screen. KNOWN DS
-// FINDING (19 Aug, still open): its empty star is `fill-muted`, a near-white
-// surface token, so on the dark theme the empty stars read pale; logged
-// upstream, not worked around here.
+// Builder, so a star now looks the same on every RM screen. The stars are the
+// one thing in the widget the colour settings do not reach: they are the DS
+// component as it ships.
 
 function PreviewReview({ review, design, skin, leading = null, contentClassName = "" }) {
-  // SNIPPET MODE ENDS IN "Read more" (coordinator, 7 Sep, from the live
-  // widgets): about 140 characters, then an underlined anchor, not a button,
-  // because on the customer's site it opens the review at its source. Here
-  // it goes nowhere. Full mode is the whole text.
-  const clipped = design.length === "snippet" && review.text.length > 140;
-  const text = clipped ? `${review.text.slice(0, 137).trimEnd()}…` : review.text;
+  // TRUNCATION IS A NUMBER NOW (Ali, 20 Sep): the real screen offers 140 or
+  // 280 characters, so the cut is design.chars and the tail is a "Read More"
+  // anchor, not a button, because on the customer's site it opens the review
+  // at its source. Here it goes nowhere. It is drawn in the LINK colour,
+  // which is the one place that setting shows.
+  const clipped = review.text.length > design.chars;
+  const text = clipped ? `${review.text.slice(0, design.chars - 3).trimEnd()}…` : review.text;
   const sourceName = SOURCES[review.source].label;
+  const stamp = reviewDate(review, design.dateFormat);
   const body = (
     <>
-      <div className="flex flex-wrap items-center gap-2">
+      {/* A flex row cannot inherit text-align, so the alignment setting is
+          handed to it as a justify-content. */}
+      <div
+        className="flex flex-wrap items-center gap-2"
+        style={{ justifyContent: JUSTIFY[skin.align] ?? "flex-start" }}
+      >
         {review.source === "facebook" ? (
           review.recommended ? (
-            <span className="flex items-center gap-1 text-sm">
+            <span className="flex items-center gap-1" style={skin.rating}>
               <ThumbsUp className="size-4" /> Recommended
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-sm">
+            <span className="flex items-center gap-1" style={skin.rating}>
               <ThumbsDown className="size-4" /> Not recommended
             </span>
           )
         ) : (
           <Rating value={review.rating} dataHook={`review-rating-${review.id}`} />
         )}
-        {design.showName ? (
-          <span className={`text-sm font-semibold ${skin.name}`}>{review.name}</span>
+        {design.showName ? <span style={skin.name}>{review.name}</span> : null}
+        {stamp ? (
+          <span style={skin.meta} data-hook="review-date">
+            {stamp}
+          </span>
         ) : null}
-        {design.showDate ? <span className={`text-xs ${skin.meta}`}>{review.date}</span> : null}
         {/* THE SOURCE AS ITS MARK, at the right of the line, as the live
-            widgets draw it (coordinator, 7 Sep). This is the one place we had
-            said the published widget would not change; the live product does
-            it, so now we follow it. The name survives for assistive tech and
-            as a hover title. */}
+            widgets draw it (coordinator, 7 Sep). On a left-aligned widget it
+            still hugs the right edge; on a centred or right-aligned one it
+            joins the line rather than fighting the alignment it was given. */}
         {design.showSource ? (
-          <span className="ml-auto flex" role="img" aria-label={sourceName} title={sourceName} data-hook="review-source-mark">
+          <span
+            className="flex"
+            style={skin.align === "left" ? { marginLeft: "auto" } : undefined}
+            role="img"
+            aria-label={sourceName}
+            title={sourceName}
+            data-hook="review-source-mark"
+          >
             <SourceMark source={review.source} />
           </span>
         ) : null}
       </div>
-      <p className="mt-2 text-sm leading-relaxed">
+      <p className="mt-2" style={{ fontSize: "1em", lineHeight: 1.55 }}>
         {text}
         {clipped ? (
           <>
@@ -875,10 +1219,11 @@ function PreviewReview({ review, design, skin, leading = null, contentClassName 
             <a
               href="#"
               className="underline underline-offset-2"
+              style={skin.link}
               onClick={(e) => e.preventDefault()}
               data-hook="review-read-more"
             >
-              Read more
+              Read More
             </a>
           </>
         ) : null}
@@ -886,7 +1231,7 @@ function PreviewReview({ review, design, skin, leading = null, contentClassName 
     </>
   );
   return (
-    <div className={`border p-4 ${skin.card} ${skin.radius}`}>
+    <div className="p-4" style={skin.card}>
       {leading ? (
         <div className="flex items-center gap-3">
           {leading}
@@ -899,23 +1244,12 @@ function PreviewReview({ review, design, skin, leading = null, contentClassName 
   );
 }
 
-// 7. BRANDING (Ali, 7 Sep). One muted line inside the widget's own box,
-// "Reviews by" and the BrightLocal wordmark, the same Logo the app shell
-// draws, sized to the line. The wordmark is currentColor, so it takes the
-// widget's muted text colour and stays legible on the dark theme. Ungated:
-// on for everyone by default and switchable in Design; whether a plan may
-// hide it is a later business decision, not a UI one.
 // 7. HEADER ROW, as the LIVE widgets have it (coordinator, 7 Sep, from
 // screenshots): a title on the left ("Customer Reviews"), and on the right a
 // small "{total} Total Reviews" line above stars and the bold average.
-// ASSUMPTION: both numbers come from the location's FULL review pool on this
-// screen (REVIEWS, every review the screen knows about), never the filtered
-// subset: a summary of five reviews means nothing. The average is over star
-// ratings only, since Facebook recommendations carry no score; the total
-// counts every review. Both agree with Review Tracker's headline because the
-// pool is built to the Tracker's split and star mix (see buildReviews).
-// An empty title hides the title and keeps the stats; the switch off keeps
-// the title alone; both gone and the row is not drawn at all.
+// The title is behind its own "Customize widget title" checkbox now, as the
+// real screen has it, and the summary is a three-way choice rather than a
+// switch. Title off and summary None and the row is not drawn at all.
 // `let`, because selectShowcaseReviews above rewrites all three together.
 let POOL_TOTAL = REVIEWS.length;
 const fmtCount = (n) => n.toLocaleString("en-GB");
@@ -923,18 +1257,38 @@ let POOL_AVERAGE = (() => {
   const stars = REVIEWS.filter((r) => typeof r.rating === "number").map((r) => r.rating);
   return stars.length ? stars.reduce((a, b) => a + b, 0) / stars.length : 0;
 })();
-const headerTitle = (design) => (design.title ?? "").trim();
-const hasHeader = (design) => design.summary !== false || headerTitle(design).length > 0;
-function WidgetHeader({ design, skin }) {
+const headerTitle = (design) => (design.titleOn === false ? "" : (design.title ?? "").trim());
+const hasHeader = (design) => design.summary !== "none" || headerTitle(design).length > 0;
+
+// THREE ANSWERS, NOT TWO (Ali, 20 Sep): "Review summary" is None, All or
+// Selected. ALL is the location's whole pool, which is what a summary on a
+// website normally means, and is what this row always said before. SELECTED
+// is the reviews this showcase actually publishes, which is the honest number
+// for a hand-picked set where the pool's average would be a different claim.
+// The average is over star ratings only, since Facebook recommendations carry
+// no score; the total counts every review.
+function summaryOf(design, reviews) {
+  if (design.summary === "none") return null;
+  if (design.summary === "selected") {
+    const stars = reviews.filter((r) => typeof r.rating === "number").map((r) => r.rating);
+    return {
+      total: reviews.length,
+      average: stars.length ? stars.reduce((a, b) => a + b, 0) / stars.length : 0,
+    };
+  }
+  return { total: POOL_TOTAL, average: POOL_AVERAGE };
+}
+
+function WidgetHeader({ design, skin, reviews }) {
   const title = headerTitle(design);
-  const stats = design.summary !== false;
+  const stats = summaryOf(design, reviews);
   if (!title && !stats) return null;
   return (
     // flex-wrap with a nowrap title: on a narrow widget the stats block drops
     // under the title rather than the title breaking mid-word beside it.
     <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1" data-hook="widget-header">
       {title ? (
-        <span className={`text-base font-semibold whitespace-nowrap ${skin.name}`} data-hook="widget-header-title">
+        <span className="whitespace-nowrap" style={skin.title} data-hook="widget-header-title">
           {title}
         </span>
       ) : (
@@ -942,34 +1296,13 @@ function WidgetHeader({ design, skin }) {
       )}
       {stats ? (
         <div className="flex flex-col items-end gap-0.5 text-right" data-hook="widget-header-stats">
-          <span className={`text-xs ${skin.meta}`}>{fmtCount(POOL_TOTAL)} Total Reviews</span>
+          <span style={skin.meta}>{fmtCount(stats.total)} Total Reviews</span>
           <span className="flex items-center gap-1.5">
-            <Rating value={Number(POOL_AVERAGE.toFixed(1))} dataHook="widget-header-rating" />
-            <span className={`text-sm font-semibold ${skin.name}`}>{POOL_AVERAGE.toFixed(1)}</span>
+            <Rating value={Number(stats.average.toFixed(1))} dataHook="widget-header-rating" />
+            <span style={skin.name}>{stats.average.toFixed(1)}</span>
           </span>
         </div>
       ) : null}
-    </div>
-  );
-}
-
-function WidgetBranding({ skin }) {
-  return (
-    <div className={`flex items-center justify-center gap-1.5 text-xs leading-4 ${skin.meta}`} data-hook="widget-branding">
-      <span>Reviews by</span>
-      {/* CENTRED TO THE PIXEL (Ali, 7 Sep: "they need centrally aligning").
-          The DS Logo's svg carries width=128 height=24 attributes and ignored
-          the h-3.5 on its wrapper, so it drew 24px tall inside a 14px box and
-          sat 5px low. [&_svg]:h-full makes the mark fit the wrapper; h-3
-          was the first size; h-4 (16px) now, a touch bigger (Ali, 7 Sep:
-          "increase the logo size in the Reviews by area, just a touch"), with
-          the text still text-xs; items-center keeps the mark's centre on the
-          text line's centre (re-measured). */}
-      <Logo
-        className="h-4 w-auto [&_svg]:h-full [&_svg]:w-auto"
-        dataHook="widget-branding-logo"
-        ariaLabel="BrightLocal"
-      />
     </div>
   );
 }
@@ -1023,7 +1356,18 @@ const CAROUSEL_DOTS_STYLE = `
 // once the user takes the wheel (a drag, an arrow, a dot), and never started
 // under prefers-reduced-motion. Swapping in embla-carousel-autoplay via the
 // Carousel's `plugins` prop is the production route.
-function CarouselWidget({ widget, reviews, skin, branded }) {
+//
+// IT HONOURS THE LAYOUT GROUP TOO. "Widget max height" and "Desktop layout
+// display" are offered in the panel for a Carousel and stated on its settings
+// card, so the carousel has to act on them or they are two rows asserting a
+// fact nothing obeys. Taken as: max height caps the SLIDES, the same reading
+// the list takes (the title and the controls stay put while the reviews move
+// under them), and the column count is how many slides stand side by side, the
+// ordinary meaning of a multi-slide carousel. ASSUMPTION, and our own call:
+// the real Widget Design screen has no carousel format at all, so there is no
+// product behaviour to copy here. Flag if a Carousel should simply not be
+// offered the two controls.
+function CarouselWidget({ widget, reviews, skin }) {
   const c = carouselOf(widget.design);
   const [api, setApi] = useState(null);
   const [paused, setPaused] = useState(false);
@@ -1047,7 +1391,8 @@ function CarouselWidget({ widget, reviews, skin, branded }) {
   const controls = c.arrows || c.dots;
   return (
     <div
-      className={`min-w-0 rounded-lg p-4 ${skin.shell}`}
+      className="min-w-0 p-4"
+      style={skin.shell}
       // "-shell": the dashboard card for the Carousel showcase is
       // data-hook="widget-carousel" (widget-<id>), so the box needs its own.
       data-hook="widget-carousel-shell"
@@ -1059,26 +1404,40 @@ function CarouselWidget({ widget, reviews, skin, branded }) {
       <style>{CAROUSEL_DOTS_STYLE}</style>
       {hasHeader(widget.design) ? (
         <div className="mb-3">
-          <WidgetHeader design={widget.design} skin={skin} />
+          <WidgetHeader design={widget.design} skin={skin} reviews={reviews} />
         </div>
       ) : null}
       <Carousel dataHook="widget-carousel-preview" opts={{ loop: c.loop }} setApi={setApi}>
-        <CarouselContent>
-          {/* EVERY SLIDE THE HEIGHT OF THE TALLEST (Ali, 7 Sep: "move the
-              pagination much closer to the review"). The track is as tall
-              as its tallest slide, so a short review left up to 70px of
-              air under its card before the arrows. The item is a flex box
-              and the card its stretched child, so the card always reaches
-              the bottom of the track and the controls sit one gap below. */}
-          {reviews.slice(0, 8).map((r) => (
-            <CarouselItem key={r.id} className="flex">
-              <PreviewReview review={r} design={widget.design} skin={skin} />
-            </CarouselItem>
-          ))}
-        </CarouselContent>
+        {/* The cap wraps the SLIDES, not the shell: the header above and the
+            arrows and dots below stay where they are while only the reviews
+            move, which is the same reading the list takes of this setting. It
+            has to sit inside <Carousel> because the controls read that
+            context, and around CarouselContent rather than on it because
+            CarouselContent spreads its props onto the inner flex track. */}
+        <div style={skin.scroller} data-hook="widget-carousel-scroller">
+          <CarouselContent>
+            {/* EVERY REVIEW IT WAS GIVEN, not the first eight: how many a
+                showcase shows is the Layout group's own control now, and
+                WidgetPreview has already applied it. A second cap here would
+                be a number nobody set. */}
+            {reviews.map((r) => (
+              <CarouselItem
+                key={r.id}
+                className="flex"
+                // Overrides the DS item's own basis-full. One column is 100%,
+                // which is the shipped behaviour untouched; two and three
+                // stand that many slides side by side, and embla still
+                // advances one at a time.
+                style={{ flexBasis: `${100 / skin.columns}%` }}
+              >
+                <PreviewReview review={r} design={widget.design} skin={skin} />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </div>
         {/* Arrows and dots each switchable; with both off the row is not
-            drawn and the branding line moves up, which is the user's choice.
-            Pressing either stops autoplay, as the plugin would. */}
+            drawn at all, which is the user's choice. Pressing either stops
+            autoplay, as the plugin would. */}
         {controls ? (
           <div
             className="mt-3 flex items-center justify-center gap-3"
@@ -1097,11 +1456,6 @@ function CarouselWidget({ widget, reviews, skin, branded }) {
           </div>
         ) : null}
       </Carousel>
-      {branded ? (
-        <div className="mt-3">
-          <WidgetBranding skin={skin} />
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -1112,9 +1466,20 @@ function CarouselWidget({ widget, reviews, skin, branded }) {
 // empty drawer below it.
 function WidgetPreview({ widget, reviews, full }) {
   const skin = previewSkin(widget.design);
-  const branded = widget.design.branding !== false;
+  // HOW MANY REVIEWS, from the Layout group's own control (Ali, 20 Sep). It
+  // caps whatever the Reviews section resolved, so a showcase shows the
+  // smaller of the two numbers.
+  // ASSUMPTION: this sits on top of the Reviews section's Limit, which is the
+  // live feed's own cap. That is two controls for one fact, because the real
+  // Widget Design screen has "Number of reviews to show" and our Reviews
+  // section already had a Limit, and the smaller of the two always wins. Worth
+  // deciding rather than leaving: Limit is 5 on all three seeds and 5 by
+  // default on a new showcase, so the 1-to-50 slider only shows a difference
+  // below 5 and is inert for its whole upper range. The real product has the
+  // slider and no Limit, which is the argument for dropping ours. Flag.
+  const shown = reviews.slice(0, widget.design.count);
 
-  if (reviews.length === 0) {
+  if (shown.length === 0) {
     return (
       <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
         No reviews match yet. Widen the filter, or pick some reviews.
@@ -1133,21 +1498,39 @@ function WidgetPreview({ widget, reviews, full }) {
   }
 
   if (widget.format === "carousel") {
-    return <CarouselWidget widget={widget} reviews={reviews} skin={skin} branded={branded} />;
+    return <CarouselWidget widget={widget} reviews={shown} skin={skin} />;
   }
 
   return (
-    <div className={`flex min-w-0 flex-col gap-3 rounded-lg p-4 ${skin.shell}`}>
-      <WidgetHeader design={widget.design} skin={skin} />
-      {(full ? reviews : reviews.slice(0, 4)).map((r) => (
-        <PreviewReview key={r.id} review={r} design={widget.design} skin={skin} />
-      ))}
-      {!full && reviews.length > 4 ? (
-        <span className={`text-center text-xs ${skin.meta}`}>
-          and {reviews.length - 4} more review{reviews.length - 4 === 1 ? "" : "s"}
+    <div className="flex min-w-0 flex-col gap-3 p-4" style={skin.shell}>
+      <WidgetHeader design={widget.design} skin={skin} reviews={shown} />
+      {/* THE COLUMN COUNT AND THE MAX HEIGHT, both on this one box: a grid of
+          one, two or three, capped in height and scrolling inside.
+          minmax(0, 1fr) rather than 1fr because a review card's min-content
+          width is its longest word plus the stars, and three auto columns of
+          that overflowed a phone (the same bug the settings grid hit in
+          September).
+          ASSUMPTION: the real control is called "Desktop layout display", so
+          it presumably drops to one column on a phone. An inline style
+          carries no media query, so the count applies at every width here;
+          the 0-minimum columns keep it from overflowing. */}
+      <div
+        className="grid gap-3"
+        data-hook="widget-reviews"
+        style={{
+          ...skin.scroller,
+          gridTemplateColumns: `repeat(${skin.columns}, minmax(0, 1fr))`,
+        }}
+      >
+        {(full ? shown : shown.slice(0, 4)).map((r) => (
+          <PreviewReview key={r.id} review={r} design={widget.design} skin={skin} />
+        ))}
+      </div>
+      {!full && shown.length > 4 ? (
+        <span style={{ ...skin.meta, textAlign: "center" }}>
+          and {shown.length - 4} more review{shown.length - 4 === 1 ? "" : "s"}
         </span>
       ) : null}
-      {branded ? <WidgetBranding skin={skin} /> : null}
     </div>
   );
 }
@@ -1482,7 +1865,7 @@ function ReviewList({ widget, setWidget }) {
           </div>
         ) : (
           <TooltipProvider>
-          <div className={`flex flex-col gap-3 rounded-lg p-4 ${skin.shell}`}>
+          <div className="flex flex-col gap-3 p-4" style={skin.shell}>
             {shown.map((r) =>
               picked ? (
                 <PickerRow
@@ -1661,8 +2044,8 @@ const SECTIONS = [
   },
   {
     id: "design",
-    rail: "Design",
-    sub: "Display and information",
+    rail: "Widget Design",
+    sub: "How your reviews look",
     Icon: Palette,
     hint: "How each review looks on your site",
   },
@@ -1777,35 +2160,99 @@ function sectionRows(id, widget, reviews) {
   if (id === "design") {
     if (widget.format === "json") return null;
     const d = widget.design;
+    const preset = presetOf(d);
     const shown = [
       d.showName ? "Reviewer's name" : null,
-      d.showSource ? "Review source" : null,
-      d.showDate ? "Review date" : null,
+      d.showSource ? "Review site icon" : null,
+      d.dateFormat !== "hidden" ? "Review date" : null,
     ].filter(Boolean);
-    // THREE GROUPS, SAME ORDER AS THE SHEET (Ali, 7 Sep: "In Design we need
-    // sub headers to break up all those key values, there are a lot, so some
-    // kind of grouping: Display, Information, Animation"). Animation only for
-    // a carousel: format-driven, so no group ever flickers, and a heading
-    // never renders without rows. Every row is always present within its
-    // group, so toggling never moves a row above the widget.
+    // THE SHEET'S OWN GROUPS, IN THE SHEET'S ORDER (Ali, 7 Sep: "In Design we
+    // need sub headers to break up all those key values, there are a lot, so
+    // some kind of grouping"). The headings are now the real screen's:
+    // Preset, Layout, Container, Text, Reviews, and Animation for a carousel
+    // only. Format-driven, so no group ever flickers, and a heading never
+    // renders without rows. Every row is always present within its group, so
+    // toggling never moves a row above the widget.
     const groups = [
       {
-        id: "display",
-        heading: "Display",
+        id: "preset",
+        heading: "Preset",
         rows: [
-          { k: "Mode", v: d.theme === "dark" ? "Dark" : "Light" },
-          { k: "Corners", v: d.corners === "square" ? "Square" : "Rounded" },
-          { k: "Branding", v: d.branding !== false ? "Shown" : "Hidden" },
+          {
+            k: "Design preset",
+            v: preset === "custom" ? "Custom" : DESIGN_PRESETS[preset].label,
+          },
         ],
       },
       {
-        id: "information",
-        heading: "Information",
+        id: "layout",
+        heading: "Layout",
         rows: [
+          { k: "Widget max height", v: `${d.maxHeight}px` },
+          {
+            k: "Desktop layout",
+            v: COLUMN_OPTIONS.find((o) => o.id === d.columns)?.label ?? "One column",
+          },
+          { k: "Reviews to show", v: `${d.count}` },
+        ],
+      },
+      {
+        id: "container",
+        heading: "Container",
+        rows: [
+          { k: "Background", v: d.bg },
+          { k: "Corner radius", v: `${d.radius}px` },
+          { k: "Border", v: d.borderOn ? `${d.borderWidth}px ${d.borderColor}` : "None" },
+          {
+            k: "Shadow",
+            v: shadowLabel(d.shadowOn, d.shadowX, d.shadowY, d.shadowBlur, d.shadowSpread, d.shadowColor),
+          },
           { k: "Title", v: headerTitle(d) || "None" },
-          { k: "Summary", v: d.summary !== false ? "Shown" : "Hidden" },
-          { k: "Review text", v: d.length === "full" ? "In full" : "Short snippet" },
+          {
+            k: "Review summary",
+            v: SUMMARY_OPTIONS.find((o) => o.id === d.summary)?.label ?? "None",
+          },
+        ],
+      },
+      {
+        id: "text",
+        heading: "Text",
+        rows: [
+          { k: "Font", v: d.font },
+          { k: "Color", v: d.color },
+          { k: "Link color", v: d.linkColor },
+          { k: "Size", v: `${d.size}px` },
+          { k: "Alignment", v: ALIGN_OPTIONS.find((o) => o.id === d.align)?.label ?? "Left" },
+        ],
+      },
+      {
+        id: "reviews",
+        heading: "Reviews",
+        rows: [
           { k: "Show on each review", v: shown.length ? shown.join(", ") : "Nothing extra" },
+          {
+            k: "Date format",
+            v: DATE_FORMATS.find((o) => o.id === d.dateFormat)?.label ?? "Hidden",
+          },
+          { k: "Character count", v: `${d.chars} characters` },
+          { k: "Schema", v: d.schema ? "Included" : "Not included" },
+          { k: "Background", v: d.reviewBg },
+          { k: "Corner radius", v: `${d.reviewRadius}px` },
+          {
+            k: "Border",
+            v: d.reviewBorderOn ? `${d.reviewBorderWidth}px ${d.reviewBorderColor}` : "None",
+          },
+          {
+            k: "Shadow",
+            v: shadowLabel(
+              d.reviewShadowOn,
+              d.reviewShadowX,
+              d.reviewShadowY,
+              d.reviewShadowBlur,
+              d.reviewShadowSpread,
+              d.reviewShadowColor,
+            ),
+          },
         ],
       },
     ];
@@ -2000,7 +2447,7 @@ function SectionCard({ section, widget, reviews, onEdit, issue = null }) {
                 </div>
               ) : null,
               ...group.rows.map((row) => (
-                <div key={row.k} className="flex items-baseline justify-between gap-3 py-1.5">
+                <div key={`${group.id}-${row.k}`} className="flex items-baseline justify-between gap-3 py-1.5">
                   <dt className="text-muted-foreground shrink-0">{row.k}</dt>
                   <dd className="text-right">{row.v}</dd>
                 </div>
@@ -2067,187 +2514,768 @@ function SwitchRow({ id, label, checked, onChange }) {
   );
 }
 
-// Returns a FRAGMENT: [sticky live preview, controls]. Mounted directly in
-// the sheet's scroller so the preview can stick (see ReviewList for the
-// same rule).
-function DesignSheetBody({ widget, setWidget }) {
-  const c = carouselOf(widget.design);
-  // LIVE PREVIEW AT THE TOP OF THE SHEET (Ali, 7 Sep: "the problem here is
-  // that we can't actually see the changes live; maybe we would have one
-  // item shown as a preview?"). The sheet covers the card's preview, so a
-  // compact one rides here: the SAME WidgetPreview in the registry
-  // PreviewFrame, fed the first review for a list and the first three for a
-  // carousel so arrows and dots have something to do. Sticky, a direct
-  // child of the DrawerBody, so the controls scroll under it.
-  const sample = resolveReviews(widget).slice(0, widget.format === "carousel" ? 3 : 1);
+/* ---------------------------- design field kit ---------------------------- */
+
+// FOUR SMALL FIELDS CARRY EVERY REPEAT in the Widget Design panel: a number
+// with a unit, a slider with its readout, a checkbox row, and a colour. There
+// are seven colours and nine numbers on that panel, so writing each one out
+// would be the "repeated JSX" this file keeps out of its way, and it is what
+// guarantees the Border colour behaves exactly like the Shadow colour.
+
+// A NUMBER THAT CAN BE CLEARED WHILE YOU TYPE. The value on the record is
+// always a number, but the field keeps the text you actually typed, so
+// clearing it to retype does not slam a 0 onto the widget and fight you. The
+// text resyncs only when the value moved somewhere else (a preset), which is
+// why the guard compares the PARSED text rather than the string: typing "007"
+// leaves "007" alone while the record holds 7.
+//
+// THE FLOOR IS CLAMPED ON WRITE, THE CEILING ON BLUR. Waiting for blur on both
+// was the wrong half: select all in "Widget max height" and retype it and the
+// record passed through 1, then 12, then 120, so the preview directly above
+// collapsed to a one-pixel sliver and sprang back under the cursor. Holding the
+// floor on write stops that; the typed text is left exactly as typed, so the
+// field still reads what you are in the middle of writing. The ceiling can
+// wait, because an in-flight 4000 in a field that maxes at 64 only makes the
+// preview look extreme for a keystroke, not broken.
+function NumberField({ id, label, value, min, max, suffix = "px", onChange }) {
+  const [text, setText] = useState(String(value));
+  useEffect(() => {
+    setText((t) => (Number(t) === value ? t : String(value)));
+  }, [value]);
   return (
-    <>
-      <div className="bg-background sticky top-0 z-10 border-b px-4 py-3" data-hook="design-live-preview">
-        <PreviewFrame surface="none" dataHook="preview-frame-design-sheet">
-          <WidgetPreview widget={widget} reviews={sample} />
-        </PreviewFrame>
+    <Field dataHook={`${id}-field`}>
+      <FieldLabel htmlFor={id} dataHook={`${id}-label`}>
+        {label}
+      </FieldLabel>
+      <InputGroup dataHook={`${id}-group`}>
+        <InputGroupInput
+          id={id}
+          dataHook={id}
+          type="number"
+          inputMode="numeric"
+          min={min}
+          max={max}
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            if (e.target.value.trim() === "") return;
+            const n = Number(e.target.value);
+            if (Number.isFinite(n)) onChange(Math.max(min, n));
+          }}
+          onBlur={() => {
+            const n = Number(text);
+            const next = Math.min(max, Math.max(min, Number.isFinite(n) ? n : value));
+            setText(String(next));
+            if (next !== value) onChange(next);
+          }}
+        />
+        <InputGroupAddon align="inline-end" className="text-muted-foreground pr-3">
+          {suffix}
+        </InputGroupAddon>
+      </InputGroup>
+    </Field>
+  );
+}
+
+// A SLIDER WITH ITS NUMBER BESIDE IT, as the real screen shows it. The slider
+// is the control; the figure is a readout, not a second input, so there is
+// only ever one way to set the value.
+//
+// THE ONE FIELD WHOSE LABEL CANNOT USE htmlFor ALONE. Checked in the DS dist:
+// Slider spreads `id` onto the Radix Root, which renders a <span>, and a span
+// is not a labelable element, so the label/control pair never forms and the
+// visible text is doing nothing. Every other field in this kit resolves to a
+// real input, so the sliders were the odd two out. FieldLabel requires
+// htmlFor, so it stays, and the working link is the label's own id read back
+// by aria-labelledby. The thumb keeps its aria-label through thumbLabels, so
+// the accessible name was always right; this is about the visible text being
+// tied to the control it names.
+function SliderField({ id, label, value, min, max, suffix = "", onChange }) {
+  return (
+    <Field dataHook={`${id}-field`}>
+      <FieldLabel id={`${id}-label`} htmlFor={id} dataHook={`${id}-label`}>
+        {label}
+      </FieldLabel>
+      <div className="flex items-center gap-3">
+        <Slider
+          id={id}
+          dataHook={id}
+          aria-labelledby={`${id}-label`}
+          className="grow"
+          min={min}
+          max={max}
+          step={1}
+          value={[value]}
+          onValueChange={(v) => onChange(v[0])}
+          thumbLabels={[label]}
+        />
+        <span
+          className="text-muted-foreground w-12 shrink-0 text-right text-sm tabular-nums"
+          data-hook={`${id}-value`}
+        >
+          {value}
+          {suffix}
+        </span>
       </div>
-    <div className="flex flex-col gap-5 px-4 py-4" data-hook="design-controls">
-      {/* THE SAME THREE GROUPS AS THE CARD, in the same order (Ali, 7 Sep):
-          Display, Information, and Animation for a carousel only. A heading
-          above each group's fields, a Separator between groups; the old
-          single "Carousel" label is gone. Animation is format-driven, so
-          nothing here appears or disappears while you toggle. */}
-      <p className={GROUP_HEADING_CLASS} data-hook="design-group-display">
-        Display
-      </p>
-      <Field dataHook="design-theme-field">
-        {/* "Mode", not "Background" (coordinator, 7 Sep): Light / Dark is the
-            colour mode of the whole showcase, not one surface. The data key
-            stays design.theme. */}
-        <FieldLabel htmlFor="design-theme-light" dataHook="design-theme-label">
-          Mode
-        </FieldLabel>
-        <ChoiceCards
-          name="design-theme"
-          value={widget.design.theme}
-          onChange={(v) => setWidget((w) => ({ ...w, design: { ...w.design, theme: v } }))}
-          columns={2}
-          options={[
-            { id: "light", label: "Light" },
-            { id: "dark", label: "Dark" },
-          ]}
-        />
-      </Field>
-      <Field dataHook="design-corners-field">
-        <FieldLabel htmlFor="design-corners-rounded" dataHook="design-corners-label">
-          Corners
-        </FieldLabel>
-        <ChoiceCards
-          name="design-corners"
-          value={widget.design.corners}
-          onChange={(v) => setWidget((w) => ({ ...w, design: { ...w.design, corners: v } }))}
-          columns={2}
-          options={[
-            { id: "rounded", label: "Rounded" },
-            { id: "square", label: "Square" },
-          ]}
-        />
-      </Field>
-      <SwitchRow
-        id="design-branding"
-        label="Show BrightLocal branding"
-        checked={widget.design.branding !== false}
-        onChange={(v) => setWidget((w) => ({ ...w, design: { ...w.design, branding: v } }))}
+    </Field>
+  );
+}
+
+// ONE CHECKBOX ROW, the same shape as SwitchRow above it and for the same
+// measured reason (the horizontal Field is a grid with align-items start, so
+// both cells need self-center). Checkboxes rather than switches because on the
+// real screen these REVEAL a group of fields rather than turning a thing on.
+function CheckRow({ id, label, checked, onChange }) {
+  return (
+    <Field orientation="horizontal" dataHook={`${id}-field`}>
+      <Checkbox
+        id={id}
+        dataHook={id}
+        className="mt-0 self-center"
+        checked={checked}
+        onCheckedChange={(v) => onChange(!!v)}
       />
-      <Separator dataHook="design-group-rule-information" />
-      <p className={GROUP_HEADING_CLASS} data-hook="design-group-information">
-        Information
-      </p>
-      <Field dataHook="design-title-field">
-        <FieldLabel htmlFor="design-title" dataHook="design-title-label">
-          Title
+      <FieldContent className="self-center">
+        <FieldLabel htmlFor={id} dataHook={`${id}-label`}>
+          {label}
         </FieldLabel>
-        <Input
-          id="design-title"
-          dataHook="design-title"
-          value={widget.design.title ?? ""}
-          placeholder="Customer Reviews"
-          onChange={(e) => setWidget((w) => ({ ...w, design: { ...w.design, title: e.target.value } }))}
+      </FieldContent>
+    </Field>
+  );
+}
+
+// ONE COLOUR FIELD, USED BY ALL SEVEN COLOURS. The DS has no colour picker, so
+// this is the DS Input carrying the hex, plus a square swatch button in the
+// group's end addon that opens a DS Popover holding the browser's own
+// <input type="color">. Typing and picking write the same value; the preview
+// ignores a half-typed hex until it is one (see `hex`), so the widget never
+// blanks mid-keystroke.
+function ColorField({ id, label, value, onChange }) {
+  return (
+    <Field dataHook={`${id}-field`}>
+      <FieldLabel htmlFor={id} dataHook={`${id}-label`}>
+        {label}
+      </FieldLabel>
+      <InputGroup dataHook={`${id}-group`}>
+        <InputGroupInput
+          id={id}
+          dataHook={id}
+          value={value}
+          spellCheck={false}
+          placeholder="#FFFFFF"
+          onChange={(e) => onChange(e.target.value)}
         />
-        <FieldDescription dataHook="design-title-desc">Leave empty for no title.</FieldDescription>
-      </Field>
-      <SwitchRow
-        id="design-summary"
-        label="Show total reviews and average"
-        checked={widget.design.summary !== false}
-        onChange={(v) => setWidget((w) => ({ ...w, design: { ...w.design, summary: v } }))}
-      />
-      <Field dataHook="design-length-field">
-        <FieldLabel htmlFor="design-length-full" dataHook="design-length-label">
-          Review text
-        </FieldLabel>
-        <ChoiceCards
-          name="design-length"
-          value={widget.design.length}
-          onChange={(v) => setWidget((w) => ({ ...w, design: { ...w.design, length: v } }))}
-          columns={2}
-          options={[
-            { id: "full", label: "In full" },
-            { id: "snippet", label: "Short snippet" },
-          ]}
-        />
-      </Field>
-      <Field dataHook="design-show-field">
-        <FieldLabel htmlFor="design-showname" dataHook="design-show-label">
-          Show on each review
-        </FieldLabel>
-        <div className="flex flex-col gap-2">
-          {[
-            { key: "showName", label: "Reviewer's name" },
-            { key: "showSource", label: "Review source" },
-            { key: "showDate", label: "Review date" },
-          ].map((o) => (
-            <Field key={o.key} orientation="horizontal">
-              <Checkbox
-                id={`design-${o.key.toLowerCase()}`}
-                dataHook={`design-${o.key.toLowerCase()}`}
-                checked={widget.design[o.key]}
-                onCheckedChange={(v) =>
-                  setWidget((w) => ({ ...w, design: { ...w.design, [o.key]: !!v } }))
-                }
+        <InputGroupAddon align="inline-end" className="pr-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                data-hook={`${id}-swatch`}
+                aria-label={`${label}: pick a colour`}
+                className="border-input size-5 shrink-0 rounded-sm border"
+                style={{ background: hex(value, "#FFFFFF") }}
               />
-              <FieldLabel htmlFor={`design-${o.key.toLowerCase()}`} dataHook={`design-${o.key.toLowerCase()}-label`}>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-auto p-2" dataHook={`${id}-picker-popover`}>
+              <input
+                type="color"
+                data-hook={`${id}-picker`}
+                aria-label={`${label} colour`}
+                className="h-28 w-32 cursor-pointer border-0 bg-transparent p-0"
+                value={hex6(value, "#FFFFFF")}
+                onChange={(e) => onChange(e.target.value.toUpperCase())}
+              />
+            </PopoverContent>
+          </Popover>
+        </InputGroupAddon>
+      </InputGroup>
+    </Field>
+  );
+}
+
+// A LABELLED RADIO GROUP, for the two settings the real screen puts on radios
+// rather than a select: the date format and the character count.
+function RadioField({ id, label, value, options, onChange }) {
+  return (
+    <Field dataHook={`${id}-field`}>
+      <FieldLabel htmlFor={`${id}-${options[0].id}`} dataHook={`${id}-label`}>
+        {label}
+      </FieldLabel>
+      <RadioGroup
+        dataHook={`${id}-radio-group`}
+        value={String(value)}
+        onValueChange={onChange}
+        aria-label={label}
+      >
+        <div className="flex flex-col gap-2">
+          {options.map((o) => (
+            <Field key={o.id} orientation="horizontal">
+              <RadioGroupItem id={`${id}-${o.id}`} value={String(o.id)} />
+              <FieldLabel htmlFor={`${id}-${o.id}`} dataHook={`${id}-${o.id}-label`}>
                 {o.label}
               </FieldLabel>
             </Field>
           ))}
         </div>
-      </Field>
-      {widget.format === "carousel" ? (
-        <>
-          <Separator dataHook="design-group-rule-animation" />
-          <p className={GROUP_HEADING_CLASS} data-hook="design-group-animation">
-            Animation
-          </p>
-          <SwitchRow id="design-loop" label="Loop" checked={c.loop} onChange={(v) => patchCarousel(setWidget, { loop: v })} />
-          <SwitchRow
-            id="design-autoplay"
-            label="Autoplay"
-            checked={c.autoplay}
-            onChange={(v) => patchCarousel(setWidget, { autoplay: v })}
+      </RadioGroup>
+    </Field>
+  );
+}
+
+// THE FOUR SHADOW NUMBERS AND ITS COLOUR, once, for the container's shadow and
+// the review card's alike. `prefix` picks which set of keys it writes:
+// "shadow" or "reviewShadow". Two-up rather than four-up because "Spread" in
+// a quarter of a 24rem drawer is a truncated word with a number under it.
+function ShadowFields({ hook, prefix, design, set }) {
+  return (
+    <div className="flex flex-col gap-3 pl-6" data-hook={`${hook}-fields`}>
+      <div className="grid grid-cols-2 gap-3">
+        {SHADOW_PARTS.map((p) => (
+          <NumberField
+            key={p.id}
+            id={`${hook}-${p.id}`}
+            label={p.label}
+            value={design[`${prefix}${p.key}`]}
+            min={-64}
+            max={64}
+            onChange={(n) => set({ [`${prefix}${p.key}`]: n })}
           />
-          {/* The "Every" select is always drawn and merely disabled while
-              Autoplay is off, so switching Autoplay changes an emphasis rather
-              than reflowing the sheet. */}
-          <Field dataHook="design-every-field">
-            <FieldLabel htmlFor="design-every" dataHook="design-every-label">
-              Every
-            </FieldLabel>
-            {/* 8rem (the w-32 step) and left-aligned under its label. The DS
-                trigger is full width inside a Field, so the width lives on a
-                wrapper; as an inline style because the preview's precompiled
-                stylesheet carries no w-32 (measured: the class computed to the
-                full 607px), and an unavailable utility is worse than a value. */}
-            <div style={{ width: "8rem" }}>
-              <Select
-                value={String(c.every)}
-                disabled={!c.autoplay}
-                onValueChange={(v) => patchCarousel(setWidget, { every: Number(v) })}
-              >
-                <SelectTrigger id="design-every" dataHook="design-every" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {AUTOPLAY_EVERY.map((s) => (
-                    <SelectItem key={s} value={String(s)}>
-                      {s} seconds
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </Field>
-          <SwitchRow id="design-arrows" label="Show arrows" checked={c.arrows} onChange={(v) => patchCarousel(setWidget, { arrows: v })} />
-          <SwitchRow id="design-dots" label="Show dots" checked={c.dots} onChange={(v) => patchCarousel(setWidget, { dots: v })} />
-        </>
-      ) : null}
+        ))}
+      </div>
+      <ColorField
+        id={`${hook}-color`}
+        label="Color"
+        value={design[`${prefix}Color`]}
+        onChange={(v) => set({ [`${prefix}Color`]: v })}
+      />
     </div>
+  );
+}
+
+// A PRESET TILE'S THUMBNAIL: the preset's own values, drawn as a tiny review
+// card through the SAME previewSkin the real widget uses. So the tile cannot
+// drift from what picking it does, and the three looks differ on the tile for
+// the same reasons they differ on the site: corners, borders, shadow, ground.
+// aria-hidden, because the tile's name is what is being chosen.
+function PresetThumb({ values }) {
+  const skin = previewSkin(values);
+  return (
+    <div
+      aria-hidden="true"
+      className="flex h-14 flex-col justify-center overflow-hidden p-1.5"
+      style={{ ...skin.shell, fontSize: "10px" }}
+    >
+      <div className="flex flex-col gap-1 p-1.5" style={skin.card}>
+        <div className="flex items-center gap-0.5">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <span
+              key={i}
+              className="block size-1 rounded-[1px]"
+              style={{ background: skin.name.color, opacity: 0.7 }}
+            />
+          ))}
+        </div>
+        <span
+          className="block h-1 w-full rounded-[1px]"
+          style={{ background: skin.name.color, opacity: 0.3 }}
+        />
+        <span
+          className="block h-1 w-2/3 rounded-[1px]"
+          style={{ background: skin.name.color, opacity: 0.18 }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// THE PRESET TILES (Ali, 20 Sep, from the real Widget Design screen). Three
+// named looks at the top of the panel, outside the groups, each showing what
+// it does rather than naming it. CUSTOM IS NOT SOMETHING YOU PICK: it appears,
+// already chosen, the moment one setting differs from the preset you were on,
+// and it goes again the moment you pick a preset back. Its thumbnail is the
+// live design, so it shows what you have actually made.
+//
+// A DS RadioGroup, not a row of buttons: one of these is always true, which is
+// what a radio group is for, and it comes with the arrow-key behaviour.
+function PresetTiles({ design, value, onChange }) {
+  const tiles = [
+    ...PRESET_ORDER.map((id) => ({ id, label: DESIGN_PRESETS[id].label, values: DESIGN_PRESETS[id].values })),
+    ...(value === "custom" ? [{ id: "custom", label: "Custom", values: design }] : []),
+  ];
+  return (
+    <Field dataHook="design-preset-field">
+      <FieldLabel htmlFor="design-preset-modern" dataHook="design-preset-label">
+        Design preset
+      </FieldLabel>
+      <RadioGroup
+        dataHook="design-preset-radio-group"
+        value={value}
+        // Custom is a readout, so picking it does nothing; picking a real
+        // preset writes every field it owns.
+        onValueChange={(v) => (v && v !== "custom" ? onChange(v) : null)}
+        aria-label="Design preset"
+      >
+        {/* Two-up, whether there are three tiles or four: the panel is 24rem
+            at its narrowest, and four across there is a 70px thumbnail. */}
+        <div className="grid grid-cols-2 gap-3">
+          {tiles.map((t) => (
+            <Field key={t.id} variant="box" dataHook={`design-preset-${t.id}-tile`}>
+              <PresetThumb values={t.values} />
+              <div className="flex items-center gap-2">
+                <RadioGroupItem id={`design-preset-${t.id}`} value={t.id} />
+                <FieldLabel htmlFor={`design-preset-${t.id}`} dataHook={`design-preset-${t.id}-label`}>
+                  {t.label}
+                </FieldLabel>
+              </div>
+            </Field>
+          ))}
+        </div>
+      </RadioGroup>
+    </Field>
+  );
+}
+
+// Returns a FRAGMENT: [sticky live preview, controls]. Mounted directly in
+// the sheet's scroller so the preview can stick (see ReviewList for the
+// same rule).
+function DesignSheetBody({ widget, setWidget }) {
+  const c = carouselOf(widget.design);
+  const d = widget.design;
+  const preset = presetOf(d);
+  // ONE WRITE PATH for every design field, so no control carries its own
+  // spread and nothing can forget a key.
+  const set = (patch) => setWidget((w) => ({ ...w, design: { ...w.design, ...patch } }));
+  // A preset writes every field it owns in one go (Ali, 20 Sep: picking a
+  // preset "sets every control below to that preset's values"). The carousel
+  // settings are not a preset's business, so they survive it, and neither is
+  // the widget title: see PRESET_KEYS for why the words someone typed are the
+  // one thing a look is not allowed to overwrite. What a preset DOES rewrite
+  // beyond the styling (the Layout numbers, and the Reviews group's Schema,
+  // name, icon and date-format settings) is spelled out in the same comment.
+  const applyPreset = (id) => {
+    const { title: _title, ...look } = DESIGN_PRESETS[id].values;
+    set(look);
+  };
+  // LIVE PREVIEW AT THE TOP OF THE SHEET (Ali, 7 Sep: "the problem here is
+  // that we can't actually see the changes live; maybe we would have one
+  // item shown as a preview?"). The sheet covers the card's preview, so a
+  // compact one rides here: the SAME WidgetPreview in the registry
+  // PreviewFrame. Sticky, a direct child of the DrawerBody, so the controls
+  // scroll under it.
+  //
+  // THE SHOWCASE'S REAL SET, NOT A SAMPLE. It used to be a hard two reviews
+  // (three for a carousel), which quietly made three controls unjudgeable at
+  // the moment you were setting them: "Number of reviews to show" changed
+  // nothing, "Widget max height" had nothing to cap, and "Review summary:
+  // Selected" read "2 Total Reviews" with the average of those two, a figure
+  // that was an artefact of the sample size rather than anything the showcase
+  // would publish. Handing over the resolved set lets WidgetPreview apply the
+  // count itself, so every one of the three now answers.
+  const sample = resolveReviews(widget);
+  return (
+    <>
+      {/* BOUNDED, because the widget is not. Now that the preview holds the
+          real set it can run to four cards of 280-character reviews, and a
+          sticky block that tall would leave no room for the controls it
+          exists to explain. An inline style rather than a utility class so it
+          survives wherever this screen renders. The widget's own "Widget max
+          height" still bites first at anything under this, which is where
+          that setting is worth watching anyway. */}
+      <div
+        className="bg-background sticky top-0 z-10 border-b px-4 py-3"
+        style={{ maxHeight: "45vh", overflowY: "auto" }}
+        data-hook="design-live-preview"
+      >
+        <PreviewFrame surface="none" dataHook="preview-frame-design-sheet">
+          <WidgetPreview widget={widget} reviews={sample} />
+        </PreviewFrame>
+      </div>
+      <div className="flex flex-col gap-5 px-4 py-4" data-hook="design-controls">
+        {/* The real screen's own line, under the panel title. */}
+        <p className="text-muted-foreground text-sm" data-hook="design-intro">
+          Customize your widget so it displays your reviews how you want your customers to see them.
+        </p>
+        <PresetTiles design={d} value={preset} onChange={applyPreset} />
+        {/* FOUR COLLAPSIBLE GROUPS, in the real screen's order and with its
+            names: Layout, Container, Text, Reviews. DS Accordion,
+            type="multiple" so closing one never opens another, and every one
+            open on arrival: this is a settings list, not a quiz. Animation is
+            a fifth for the carousel, format-driven, so nothing appears or
+            disappears while you work. */}
+        <Accordion
+          type="multiple"
+          dataHook="design-groups"
+          defaultValue={["layout", "container", "text", "reviews", "animation"]}
+        >
+          <AccordionItem value="layout">
+            <AccordionTrigger data-hook="design-group-layout">Layout</AccordionTrigger>
+            <AccordionContent className="flex flex-col gap-5 pt-1">
+              <NumberField
+                id="design-max-height"
+                label="Widget max height"
+                value={d.maxHeight}
+                min={200}
+                max={4000}
+                onChange={(n) => set({ maxHeight: n })}
+              />
+              <Field dataHook="design-columns-field">
+                <FieldLabel htmlFor="design-columns-1" dataHook="design-columns-label">
+                  Desktop layout display
+                </FieldLabel>
+                {/* GLYPHS, NAMED. The real screen draws three grid glyphs and
+                    no words, so each item carries its name as its accessible
+                    label instead of as visible text. The guard on the change
+                    keeps one column always chosen: a ToggleGroup sends an
+                    empty value when you press the item that is already on. */}
+                <ToggleGroup
+                  type="single"
+                  variant="outline"
+                  dataHook="design-columns"
+                  value={d.columns}
+                  onValueChange={(v) => (v ? set({ columns: v }) : null)}
+                  aria-label="Desktop layout display"
+                >
+                  {COLUMN_OPTIONS.map((o) => (
+                    <ToggleGroupItem
+                      key={o.id}
+                      id={`design-columns-${o.id}`}
+                      value={o.id}
+                      dataHook={`design-columns-${o.id}`}
+                      aria-label={o.label}
+                    >
+                      <o.Icon className="size-4" />
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </Field>
+              <SliderField
+                id="design-count"
+                label="Number of reviews to show"
+                value={d.count}
+                min={1}
+                max={50}
+                onChange={(n) => set({ count: n })}
+              />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="container">
+            <AccordionTrigger data-hook="design-group-container">Container</AccordionTrigger>
+            <AccordionContent className="flex flex-col gap-5 pt-1">
+              <ColorField id="design-bg" label="Background" value={d.bg} onChange={(v) => set({ bg: v })} />
+              <NumberField
+                id="design-radius"
+                label="Corner radius"
+                value={d.radius}
+                min={0}
+                max={64}
+                onChange={(n) => set({ radius: n })}
+              />
+              {/* A CHECKBOX THAT REVEALS ITS FIELDS, as the real screen has
+                  it. The values stay on the record while the box is off, so
+                  unticking and reticking gives back what was set rather than
+                  the default. */}
+              <CheckRow
+                id="design-border"
+                label="Customize border"
+                checked={d.borderOn}
+                onChange={(v) => set({ borderOn: v })}
+              />
+              {d.borderOn ? (
+                <div className="grid grid-cols-2 gap-3 pl-6" data-hook="design-border-fields">
+                  <NumberField
+                    id="design-border-width"
+                    label="Width"
+                    value={d.borderWidth}
+                    min={0}
+                    max={20}
+                    onChange={(n) => set({ borderWidth: n })}
+                  />
+                  <ColorField
+                    id="design-border-color"
+                    label="Color"
+                    value={d.borderColor}
+                    onChange={(v) => set({ borderColor: v })}
+                  />
+                </div>
+              ) : null}
+              <CheckRow
+                id="design-shadow"
+                label="Customize shadow"
+                checked={d.shadowOn}
+                onChange={(v) => set({ shadowOn: v })}
+              />
+              {d.shadowOn ? (
+                <ShadowFields hook="design-shadow" prefix="shadow" design={d} set={set} />
+              ) : null}
+              <CheckRow
+                id="design-title-on"
+                label="Customize widget title"
+                checked={d.titleOn}
+                onChange={(v) => set({ titleOn: v })}
+              />
+              {d.titleOn ? (
+                <Field dataHook="design-title-field" className="pl-6">
+                  <FieldLabel htmlFor="design-title" dataHook="design-title-label">
+                    Title text
+                  </FieldLabel>
+                  <Input
+                    id="design-title"
+                    dataHook="design-title"
+                    value={d.title ?? ""}
+                    placeholder="Customer Reviews"
+                    onChange={(e) => set({ title: e.target.value })}
+                  />
+                </Field>
+              ) : null}
+              <Field dataHook="design-summary-field">
+                <FieldLabel htmlFor="design-summary" dataHook="design-summary-label">
+                  Review summary
+                </FieldLabel>
+                {/* 10rem and left-aligned under its label, as an inline style
+                    for the reason the Every select carries one: the preview's
+                    precompiled stylesheet does not always carry a w-* step,
+                    and an unavailable utility is worse than a value. */}
+                <div style={{ width: "10rem" }}>
+                  <Select value={d.summary} onValueChange={(v) => set({ summary: v })}>
+                    <SelectTrigger id="design-summary" dataHook="design-summary" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SUMMARY_OPTIONS.map((o) => (
+                        <SelectItem key={o.id} value={o.id}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <FieldDescription dataHook="design-summary-desc">
+                  All counts every review this location has. Selected counts only the reviews this
+                  showcase publishes.
+                </FieldDescription>
+              </Field>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="text">
+            <AccordionTrigger data-hook="design-group-text">Text</AccordionTrigger>
+            <AccordionContent className="flex flex-col gap-5 pt-1">
+              <Field dataHook="design-font-field">
+                <FieldLabel htmlFor="design-font" dataHook="design-font-label">
+                  Font
+                </FieldLabel>
+                {/* Each option is drawn in its own face, so the list shows the
+                    difference rather than naming it. */}
+                <Select value={d.font} onValueChange={(v) => set({ font: v })}>
+                  <SelectTrigger id="design-font" dataHook="design-font" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FONTS.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        <span style={{ fontFamily: f.stack }}>{f.id}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <ColorField id="design-color" label="Color" value={d.color} onChange={(v) => set({ color: v })} />
+              <ColorField
+                id="design-link-color"
+                label="Link color"
+                value={d.linkColor}
+                onChange={(v) => set({ linkColor: v })}
+              />
+              <SliderField
+                id="design-size"
+                label="Size"
+                value={d.size}
+                min={14}
+                max={20}
+                suffix="px"
+                onChange={(n) => set({ size: n })}
+              />
+              <Field dataHook="design-align-field">
+                <FieldLabel htmlFor="design-align-left" dataHook="design-align-label">
+                  Alignment
+                </FieldLabel>
+                <ToggleGroup
+                  type="single"
+                  variant="outline"
+                  dataHook="design-align"
+                  value={d.align}
+                  onValueChange={(v) => (v ? set({ align: v }) : null)}
+                  aria-label="Alignment"
+                >
+                  {ALIGN_OPTIONS.map((o) => (
+                    <ToggleGroupItem
+                      key={o.id}
+                      id={`design-align-${o.id}`}
+                      value={o.id}
+                      dataHook={`design-align-${o.id}`}
+                      aria-label={o.label}
+                    >
+                      <o.Icon className="size-4" />
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </Field>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="reviews">
+            <AccordionTrigger data-hook="design-group-reviews">Reviews</AccordionTrigger>
+            <AccordionContent className="flex flex-col gap-5 pt-1">
+              {/* The three on-by-default checkboxes as data, one row each, so
+                  they read as one set and a fourth costs a line. */}
+              <div className="flex flex-col gap-3">
+                {REVIEW_TOGGLES.map((o) => (
+                  <CheckRow
+                    key={o.key}
+                    id={`design-${o.key.toLowerCase()}`}
+                    label={o.label}
+                    checked={d[o.key] !== false}
+                    onChange={(v) => set({ [o.key]: v })}
+                  />
+                ))}
+              </div>
+              <RadioField
+                id="design-date-format"
+                label="Date format"
+                value={d.dateFormat}
+                options={DATE_FORMATS}
+                onChange={(v) => set({ dateFormat: v })}
+              />
+              {/* The count is what the preview actually cuts at, and the tail
+                  is a "Read More" link in the link colour. */}
+              <RadioField
+                id="design-chars"
+                label="Reviews character count"
+                value={d.chars}
+                options={CHAR_COUNTS}
+                onChange={(v) => set({ chars: Number(v) })}
+              />
+              <ColorField
+                id="design-review-bg"
+                label="Background"
+                value={d.reviewBg}
+                onChange={(v) => set({ reviewBg: v })}
+              />
+              <NumberField
+                id="design-review-radius"
+                label="Corner radius"
+                value={d.reviewRadius}
+                min={0}
+                max={64}
+                onChange={(n) => set({ reviewRadius: n })}
+              />
+              <CheckRow
+                id="design-review-border"
+                label="Customize border"
+                checked={d.reviewBorderOn}
+                onChange={(v) => set({ reviewBorderOn: v })}
+              />
+              {d.reviewBorderOn ? (
+                <div className="grid grid-cols-2 gap-3 pl-6" data-hook="design-review-border-fields">
+                  <NumberField
+                    id="design-review-border-width"
+                    label="Width"
+                    value={d.reviewBorderWidth}
+                    min={0}
+                    max={20}
+                    onChange={(n) => set({ reviewBorderWidth: n })}
+                  />
+                  <ColorField
+                    id="design-review-border-color"
+                    label="Color"
+                    value={d.reviewBorderColor}
+                    onChange={(v) => set({ reviewBorderColor: v })}
+                  />
+                </div>
+              ) : null}
+              <CheckRow
+                id="design-review-shadow"
+                label="Customize shadow"
+                checked={d.reviewShadowOn}
+                onChange={(v) => set({ reviewShadowOn: v })}
+              />
+              {d.reviewShadowOn ? (
+                <ShadowFields hook="design-review-shadow" prefix="reviewShadow" design={d} set={set} />
+              ) : null}
+            </AccordionContent>
+          </AccordionItem>
+
+          {widget.format === "carousel" ? (
+            <AccordionItem value="animation">
+              <AccordionTrigger data-hook="design-group-animation">Animation</AccordionTrigger>
+              <AccordionContent className="flex flex-col gap-5 pt-1">
+                {/* KEPT, NOT REBUILT. The real Widget Design screen has no
+                    carousel settings, but our Carousel showcase is a carousel
+                    and its loop, autoplay and controls are real behaviour, so
+                    they stay where they were rather than being deleted along
+                    with Mode and the branding line.
+                    ASSUMPTION: Ali may want these somewhere else, or gone. */}
+                <SwitchRow
+                  id="design-loop"
+                  label="Loop"
+                  checked={c.loop}
+                  onChange={(v) => patchCarousel(setWidget, { loop: v })}
+                />
+                <SwitchRow
+                  id="design-autoplay"
+                  label="Autoplay"
+                  checked={c.autoplay}
+                  onChange={(v) => patchCarousel(setWidget, { autoplay: v })}
+                />
+                {/* The "Every" select is always drawn and merely disabled while
+                    Autoplay is off, so switching Autoplay changes an emphasis
+                    rather than reflowing the sheet. */}
+                <Field dataHook="design-every-field">
+                  <FieldLabel htmlFor="design-every" dataHook="design-every-label">
+                    Every
+                  </FieldLabel>
+                  {/* 8rem (the w-32 step) and left-aligned under its label. As
+                      an inline style because the preview's precompiled
+                      stylesheet carries no w-32 (measured: the class computed
+                      to the full 607px), and an unavailable utility is worse
+                      than a value. */}
+                  <div style={{ width: "8rem" }}>
+                    <Select
+                      value={String(c.every)}
+                      disabled={!c.autoplay}
+                      onValueChange={(v) => patchCarousel(setWidget, { every: Number(v) })}
+                    >
+                      <SelectTrigger id="design-every" dataHook="design-every" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AUTOPLAY_EVERY.map((s) => (
+                          <SelectItem key={s} value={String(s)}>
+                            {s} seconds
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </Field>
+                <SwitchRow
+                  id="design-arrows"
+                  label="Show arrows"
+                  checked={c.arrows}
+                  onChange={(v) => patchCarousel(setWidget, { arrows: v })}
+                />
+                <SwitchRow
+                  id="design-dots"
+                  label="Show dots"
+                  checked={c.dots}
+                  onChange={(v) => patchCarousel(setWidget, { dots: v })}
+                />
+              </AccordionContent>
+            </AccordionItem>
+          ) : null}
+        </Accordion>
+      </div>
     </>
   );
 }
