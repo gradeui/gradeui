@@ -1183,7 +1183,7 @@ const STATES = [
        return !!t && t.textContent.trim() === "Customer view"
          && !!document.querySelector('[data-hook="customer-preview-drawer"] [data-hook^="customer-site-"]');
      })()`,
-    "Customer view on a review-only campaign: the review page with its invitation wording and the Review us on Google button, and the footer line that this is exactly what the customer sees."],
+    "Customer view on a review-only campaign: the review page with its invitation wording and the Review us on Google button, and the footer line calling it a preview of what the customer sees."],
   // c3 (thumbs), NOT c6 or c2 (stars): the interactive star control in the
   // drawer throws "ReferenceError: Star is not defined" and blanks the
   // sandbox (probed 7 Sep 2026). Thumbs is the one feedback type whose

@@ -744,6 +744,11 @@
       "why": "Review Builder: the wizard body takes the DS page-header gutter so the section rail and the card line up with the breadcrumb and title (Ali, 20 Sep: \"sidebar nav isnt lining up with the header\"); the Message step carries the product Legal Content (the permission reminder, the physical address with its placeholders, the anti-spam sentence and the Terms and Conditions line), and the hub empty state opens with the blurb from the product (\"Before you get started\" panel), minus the video.",
       "find": "        <DialogContent dataHook=\"legal-info-content\">\n          <DialogHeader>\n            <DialogTitle dataHook=\"legal-info-title\">About the legal footer</DialogTitle>\n            <DialogDescription dataHook=\"legal-info-desc\">\n              A legal footer is part of the terms and conditions. Laws such as CAN-SPAM in the US and\n              the ePrivacy Directive and GDPR in the EU also require marketing email to say who sent\n              it, give a real postal address, and offer a way to opt out.\n",
       "replace": "        <DialogContent dataHook=\"legal-info-content\">\n          <DialogHeader>\n            {/* NAMED FOR THE GROUP, NOT FOR THE OLD FIELD. This explainer sat\n                under a textarea called \"Legal footer\"; that field is the\n                permission reminder now, inside Legal Content, so a title and a\n                button promising \"the legal footer\" sent a reader looking for a\n                control that is not there. The description still says footer\n                because that is the place in the email the content prints, which\n                the group's own intro line names too. */}\n            <DialogTitle dataHook=\"legal-info-title\">About legal content</DialogTitle>\n            <DialogDescription dataHook=\"legal-info-desc\">\n              Legal content is part of the terms and conditions. Laws such as CAN-SPAM in the US and\n              the ePrivacy Directive and GDPR in the EU also require marketing email to say who sent\n              it, give a real postal address, and offer a way to opt out.\n"
+    },
+    {
+      "why": "Customer preview: the footer calls itself a preview (Ali, 20 Sep: \"let's not say exactly\"). It renders the customer page in a drawer at a different width, so \"exactly\" was a promise the preview cannot keep.",
+      "find": "\"This is exactly what your customer sees.\"",
+      "replace": "\"This is a preview of what your customer sees.\""
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [
@@ -2306,6 +2311,11 @@
       "why": "Review Builder: the wizard body takes the DS page-header gutter so the section rail and the card line up with the breadcrumb and title (Ali, 20 Sep: \"sidebar nav isnt lining up with the header\"); the Message step carries the product Legal Content (the permission reminder, the physical address with its placeholders, the anti-spam sentence and the Terms and Conditions line), and the hub empty state opens with the blurb from the product (\"Before you get started\" panel), minus the video.",
       "find": "        <DialogContent dataHook=\"legal-info-content\">\n          <DialogHeader>\n            <DialogTitle dataHook=\"legal-info-title\">About the legal footer</DialogTitle>\n            <DialogDescription dataHook=\"legal-info-desc\">\n              A legal footer is part of the terms and conditions. Laws such as CAN-SPAM in the US and\n              the ePrivacy Directive and GDPR in the EU also require marketing email to say who sent\n              it, give a real postal address, and offer a way to opt out.\n",
       "replace": "        <DialogContent dataHook=\"legal-info-content\">\n          <DialogHeader>\n            {/* NAMED FOR THE GROUP, NOT FOR THE OLD FIELD. This explainer sat\n                under a textarea called \"Legal footer\"; that field is the\n                permission reminder now, inside Legal Content, so a title and a\n                button promising \"the legal footer\" sent a reader looking for a\n                control that is not there. The description still says footer\n                because that is the place in the email the content prints, which\n                the group's own intro line names too. */}\n            <DialogTitle dataHook=\"legal-info-title\">About legal content</DialogTitle>\n            <DialogDescription dataHook=\"legal-info-desc\">\n              Legal content is part of the terms and conditions. Laws such as CAN-SPAM in the US and\n              the ePrivacy Directive and GDPR in the EU also require marketing email to say who sent\n              it, give a real postal address, and offer a way to opt out.\n"
+    },
+    {
+      "why": "Customer preview: the footer calls itself a preview (Ali, 20 Sep: \"let's not say exactly\"). It renders the customer page in a drawer at a different width, so \"exactly\" was a promise the preview cannot keep.",
+      "find": "\"This is exactly what your customer sees.\"",
+      "replace": "\"This is a preview of what your customer sees.\""
     }
   ],
   "app/(app)/locations/[location]/page.jsx": [
@@ -2847,6 +2857,11 @@
       "why": "Cards with a sticky header band close the 12px row gap under it (Ali, 20 Sep: \"Weird extra padding in Review Builder here\", on Internal feedback). The DS Card is a flex column with a row gap, and the header's -mt-3 only cancels the card's top padding, so a strip of card showed between the header's bottom border and the table or chart under it. Review Manager's own table card already sets gap-0.",
       "find": "<Card dataHook=\"all-feedback-card\" className=\"max-w-none\" density=\"condensed\">",
       "replace": "<Card dataHook=\"all-feedback-card\" className=\"max-w-none gap-0\" density=\"condensed\">"
+    },
+    {
+      "why": "Customer preview: the footer calls itself a preview (Ali, 20 Sep: \"let's not say exactly\"). It renders the customer page in a drawer at a different width, so \"exactly\" was a promise the preview cannot keep.",
+      "find": "\"This is exactly what your customer sees.\"",
+      "replace": "\"This is a preview of what your customer sees.\""
     }
   ],
   "app/(app)/locations/[location]/reviews/builder/hub-and-spoke/page.jsx": [
@@ -3204,6 +3219,11 @@
       "why": "Cards with a sticky header band close the 12px row gap under it (Ali, 20 Sep: \"Weird extra padding in Review Builder here\", on Internal feedback). The DS Card is a flex column with a row gap, and the header's -mt-3 only cancels the card's top padding, so a strip of card showed between the header's bottom border and the table or chart under it. Review Manager's own table card already sets gap-0.",
       "find": "<Card dataHook=\"all-feedback-card\" className=\"max-w-none\" density=\"condensed\">",
       "replace": "<Card dataHook=\"all-feedback-card\" className=\"max-w-none gap-0\" density=\"condensed\">"
+    },
+    {
+      "why": "Customer preview: the footer calls itself a preview (Ali, 20 Sep: \"let's not say exactly\"). It renders the customer page in a drawer at a different width, so \"exactly\" was a promise the preview cannot keep.",
+      "find": "\"This is exactly what your customer sees.\"",
+      "replace": "\"This is a preview of what your customer sees.\""
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/templates/page.jsx": [

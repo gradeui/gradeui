@@ -6141,7 +6141,7 @@ function CustomerPreviewDrawer({ open, onOpenChange, config, expired }) {
           <span className="text-muted-foreground text-xs">
             {kiosk
               ? "What your customer sees on the tablet. It comes back to the first question after every answer."
-              : "This is exactly what your customer sees."}
+              : "This is a preview of what your customer sees."}
           </span>
           <span className="grow" />
           {current !== first ? (
