@@ -5,6 +5,13 @@
 // re-promotion workflow: apps/brightlocal/README.md.
 // source-hash: ec9c6f2c393f
 
+// NOTE, 20 SEP: this file is still named for the rail it was spun off to try,
+// and the rail is gone. The editor is two full-bleed pages now, Select reviews
+// and Widget design, each entered from a showcase card, with embed reachable
+// from the card's overflow as it always was. See the "settings page" section
+// for the decisions and Ali's words. Everything below this line is the 7 Sep
+// history, kept because it is how the screen got here.
+//
 // RM — Review Showcase — Rail (7 Sep). A spin-off of "RM — Review Showcase"
 // whose create and edit flow is a SETTINGS PAGE WITH A LEFT RAIL instead of a
 // four-step wizard. Ali, 7 Sep: "I'm thinking we should switch our Review
@@ -173,12 +180,10 @@ import { Slider } from "@brightlocal/ui-components/slider";
 // is why SwitchRow did not come back with it.
 import { Switch } from "@brightlocal/ui-components/switch";
 import { ToggleGroup, ToggleGroupItem } from "@brightlocal/ui-components/toggle-group";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@brightlocal/ui-components/accordion";
+// NO ACCORDION ANY MORE. The five design groups were items in one; they are
+// cards with their own Edit now (Ali, 20 Sep: "I'd make each section header
+// more prominent, I can hardly see that there are sections"), so the import
+// went with them.
 import {
   Field,
   FieldContent,
@@ -223,10 +228,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   X,
-  ChevronDown,
   Ban,
   RotateCcw,
-  SlidersHorizontal,
   LayoutList,
   GalleryHorizontal,
   Braces,
@@ -234,8 +237,6 @@ import {
   MoreHorizontal,
   Star,
   FileText,
-  ListChecks,
-  Palette,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -247,7 +248,12 @@ import {
   FacebookOriginal,
   TrustpilotOriginal,
 } from "@brightlocal/icons";
-import { AppLayoutShell, ProposalSidebar, PageHeader, DateStamp, formatDate, SourceMark, FeedbackScore, PreviewFrame, REVIEW_SOURCES } from "@brightlocal/proposal";
+import { AppLayoutShell, ProposalSidebar, PageHeader, DateStamp, formatDate, formatDateShort, SourceMark, FeedbackScore, PreviewFrame, REVIEW_SOURCES } from "@brightlocal/proposal";
+// THE REGISTRY'S FACET MENUS, not a fifth hand-built filter (Ali, 7 Sep:
+// "we now HAVE 2 different ways to choose filters. WHY"). Review Manager and
+// the campaigns table both filter through these two, so the ratings menu on
+// this page is the same object as the ratings menu on the inbox.
+import { FacetedFilterMenu, SingleSelectMenu } from "@brightlocal/facet-menu";
 // SideSheetHeader, not SheetHeader: the DS barrel already exports a SheetHeader
 // (the Sheet family), and the contract check keys on the JSX name.
 import { SideSheetHeader } from "@brightlocal/side-sheet-header";
@@ -498,15 +504,10 @@ const DRAWER_WIDTH =
   "data-[vaul-drawer-direction=right]:lg:w-[clamp(24rem,50vw,40rem)] " +
   "data-[vaul-drawer-direction=right]:sm:max-w-[40rem]";
 
-// THE ONE EXCEPTION, for Select Reviews. Its table is six columns wide and
-// the real product gives that step the whole page, so the panel runs to 64rem
-// where there is room for it. Same floor and the same shape as above, so it
-// still reads as the same object; it just stops squeezing a table into half a
-// phone's worth of width. See SectionSheet.
-const REVIEWS_DRAWER_WIDTH =
-  "data-[vaul-drawer-direction=right]:sm:w-[clamp(24rem,92vw,64rem)] " +
-  "data-[vaul-drawer-direction=right]:lg:w-[clamp(24rem,78vw,64rem)] " +
-  "data-[vaul-drawer-direction=right]:sm:max-w-[64rem]";
+// There used to be a second, wider clamp here for the Select Reviews sheet.
+// Select reviews is a full-bleed page now, so the wide clamp went with it and
+// this is the one clamp left. Three sheets wear it: the preview and embed
+// drawers on the showcase list, and the design part sheet in the editor.
 
 // THE SAME POOL AS REVIEW TRACKER, BY CONSTRUCTION (coordinator, 7 Sep:
 // "Thirty reviews at 3.8 does not demonstrate a showcase, and the Tracker's
@@ -921,9 +922,10 @@ const hex6 = (v, fallback) => {
 };
 const shadowCss = (on, x, y, blur, spread, color, fallbackColor) =>
   on ? `${x}px ${y}px ${blur}px ${spread}px ${hex(color, fallbackColor)}` : "none";
-// The same shadow, said in words, for the settings card's rows.
-const shadowLabel = (on, x, y, blur, spread, color) =>
-  on ? `${x}, ${y}, ${blur}, ${spread} ${color}` : "None";
+// The shadow said in words used to feed the settings card's rows. Those rows
+// went when Embed left the rail and the Design summary card with it; the line
+// under each design block names the two or three settings that change the
+// look most, and a four-number shadow is not one of them.
 // A flex row cannot inherit text-align, so alignment has to be handed to it
 // as a justify-content. One map, used wherever a row sits inside the widget.
 const JUSTIFY = { left: "flex-start", center: "center", right: "flex-end" };
@@ -1851,243 +1853,80 @@ const positionValues = (count, current) => {
   return [-1, ...values];
 };
 
-// One line in a filter column: the DS Checkbox, an optional glyph, and the
-// name. The same shape for a star rating and for a review source, so the four
-// columns read as one panel rather than as four lists. The alignment fix is
-// CheckRow's, for the same measured reason: the DS horizontal Field is a grid
-// with align-items start, so both cells need self-center.
-function FilterCheckRow({ id, label, glyph = null, checked, onChange }) {
-  return (
-    <Field orientation="horizontal" dataHook={`${id}-field`}>
-      <Checkbox
-        id={id}
-        dataHook={id}
-        className="mt-0 self-center"
-        checked={checked}
-        onCheckedChange={(v) => onChange(!!v)}
-      />
-      <FieldContent className="self-center">
-        <FieldLabel htmlFor={id} dataHook={`${id}-label`} className="flex items-center gap-2">
-          {glyph}
-          {label}
-        </FieldLabel>
-      </FieldContent>
-    </Field>
-  );
-}
-
-// ONE WIDE PANEL, FOUR COLUMNS, AND NOTHING HAPPENS UNTIL Apply Filters
-// (Ali, 20 Sep, from the screenshot). The draft lives here and is re-seeded
-// from the showcase every time the panel opens, so closing it without
-// pressing Apply is a cancel and needs no second button to say so.
+// THE TABLE'S DATE, SHORT (Ali, 20 Sep: "Can we change the date to the
+// shorter date format (so Sep)?"). formatDateShort is the registry's one
+// short form, and it is Ali's own wording for it (proposal-page.jsx: "we
+// maybe also need a short version for using in tables, so that would be
+// Aug 18, 2026"), so this column now reads "Sep 9, 2026", exactly as Review
+// Manager's Date column does. ASSUMPTION: month first, because one product
+// should not print two short dates; the brief's "day, short month, year"
+// and this differ only in order.
 //
-// The columns are an inline grid rather than `lg:grid-cols-4`: this screen
-// renders in Studio as well as in the app, and the preview's precompiled
-// stylesheet only carries the utilities these screens already use. auto-fit
-// also means the panel folds to two columns and then one on a narrow viewport
-// without a media query to maintain.
-function FilterMenu({ widget, setWidget }) {
-  const [open, setOpen] = useState(false);
-  const seed = () => ({
-    ratings: normaliseRatings(widget.ratings),
-    nps: npsOf(widget),
-    period: dateOptionOf(widget).id,
-    dateStart: widget.dateStart ?? "",
-    dateEnd: widget.dateEnd ?? "",
-    sources: sourcesOf(widget),
-  });
-  const [draft, setDraft] = useState(seed);
-  const patch = (p) => setDraft((d) => ({ ...d, ...p }));
-  const toggleIn = (list, id) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
-  const allRatings = draft.ratings.length === ALL_RATINGS.length;
-  const allSources = draft.sources.length === SOURCE_IDS.length;
-  return (
-    <Popover
-      open={open}
-      onOpenChange={(o) => {
-        if (o) setDraft(seed());
-        setOpen(o);
-      }}
-    >
-      <PopoverTrigger asChild>
-        {/* rounded-sm text-sm font-normal, the same override the registry's
-            facet triggers carry: a filter dropdown is a FIELD, not an action,
-            and Button's own base would put a 12px semibold pill beside the
-            14px Auto select label next to it. */}
-        <Button
-          variant="outline"
-          size="sm"
-          dataHook="picker-filter"
-          className="rounded-sm text-sm font-normal"
-        >
-          <SlidersHorizontal className="size-4" />
-          Filter
-          <ChevronDown className="size-3.5 opacity-60" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="p-0"
-        style={{ width: "min(64rem, calc(100vw - 2rem))" }}
-        dataHook="picker-filter-panel"
-      >
-        <div
-          className="p-4"
-          style={{
-            display: "grid",
-            gap: "1.5rem",
-            gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
-          }}
-        >
-          <Field dataHook="filter-ratings-field">
-            <FieldLabel htmlFor="filter-ratings-all" dataHook="filter-ratings-label">
-              Star Rating
-            </FieldLabel>
-            <div className="flex flex-col gap-2">
-              {/* Toggle All is checked only when all five are. The DS Checkbox
-                  draws no third state, so a half-ticked list reads as off
-                  rather than as a box that looks ticked and is not. */}
-              <FilterCheckRow
-                id="filter-ratings-all"
-                label="Toggle All"
-                checked={allRatings}
-                onChange={() => patch({ ratings: allRatings ? [] : ALL_RATINGS })}
-              />
-              {RATING_OPTIONS.map((o) => (
-                <FilterCheckRow
-                  key={o.id}
-                  id={`filter-rating-${o.id}`}
-                  label={o.label}
-                  glyph={ratingGlyph(o.id)}
-                  checked={draft.ratings.includes(o.id)}
-                  onChange={() => patch({ ratings: toggleIn(draft.ratings, o.id) })}
-                />
-              ))}
-            </div>
-          </Field>
+// The row's own `date` stays LONG. The widget preview falls back to it when
+// a row carries no ISO day, and that is the customer's site, not this table.
+const tableDate = (review) => (review.iso ? formatDateShort(review.iso) : review.date);
 
-          {/* RadioField is the kit's own labelled radio group, the one the
-              date format and the character count in Widget Design use, so a
-              one-of-many question looks the same wherever it is asked. */}
-          <RadioField
-            id="filter-nps"
-            label="Feedback Score (NPS)"
-            value={draft.nps}
-            options={NPS_OPTIONS}
-            onChange={(v) => patch({ nps: v })}
-          />
+// FOUR TRIGGERS IN A ROW, NOT ONE PANEL BEHIND A BUTTON (Ali, 20 Sep: "the
+// filter should be at the top of a card ... The filters would also be
+// individual, so rating, date, sources"). The wide four-column dropdown and
+// its Apply Filters button are gone; these are the registry's facet menus,
+// the same ones Review Manager and the campaigns table use, and they apply
+// as you pick rather than staging a draft.
+//
+// ONE DIFFERENCE FROM THOSE TWO, AND IT IS DELIBERATE. There an empty list
+// means "all", because nothing ticked and everything ticked look the same in
+// a menu with no All row. Here the record stores exactly what is ticked, so
+// an empty list means nothing matches and the "All ratings" row is a real
+// toggle-all, which is what the panel's Toggle All checkbox was.
+const facetLabel = (on, total, all, none, one, many) =>
+  on.length === total
+    ? all
+    : on.length === 0
+      ? none
+      : on.length === 1
+        ? one(on[0])
+        : `${on.length} ${many}`;
 
-          <div className="flex flex-col gap-3">
-            <RadioField
-              id="filter-date"
-              label="Date"
-              value={draft.period}
-              options={DATE_OPTIONS}
-              onChange={(v) => patch({ period: v })}
-            />
-            {/* Under the Custom option, which is the last one in the list, so
-                "under it" and "after the group" are the same place. A native
-                date input rather than a DS date picker: the DS ships a
-                Calendar but no field that pairs with it, and two hand-built
-                popover calendars is a lot of machinery for a filter nobody
-                has asked to demonstrate.
-                STACKED, NOT SIDE BY SIDE, AND NOT INDENTED. Measured in the
-                sandbox at 1280: the panel's four tracks come out 229.5px, and
-                two-up inside one of them with a gap and a 24px indent left
-                each field 97px against the 148px "dd/mm/yyyy" and the
-                calendar button need. The placeholder was cut mid-word and the
-                picker button sat off the end, so the only way to set a range
-                was to type blind. One under the other gives each the column's
-                full width; the indent went with it because the fields already
-                sit under the Custom radio and say what they are. */}
-            {draft.period === "custom" ? (
-              <div className="flex flex-col gap-3" data-hook="filter-date-range">
-                <Field dataHook="filter-date-start-field">
-                  <FieldLabel htmlFor="filter-date-start" dataHook="filter-date-start-label">
-                    Start
-                  </FieldLabel>
-                  <Input
-                    id="filter-date-start"
-                    dataHook="filter-date-start"
-                    type="date"
-                    value={draft.dateStart}
-                    onChange={(e) => patch({ dateStart: e.target.value })}
-                  />
-                </Field>
-                <Field dataHook="filter-date-end-field">
-                  <FieldLabel htmlFor="filter-date-end" dataHook="filter-date-end-label">
-                    End
-                  </FieldLabel>
-                  <Input
-                    id="filter-date-end"
-                    dataHook="filter-date-end"
-                    type="date"
-                    value={draft.dateEnd}
-                    onChange={(e) => patch({ dateEnd: e.target.value })}
-                  />
-                </Field>
-              </div>
-            ) : null}
-          </div>
+// FEEDBACK SCORE KEEPS A MENU OF ITS OWN. Ali named three filters and the
+// panel carried four; dropping the fourth would drop a filter the product
+// ships. A facet trigger has no field label above it, so the values have to
+// carry the noun themselves, the same way "All sources" does on Review
+// Manager. The ids are untouched, because npsMatches reads them.
+const NPS_FACET_LABEL = {
+  all: "All feedback scores",
+  none: "No feedback score",
+  positive: "Positive feedback",
+};
+const NPS_FACET_OPTIONS = NPS_OPTIONS.map((o) => ({ id: o.id, label: NPS_FACET_LABEL[o.id] }));
 
-          <Field dataHook="filter-sources-field">
-            <FieldLabel htmlFor="filter-sources-all" dataHook="filter-sources-label">
-              Review Sources
-            </FieldLabel>
-            {/* OUR SOURCES, NOT THE PRODUCT'S EIGHTY. The real panel lists
-                every site BrightLocal tracks; this prototype has data for the
-                Tracker's seven, so those are what is offered. Each keeps its
-                mark beside the name (Ali, 7 Sep: "on sources, can we include
-                the logo?"), from the registry's SourceMark. */}
-            <div className="flex flex-col gap-2">
-              <FilterCheckRow
-                id="filter-sources-all"
-                label="Toggle All"
-                checked={allSources}
-                onChange={() => patch({ sources: allSources ? [] : SOURCE_IDS })}
-              />
-              {/* ONE COLUMN, ALTHOUGH THE PRODUCT'S IS TWO. Measured in the
-                  sandbox at 1280: the panel's four tracks come out 229.5px,
-                  so two-up gives each source 108.75px, and our names do not
-                  live there. "TripAdvisor" needs 131px and has no space to
-                  break at, so its text ran across the panel's right border;
-                  "Yahoo! Local", "Apple Maps" and "Bing Places" each wrapped
-                  to two lines. The real panel gets away with two columns
-                  because it is listing eighty short names across a whole
-                  page. Seven names one under the other is one row taller than
-                  the Date radios beside it and every one of them fits. */}
-              <div className="grid gap-y-2">
-                {SOURCE_LIST.map((s) => (
-                  <FilterCheckRow
-                    key={s.id}
-                    id={`filter-source-${s.id}`}
-                    label={s.label}
-                    glyph={<SourceMark source={s.id} />}
-                    checked={draft.sources.includes(s.id)}
-                    onChange={() => patch({ sources: toggleIn(draft.sources, s.id) })}
-                  />
-                ))}
-              </div>
-            </div>
-          </Field>
-        </div>
-        <div className="flex justify-end border-t p-3">
-          <Button
-            variant="primary"
-            size="sm"
-            dataHook="picker-filter-apply"
-            onClick={() => {
-              setWidget((w) => ({ ...w, ...draft }));
-              setOpen(false);
-            }}
-          >
-            Apply Filters
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
+// The campaigns table's look, minus its two sticky-header lines. Those need
+// `overflow-visible` on the DS table's own wrapper, and that wrapper is the
+// horizontal scroll region the table falls back on below about 800px wide.
+// At 1280 nothing scrolls sideways any more (the rail went, see the settings
+// page section), but the region has to stay for the phone, so the sticky
+// header lines stay out. The cell insets stay, so the first column lines up
+// with the header's px-4 instead of sitting 8px short of it.
+// WHY THE TWO STICKY EDGES ARE PULLED OUT BY 24px. The shell's content
+// scroller carries 24px of padding on every side (p-section-sm, with the
+// showcase's own `contentClassName="pt-6!"` landing on the same 24 at the
+// top), and a sticky child is inset by that padding while the scroller still
+// CLIPS at its border box. Measured at 1280: a band at top-0 pinned at 169
+// against a scroller whose top edge is 145, so table rows scrolled through
+// the 24px strip between the page header's rule and the card, in plain sight
+// and outside the card's own clip. Same story under the pager. Pulling each
+// edge out by the padding pins the band flush to the header's rule and the
+// pager flush to the foot of the scroller, which is where Review Manager and
+// the campaigns table put theirs.
+// ONLY THE TOP EDGES READ THIS CONSTANT NOW. 24px is what the content wrapper
+// forces above a card at every width, so a hard number is honest there. The
+// padding BELOW the card is the token --ds-section-padding-y-sm, which is 16
+// under 1280, so the pager reads that token instead; see the pager itself.
+const SHELL_PAD = "-1.5rem";
+
+const SELECT_TABLE_LOOK =
+  "rounded-none border-0 " +
+  "[&_thead_th:first-child]:pl-4 [&_tbody_td:first-child]:pl-4 " +
+  "[&_thead_th:last-child]:pr-4 [&_tbody_td:last-child]:pr-4";
 
 // A YELP ROW'S ONE CELL. It sits where the Position select would be, because
 // the absence of a choice belongs where the choice would have been; the
@@ -2120,15 +1959,38 @@ function UnavailableChip({ id }) {
 // would be working against it.
 const dimmed = (review) => (isUsable(review) ? undefined : { opacity: 0.5 });
 
-// Returns a FRAGMENT: [banner, heading, sticky toolbar, table]. Mount it
-// directly inside the scroller; the toolbar is `sticky top-0` and a sticky
-// element cannot travel outside its parent's box, which is why the reviews
-// sheet drops DrawerBody's padding and everything here carries its own.
-// TooltipProvider renders no element of its own, so wrapping the fragment in
-// it leaves the toolbar a direct child of the scroller.
-function SelectReviews({ widget, setWidget }) {
+// SELECT REVIEWS IS A PAGE NOW (Ali, 20 Sep: "That drawer seems awfully large
+// with the table in it. I think we would have to select reviews on its own
+// page, and then do the design stuff on its own page"), AND IT IS FULL BLEED
+// (Ali, the same night: "yeah, no rail for select reviews"). Edit reviews on
+// a showcase card opens straight onto this, under the showcase's own header
+// with Save showcase and Close still on it. No rail, no drawer, no Done
+// button and no key/value rows: the filters at the top of the card say what
+// is chosen and the table under them says what that leaves, which is what the
+// rows were reading back. Losing the rail is also what let the table stop
+// scrolling sideways: see the DataTable below for the two measurements.
+//
+// A PROPER TABLE (Ali, same morning: "I think we would have to set our table
+// up properly on the review selection, like we have on other sections, so we
+// need pagination"). Same DataTable, now in the card treatment the campaigns
+// and Review Manager tables use: a sticky band carrying the title and the
+// filters, the table full-bleed under it, and the DS pager pinned to the
+// bottom of the card doing the counting.
+function SelectReviews({ widget, setWidget, issue = null }) {
   const [notice, setNotice] = useState(true);
   const [sorting, setSorting] = useState([{ id: "date", desc: true }]);
+  // ONE MENU STATE FOR THE WHOLE ROW, so only one panel is ever open. Review
+  // Manager's shape, spread into each menu.
+  const [menu, setMenu] = useState(null);
+  const menuState = (id) => ({ open: menu === id, onOpenChange: (o) => setMenu(o ? id : null) });
+
+  const ratings = normaliseRatings(widget.ratings);
+  const sources = sourcesOf(widget);
+  const dateOption = dateOptionOf(widget);
+  const nps = npsOf(widget);
+  const patch = (p) => setWidget((w) => ({ ...w, ...p }));
+  const toggleIn = (list, id) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
+
   // Everything the filters leave, Yelp included: a Yelp review is listed and
   // marked unavailable rather than quietly dropped, which is what the banner
   // is there to explain.
@@ -2136,9 +1998,8 @@ function SelectReviews({ widget, setWidget }) {
   // THE FILTER FIELDS ARE THE DEPENDENCIES, not the whole showcase. Setting a
   // Position rewrites the record, and a memo keyed on the record would rebuild
   // this list, which would send the page reset below back to page one every
-  // time somebody ordered a review on page three. Apply Filters is the only
-  // thing that hands over new `ratings` and `sources` arrays, so identity is
-  // exactly the right test here.
+  // time somebody ordered a review on page three. Every menu hands over a new
+  // array or a new id, so identity is exactly the right test here.
   const rows = useMemo(
     () => filteredReviews(widget),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2183,7 +2044,7 @@ function SelectReviews({ widget, setWidget }) {
         sortingFn: (a, b) => b.original.daysAgo - a.original.daysAgo,
         cell: ({ row }) => (
           <span className="text-muted-foreground text-sm whitespace-nowrap" style={dimmed(row.original)}>
-            {row.original.date}
+            {tableDate(row.original)}
           </span>
         ),
       },
@@ -2310,21 +2171,35 @@ function SelectReviews({ widget, setWidget }) {
   });
 
   // A NEW FILTER STARTS AT PAGE ONE. Applying one that leaves three reviews
-  // while you are on page four otherwise shows an empty table under a count
-  // line reading "Showing 61-3 of 3 results".
+  // while you are on page four otherwise shows an empty table under a pager
+  // reading "61 to 3 of 3".
   useEffect(() => {
     table.setPageIndex(0);
   }, [rows, table]);
 
-  const pagination = table.getState().pagination;
-  const total = table.getRowCount();
-  const start = total === 0 ? 0 : pagination.pageIndex * pagination.pageSize + 1;
-  const end = Math.min(total, (pagination.pageIndex + 1) * pagination.pageSize);
+  const allRatings = ratings.length === ALL_RATINGS.length;
+  const allSources = sources.length === SOURCE_IDS.length;
+  const ratingsLabel = facetLabel(
+    ratings,
+    ALL_RATINGS.length,
+    "All ratings",
+    "No ratings",
+    (id) => RATING_OPTIONS.find((o) => o.id === id)?.label ?? id,
+    "ratings",
+  );
+  const sourcesLabel = facetLabel(
+    sources,
+    SOURCE_IDS.length,
+    "All sources",
+    "No sources",
+    (id) => SOURCES[id]?.label ?? id,
+    "sources",
+  );
 
   return (
     <TooltipProvider>
-      {notice ? (
-        <div className="px-4 pt-4" data-hook="picker-notice">
+      <div className="flex min-w-0 flex-col gap-4">
+        {notice ? (
           <AlertInfo
             dataHook="reviews-yelp-notice"
             description={YELP_NOTICE}
@@ -2341,85 +2216,272 @@ function SelectReviews({ widget, setWidget }) {
               </Button>
             }
           />
-        </div>
-      ) : null}
+        ) : null}
 
-      <div className="flex flex-col gap-1 px-4 pt-4" data-hook="picker-heading">
-        <h3 className="text-base font-medium">Select Reviews</h3>
-        <p className="text-muted-foreground text-sm">
-          Select the reviews you would like to showcase in your {TYPE_WORD[widget.format]} widget.
-        </p>
-      </div>
-
-      {/* THE TOOLBAR STICKS (Ali, 7 Sep: "the filters should stick"). Filter
-          and Auto select on the left, the count on the right, pinned to the
-          top of the sheet's scroller while the table runs under it. It is a
-          DIRECT CHILD of the scroller because a sticky element cannot travel
-          outside its parent's box. The count keeps the "picker-count" hook
-          the old running total had. */}
-      <div
-        className="bg-background sticky top-0 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-4 py-3"
-        data-hook="picker-bar"
-      >
-        <FilterMenu widget={widget} setWidget={setWidget} />
-        <div className="flex items-center gap-2" data-hook="picker-auto-select">
-          <Switch
-            id="picker-auto-select-switch"
-            dataHook="picker-auto-select-switch"
-            checked={widget.autoSelect !== false}
-            onCheckedChange={(v) => setWidget((w) => ({ ...w, autoSelect: !!v }))}
+        {/* THE SAVE-BLOCKING ALERT MOVED WITH THE STEP. Save still sends you
+            to Select reviews when the filters match nothing, from the design
+            page as readily as from this one, and this is what it lands on,
+            sitting above the filters it names. */}
+        {issue ? (
+          <AlertWarning
+            dataHook="reviews-issue"
+            title={ISSUE_COPY[issue].title}
+            description={ISSUE_COPY[issue].body(widget)}
           />
-          <FieldLabel htmlFor="picker-auto-select-switch" dataHook="picker-auto-select-label">
-            Auto select reviews
-          </FieldLabel>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label="What auto select does"
-                data-hook="picker-auto-select-info"
-                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex cursor-pointer items-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
-              >
-                <Info className="size-3.5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>{AUTO_SELECT_TIP}</TooltipContent>
-          </Tooltip>
-        </div>
-        <span className="grow" />
-        <p className="text-muted-foreground text-sm tabular-nums" data-hook="picker-count" aria-live="polite">
-          Showing {start}-{end} of {fmtCount(total)} results
-        </p>
-      </div>
+        ) : null}
 
-      <div className="px-4 py-4" data-hook="picker-list">
-        {/* SIX COLUMNS NEED ROOM. minWidth turns the DS table's own wrapper
-            into a scroll region rather than letting the review text column
-            compress to a word a line, and the sheet is widened for this step
-            besides; see SectionSheet. */}
-        <DataTable
-          table={table}
-          dataHook="select-reviews-table"
-          minWidth="46rem"
-          scrollRegionLabel="Reviews to choose from"
-          noResultsMessage={
-            npsOf(widget) === "positive"
-              ? "No reviews match these filters. A feedback score comes from a Get Reviews campaign, and this location has none."
-              : "No reviews match these filters."
-          }
-        />
-        {total > 0 ? (
-          <div className="border-t px-1 py-2">
+        {/* THE WIDGET ITSELF, OVER THE ROWS THAT CHOOSE WHAT GOES IN IT. The
+            step lost its preview when the sheet became a page, and choosing
+            reviews with nothing to choose FOR is the one thing this card was
+            doing: it shows the resolved set, so a filter, a Position or a
+            Blacklist switch is answered in the widget a beat later.
+            NOT STICKY, and neither is the design page's preview any more.
+            The work here is a long table that already spends the top of the
+            fold on its own sticky band and the bottom on its pager, and a
+            third pinned block would leave a strip of rows between them. This
+            one scrolls away once you are reading the table.
+            CAPPED AND SCROLLING, because the widget is not bounded: a list of
+            ten reviews is taller than the page. The cap is what keeps the
+            table's header and its first rows above the fold at 1280x900,
+            which is the whole reason the preview sits here and not in the
+            middle of the step. */}
+        <Card
+          dataHook="reviews-preview-card"
+          className="max-w-none gap-0 p-0"
+          density="condensed"
+        >
+          <div className="px-4 py-3" style={{ maxHeight: "16rem", overflowY: "auto" }}>
+            {/* THE REGISTRY'S PreviewFrame, the same wrapper the card, the
+                Design preview and the preview sheet all put round a showcase,
+                so one widget is not drawn four subtly different ways. A list,
+                a carousel and a JSON feed each render whatever WidgetPreview
+                renders for them, which is how the feed URL turns up here too
+                rather than a widget the JSON step does not have. */}
+            <PreviewFrame surface="none" dataHook="preview-frame-reviews">
+              <WidgetPreview widget={widget} reviews={resolveReviews(widget)} />
+            </PreviewFrame>
+          </div>
+        </Card>
+
+        <Card
+          dataHook="select-reviews-card"
+          className="max-w-none gap-0 overflow-clip p-0"
+          density="condensed"
+        >
+          {/* THE BAND STICKS, NOT THE CARDHEADER INSIDE IT (the campaigns
+              table learned this the hard way: a sticky element cannot travel
+              outside its parent's box, so a wrapper exactly one CardHeader
+              tall has nowhere to go). The filters stick because Ali asked for
+              it on 7 Sep ("the filters should stick"). Nothing is subtracted
+              for a page header the way Review Manager and the campaigns table
+              have to: WizardShell pins its header OUTSIDE the scroller, so
+              the top of the scroller is already under it. See SHELL_PAD for
+              why the offset is negative rather than zero. */}
+          <div className="bg-card sticky z-30 rounded-t-[inherit] border-b" style={{ top: SHELL_PAD }}>
+            <CardHeader dataHook="picker-heading" className="px-4 pt-4 pb-3">
+              {/* NO COUNT BY THE TITLE (Ali, 17 Sep: "we have pagination").
+                  The pager at the foot of the card counts the filtered rows,
+                  which is what the old "Showing 1-20 of 836 results" line in
+                  the toolbar was doing. */}
+              <CardTitle size="small" dataHook="select-reviews-title">
+                Select reviews
+              </CardTitle>
+              <CardDescription>
+                Select the reviews you would like to showcase in your {TYPE_WORD[widget.format]}{" "}
+                widget.
+              </CardDescription>
+            </CardHeader>
+
+            {/* RATING, DATE, SOURCES, in Ali's own order, with Feedback Score
+                after them, then Auto select pushed to the far end.
+                gap-1.5 and the default left align: the row starts at the
+                card's left edge, so every panel hangs from the trigger it
+                belongs to.
+                AUTO SELECT IS IN THIS ROW, NOT THE HEADER'S ACTION SLOT.
+                CardHeader's action column is max-content, and at 390 the
+                switch, its label and the info dot took 200 of the card's 294,
+                leaving the title two lines and the description one word a
+                line. It sat in the old sheet's toolbar beside Filter anyway,
+                so this is where it was. The spacer keeps it off the filters:
+                it is a standing setting, not a filter. */}
+            <div className="flex flex-wrap items-center gap-1.5 px-4 pb-3" data-hook="picker-bar">
+              <FacetedFilterMenu
+                label={ratingsLabel}
+                {...menuState("ratings")}
+                options={RATING_OPTIONS.map((o) => ({
+                  id: o.id,
+                  label: o.label,
+                  leading: ratingGlyph(o.id),
+                }))}
+                isAllSelected={allRatings}
+                isChecked={(id) => ratings.includes(id)}
+                onAll={() => patch({ ratings: allRatings ? [] : ALL_RATINGS })}
+                onOption={(id) => patch({ ratings: toggleIn(ratings, id) })}
+                allLabel="All ratings"
+                panelWidth="w-56"
+                dataHook="filter-ratings"
+              />
+              <SingleSelectMenu
+                label={dateOption.label}
+                {...menuState("date")}
+                options={DATE_OPTIONS.map((o) => ({ id: o.id, label: o.label }))}
+                value={dateOption.id}
+                onSelect={(id) => {
+                  patch({ period: id });
+                  setMenu(null);
+                }}
+                panelWidth="w-52"
+                dataHook="filter-date"
+              />
+              {/* THE RANGE SITS BESIDE ITS OWN MENU, not inside it: a facet
+                  panel is a list of options and two date fields are not
+                  options. Native date inputs, the same two the old panel
+                  carried and for the same reason (the DS ships a Calendar but
+                  no field that pairs with it, and two hand-built popover
+                  calendars is a lot of machinery for a filter nobody has
+                  asked to demonstrate). */}
+              {dateOption.id === "custom" ? (
+                <div className="flex items-center gap-1.5" data-hook="filter-date-range">
+                  <Input
+                    id="filter-date-start"
+                    dataHook="filter-date-start"
+                    type="date"
+                    aria-label="Start of the date range"
+                    style={{ width: "9.5rem" }}
+                    value={widget.dateStart ?? ""}
+                    onChange={(e) => patch({ dateStart: e.target.value })}
+                  />
+                  <span className="text-muted-foreground text-sm">to</span>
+                  <Input
+                    id="filter-date-end"
+                    dataHook="filter-date-end"
+                    type="date"
+                    aria-label="End of the date range"
+                    style={{ width: "9.5rem" }}
+                    value={widget.dateEnd ?? ""}
+                    onChange={(e) => patch({ dateEnd: e.target.value })}
+                  />
+                </div>
+              ) : null}
+              {/* OUR SOURCES, NOT THE PRODUCT'S EIGHTY. The real panel lists
+                  every site BrightLocal tracks; this prototype has data for
+                  the Tracker's seven, so those are what is offered, each with
+                  its mark beside the name (Ali, 7 Sep: "on sources, can we
+                  include the logo?"). No search box: Review Manager gates one
+                  at eight options and there are seven. */}
+              <FacetedFilterMenu
+                label={sourcesLabel}
+                {...menuState("sources")}
+                options={SOURCE_LIST.map((s) => ({
+                  id: s.id,
+                  label: s.label,
+                  leading: <SourceMark source={s.id} />,
+                }))}
+                isAllSelected={allSources}
+                isChecked={(id) => sources.includes(id)}
+                onAll={() => patch({ sources: allSources ? [] : SOURCE_IDS })}
+                onOption={(id) => patch({ sources: toggleIn(sources, id) })}
+                allLabel="All sources"
+                panelWidth="w-56"
+                dataHook="filter-sources"
+              />
+              <SingleSelectMenu
+                label={NPS_FACET_LABEL[nps]}
+                {...menuState("nps")}
+                options={NPS_FACET_OPTIONS}
+                value={nps}
+                onSelect={(id) => {
+                  patch({ nps: id });
+                  setMenu(null);
+                }}
+                panelWidth="w-56"
+                dataHook="filter-nps"
+              />
+              <span className="grow" />
+              <div className="flex items-center gap-2" data-hook="picker-auto-select">
+                <Switch
+                  id="picker-auto-select-switch"
+                  dataHook="picker-auto-select-switch"
+                  checked={widget.autoSelect !== false}
+                  onCheckedChange={(v) => setWidget((w) => ({ ...w, autoSelect: !!v }))}
+                />
+                <FieldLabel htmlFor="picker-auto-select-switch" dataHook="picker-auto-select-label">
+                  Auto select reviews
+                </FieldLabel>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="What auto select does"
+                      data-hook="picker-auto-select-info"
+                      className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex cursor-pointer items-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                    >
+                      <Info className="size-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{AUTO_SELECT_TIP}</TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+          </div>
+
+          {/* NO HORIZONTAL SCROLL AT 1280, WHICH IS WHY THE RAIL WENT (Ali,
+              20 Sep: "I dont want scrolling tables"). Measured before: the
+              settings column is 896px, the rail took 256 of it and the card
+              was left with 568 against six columns that need 736, so Position
+              and Blacklist sat behind a scroll region and the column labels
+              scrolled away with the rows. Measured after, with the page full
+              bleed: the card is 848 and the table lays out at 848, 112 more
+              than it asks for.
+              minWidth STAYS at 46rem, and it is not the desktop's problem: it
+              is the floor that keeps the review text from compressing to a
+              word a line on a phone, where the DS wrapper becomes a labelled
+              scroll region as it should. Below about 800px wide the table
+              scrolls inside its own region and the page does not. */}
+          <div data-hook="picker-list">
+            <DataTable
+              table={table}
+              dataHook="select-reviews-table"
+              className={SELECT_TABLE_LOOK}
+              minWidth="46rem"
+              scrollRegionLabel="Reviews to choose from"
+              noResultsMessage={
+                npsOf(widget) === "positive"
+                  ? "No reviews match these filters. A feedback score comes from a Get Reviews campaign, and this location has none."
+                  : "No reviews match these filters."
+              }
+            />
+          </div>
+
+          {/* ALWAYS SHOWN, even at one page (Ali, 6 Sep, on the campaigns
+              pager: "just leave it there! as filtering might add or remove
+              it"). Same wording as every other pager in the product: the DS
+              default is "1-20 of 836", and two tables in one product should
+              not count rows differently. */}
+          {/* THE BOTTOM PULL IS THE TOKEN, NOT SHELL_PAD. Both edges are
+              pulled out by the scroller's own padding, but only the top one
+              is a constant: the content wrapper forces 24px above the card at
+              every width, while the scroller's padding below it is
+              --ds-section-padding-y-sm, 16px under 1280 and 24 from there up.
+              A hard -1.5rem therefore hung the pager 8px past the clip on
+              tablet and phone, trimming its own bottom padding and the card's
+              bottom edge. Reading the token instead makes the pull whatever
+              the padding actually is, at any width. */}
+          <div
+            className="bg-card sticky z-10 border-t px-4 py-2"
+            style={{ bottom: "calc(-1 * var(--ds-section-padding-y-sm))" }}
+          >
             <DataTablePagination
               table={table}
               dataHook="select-reviews-pagination"
+              className="w-auto"
               ariaLabel="Review pagination"
-              // The toolbar above already counts the results, in a fixed
-              // place that does not move as pages turn.
-              showRowCount={false}
+              renderRowCount={({ startRow, endRow, totalRows }) =>
+                `${startRow} to ${endRow} of ${totalRows}`
+              }
             />
           </div>
-        ) : null}
+        </Card>
       </div>
     </TooltipProvider>
   );
@@ -2429,17 +2491,18 @@ function SelectReviews({ widget, setWidget }) {
 
 // ONE CARD PER SHOWCASE, FIXED (Ali, 7 Sep). Title is the type, caption the
 // live product's line, then the same key / value rows the settings page
-// shows, then the footer: Preview and Edit visible, and an overflow menu
-// holding Embed code (Ali's standing rule: at most two CTAs visible, the
-// rest in the overflow). Nothing to name, nothing to delete, so the menu
-// carries the one item.
+// shows, then the footer: Preview, Edit reviews and Edit design visible, and
+// an overflow menu holding Embed code. Nothing to name, nothing to delete, so
+// the menu carries the one item. Ali's standing rule is at most two CTAs
+// visible with the rest in the overflow, and this is three: see the footer
+// for why, and for the one that could move.
 //
 // NO CODE ON THE CARD (Ali, 7 Sep, reversing the same morning: "I don't need
 // to display the code on the actual cards on the Showcase homepage, opening
 // in a drawer/sheet is fine, as we might want the instructions we had
 // already"). Embed code opens the Embed sheet, which keeps the code box,
 // Copy and the numbered steps.
-function WidgetCard({ widget, onView, onEdit, onEmbed }) {
+function WidgetCard({ widget, onView, onEditReviews, onEditDesign, onEmbed }) {
   const format = FORMATS[widget.format];
   return (
     // gap-4, matching the campaign cards (Ali, 3 Sep: "gaps in the cards
@@ -2473,17 +2536,36 @@ function WidgetCard({ widget, onView, onEdit, onEmbed }) {
           ))}
         </dl>
       </CardContent>
-      {/* Preview is what most people want from a list, so it is the outline
-          button; Edit is a ghost; the overflow (DS DropdownMenu, the
-          MoreHorizontal trigger the cards had before) holds Embed code, or
-          Feed URL for the JSON feed, which opens the Embed sheet. */}
-      <CardFooter className="mt-auto justify-start gap-1.5">
+{/* THE CARD IS THE WAY IN TO BOTH EDITORS (Ali, 20 Sep). The editor's
+          three-item rail is gone, so one Edit button would have reached Select
+          reviews and left Widget design with no door at all. Two named buttons
+          say which page they open, which the single "Edit" never did.
+          Preview stays the outline button, the two Edits are ghosts, and the
+          overflow (DS DropdownMenu, the MoreHorizontal trigger the cards had
+          before) still holds Embed code, or Feed URL for the JSON feed.
+          NOTE, three visible controls against Ali's usual two: Preview, Edit
+          reviews and Edit design. Preview could go in the overflow, since the
+          card's title already opens it, and that is his call rather than one
+          to take here. Flagged in the report.
+          NO EDIT DESIGN ON A JSON FEED: a feed carries no design, and the
+          rail item for it was already filtered out for the same reason. */}
+      <CardFooter className="mt-auto flex-wrap justify-start gap-1.5">
         <Button variant="outline" size="sm" dataHook={`widget-${widget.id}-view`} onClick={onView}>
           Preview
         </Button>
-        <Button variant="ghost" size="sm" dataHook={`widget-${widget.id}-edit`} onClick={onEdit}>
-          Edit
+        <Button variant="ghost" size="sm" dataHook={`widget-${widget.id}-edit`} onClick={onEditReviews}>
+          Edit reviews
         </Button>
+        {widget.format === "json" ? null : (
+          <Button
+            variant="ghost"
+            size="sm"
+            dataHook={`widget-${widget.id}-edit-design`}
+            onClick={onEditDesign}
+          >
+            Edit design
+          </Button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -2514,13 +2596,20 @@ function WidgetCard({ widget, onView, onEdit, onEmbed }) {
 // items-start, so a three-row List card is its own height instead of being
 // stretched to the seven-row Carousel and leaving ~180px of white (Showcase
 // audit, 10 Sep).
-function WidgetsDashboard({ widgets, onView, onEdit, onEmbed }) {
+function WidgetsDashboard({ widgets, onView, onEditReviews, onEditDesign, onEmbed }) {
   return (
     <div className="grid items-start gap-4 md:grid-cols-2">
       {FORMAT_ORDER.map((id) => widgets.find((w) => w.id === id))
         .filter(Boolean)
         .map((w) => (
-          <WidgetCard key={w.id} widget={w} onView={() => onView(w)} onEdit={() => onEdit(w)} onEmbed={() => onEmbed(w)} />
+          <WidgetCard
+            key={w.id}
+            widget={w}
+            onView={() => onView(w)}
+            onEditReviews={() => onEditReviews(w)}
+            onEditDesign={() => onEditDesign(w)}
+            onEmbed={() => onEmbed(w)}
+          />
         ))}
     </div>
   );
@@ -2528,268 +2617,124 @@ function WidgetsDashboard({ widgets, onView, onEdit, onEmbed }) {
 
 /* ============================== settings page ============================= */
 
-// A SETTINGS PAGE WITH A RAIL, NOT A WIZARD (Ali, 7 Sep: "switch our Review
-// Showcase creation/editing to a similar workflow that we have for the Review
-// builder ... so a left rail, I think it works better"). The four wizard
-// steps become four rail sections. Nothing is sequenced and nothing gates
-// anything: every setting already holds a working value, so Save is enabled
-// from the first render, and the one thing that can genuinely be wrong (a set
-// of filters that matches nothing) is checked when it is pressed.
+// TWO PAGES, AND NO RAIL ON EITHER (Ali, 20 Sep, in order: "I think we would
+// have to select reviews on its own page, and then do the design stuff on its
+// own page", then "yeah, no rail for select reviews", then, on the design
+// page, "So, we are leaning into preview, and you can edit each part, just
+// like we had preview and edit in Review Builder").
 //
-// COPIED FROM THE REVIEW BUILDER'S TEMPLATE EDITOR, not re-derived: the rail
-// (plain buttons with tablist semantics: icon, label, subtext, active state),
-// the General card (now DS Field primitives), the preview-led cards with one
-// Edit button each, and the right-hand sheet carrying Review Manager's drawer
-// overrides. If a third screen needs this shape, lift it into
-// @brightlocal/wizard-shell rather than copying it a third time.
+// The three-item rail (Reviews / Widget Design / Embed) is gone.
 //
-// `rail` is the rail label, `sub` the line under it, `hint` the line under
-// the sheet's title. Three different lengths for three different places.
-const SECTIONS = [
-  {
-    id: "reviews",
-    rail: "Reviews",
-    sub: "Which reviews appear",
-    Icon: ListChecks,
-    hint: "The reviews this showcase publishes on your site",
-  },
-  {
-    id: "design",
-    rail: "Widget Design",
-    sub: "How your reviews look",
-    Icon: Palette,
-    hint: "How each review looks on your site",
-  },
-  // EMBED ON THE RAIL (Ali, 7 Sep: "we will also need a tab on the left rail
-  // for the embed preview and code itself", then "or just the code maybe?").
-  // Code only: the other cards already show the widget. Code, not Code2,
-  // because the icon bundle carries no Code2 and Code is what the dashboard
-  // already uses for embed.
-  {
-    id: "embed",
-    rail: "Embed",
-    sub: "Code for your site",
-    Icon: Code,
-    hint: "The lines that put this showcase on your site",
-  },
+//   Select reviews is full bleed, because the table it exists for could not
+//   fit beside a 256px rail: measured at 1280 the table needs 736 and the
+//   card was 566, so Position and Blacklist sat behind a horizontal scroll
+//   (Ali, the same night: "I dont want scrolling tables"). Without the rail
+//   the card is 848 and the table fits whole.
+//
+//   Widget design is preview-led, in the shape the Review Builder's template
+//   editor already uses: the widget itself at the top, then one block per
+//   part, each with a heading, a line saying what that part is set to, and an
+//   Edit that opens a sheet holding just that part's fields. The headings are
+//   the point (Ali, the same night: "I'd actually edit each section, and I'd
+//   make each section header more prominent, I can hardly see that there are
+//   sections"). They are card titles now, not accordion triggers inside one
+//   long card. A sheet holding one group is small: what Ali objected to was a
+//   drawer with a whole review table in it, not sheets.
+//
+//   Embed left the editor altogether. Every showcase card on the list page
+//   already carries Embed code, or Feed URL for the JSON feed, in its
+//   overflow, so the section had nothing the card did not have. The card that
+//   read a section back, and the Design rows it read, went with it.
+//
+// Getting between the two pages is the CARD, not the editor: each card
+// carries Edit reviews and Edit design, and Close in the header goes back to
+// them. The header says which of the two you are on, so neither page is a
+// room with no name.
+
+// THE DESIGN PARTS ARE THE FORM'S OWN GROUPS, in the form's order: the preset
+// tiles, then the four groups the panel already had, then Animation for a
+// carousel. No group is invented here and none is renamed. Each is a block on
+// the page with its own Edit, and `label` is both the block's heading and its
+// sheet's title, so the thing you press and the thing that opens carry one
+// name.
+const DESIGN_GROUPS = [
+  { id: "preset", label: "Preset" },
+  { id: "layout", label: "Layout" },
+  { id: "container", label: "Container" },
+  { id: "text", label: "Text" },
+  { id: "reviews", label: "Reviews" },
+  { id: "animation", label: "Animation" },
 ];
-// A PER-TYPE RAIL, NOT A TOGGLE. A JSON feed has no design, so its rail is
-// Reviews and Embed; List and Carousel get Design between them. The set is
-// fixed by the showcase's type, so nothing appears or disappears while you
-// work.
-const sectionsFor = (widget) =>
-  SECTIONS.filter((s) => s.id !== "design" || widget.format !== "json");
+// A carousel has an Animation block and nothing else does, the same rule the
+// old Animation accordion item carried. Format-driven, so no block appears or
+// disappears while you work.
+const designGroupsFor = (widget) =>
+  DESIGN_GROUPS.filter((g) => g.id !== "animation" || widget.format === "carousel");
 
-// PLAIN BUTTONS, NOT THE DS SIDEBAR. Same reasoning as the Review Builder:
-// SidebarMenuButton needs a SidebarProvider whose wrapper ships min-h-svh and
-// fixed positioning meant for app chrome, which fights a page that already
-// scrolls. This keeps the icon, label, subtext and active state and carries
-// tablist semantics so it is keyboard-navigable.
-function SettingsRail({ sections, value, onChange }) {
-  // STICKY (Ali, 7 Sep: "left rail should be sticky"). The shell's content
-  // area is the scroller and the header sits outside it, so top-0 pins the
-  // rail flush under the header while the cards scroll past. self-start stops
-  // the grid stretching it to the card's height, which would leave nothing for
-  // sticky to do. md only: below that the rail stacks above the card and
-  // should scroll away with it.
-  return (
-    <div
-      role="tablist"
-      aria-orientation="vertical"
-      aria-label="Showcase settings"
-      className="flex flex-col gap-1 md:sticky md:top-0 md:self-start"
-      data-hook="widget-rail"
-    >
-      {sections.map((x) => {
-        const on = x.id === value;
-        return (
-          <button
-            key={x.id}
-            type="button"
-            role="tab"
-            aria-selected={on}
-            data-hook={`widget-tab-${x.id}`}
-            onClick={() => onChange(x.id)}
-            className={`flex items-start gap-2.5 rounded-md px-3 py-2.5 text-left transition-colors ${
-              on ? "bg-muted" : "hover:bg-muted/50"
-            }`}
-          >
-            <x.Icon className={`mt-0.5 size-4 shrink-0 ${on ? "" : "text-muted-foreground"}`} />
-            <span className="flex min-w-0 flex-col">
-              <span className={`truncate text-sm ${on ? "font-medium" : ""}`}>{x.rail}</span>
-              <span className="text-muted-foreground truncate text-xs">{x.sub}</span>
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// The one-line description under each card's title. Says what is currently
-// chosen, so the card reads as a summary before you open the sheet.
-function sectionSummary(id, widget, reviews) {
-  // NO CAPTIONS THAT RESTATE THE ROWS (Ali, 7 Sep: "Why are we adding yet
-  // more descriptions? Remove."). Reviews and a saved Embed say nothing
-  // under their title; the rows and the code carry the facts. The two lines
-  // that survive explain a DISABLED state (a JSON feed has no design; an
-  // unsaved showcase has no code yet), which the rows cannot.
-  if (id === "reviews") return null;
-  if (id === "embed") {
-    // AN UNSAVED WIDGET HAS NO ID, and the code carries the id, so the code
-    // is shown faded with this sentence rather than the section hiding
-    // (no rail items appearing or disappearing).
-    return widget.id ? null : "The code becomes available once the showcase is saved.";
-  }
-  if (id === "design" && widget.format === "json") {
-    return "A JSON feed carries no design. Your own front end decides how it looks.";
-  }
-  // Layout and Design say it in rows (sectionRows), not a sentence.
-  return null;
-}
-
-// ONE SHAPE FOR EVERY SETTINGS CARD (Ali, 7 Sep: "we have key value pairs
-// here, but then we comma separate them in the design tab? annoying"). The
-// Reviews card had rows and Design had a sentence stitched from the same
-// facts. Every section now lists its settings as key / value rows, in the
-// order the sheet edits them, so a card reads like the sheet behind it.
-// The one look for a group heading, on the card and in the sheet alike.
-const GROUP_HEADING_CLASS = "text-muted-foreground text-xs font-medium";
-// Rows come flat (Reviews) or grouped (Design); the card renders both as
-// groups, a flat list being one group with no heading.
-const asGroups = (rows) => (rows.length && rows[0].rows ? rows : [{ id: "all", heading: null, rows }]);
-
-function sectionRows(id, widget, reviews) {
-  // The SAME rows as the hub card, from the same function, built off the
-  // resolved set this page already has in hand.
-  if (id === "reviews") return widgetRows(widget, reviews);
-  if (id === "design") {
-    if (widget.format === "json") return null;
-    const d = widget.design;
+// THE LINE UNDER EACH HEADING SAYS WHAT THAT PART IS SET TO RIGHT NOW, which
+// is what makes a block worth reading before you open it. One line, the
+// settings that change the look most, in the order the sheet edits them. It
+// is deliberately not every field: the old cards listed all eight Container
+// values as key and value rows, and Ali's complaint about that screen was
+// that he could not see where one section ended and the next began.
+function designGroupSummary(id, widget) {
+  const d = widget.design;
+  if (id === "preset") {
     const preset = presetOf(d);
+    return preset === "custom" ? "Custom" : DESIGN_PRESETS[preset].label;
+  }
+  if (id === "layout") {
+    const cols = COLUMN_OPTIONS.find((o) => o.id === d.columns)?.label ?? "One column";
+    return `${cols}, ${d.count} review${d.count === 1 ? "" : "s"}, max height ${d.maxHeight}px`;
+  }
+  if (id === "container") {
+    const title = headerTitle(d);
+    return `${d.bg}, ${d.radius}px corners, ${
+      d.borderOn ? `${d.borderWidth}px border` : "no border"
+    }${title ? `, titled ${title}` : ""}`;
+  }
+  if (id === "text") {
+    const align = ALIGN_OPTIONS.find((o) => o.id === d.align)?.label ?? "Left";
+    return `${d.font}, ${d.size}px, ${align.toLowerCase()} aligned, ${d.color}`;
+  }
+  if (id === "reviews") {
     const shown = [
-      d.showName ? "Reviewer's name" : null,
-      d.showSource ? "Review site icon" : null,
-      d.dateFormat !== "hidden" ? "Review date" : null,
+      d.showName !== false ? "name" : null,
+      d.showSource !== false ? "site icon" : null,
+      d.dateFormat !== "hidden" ? "date" : null,
     ].filter(Boolean);
-    // THE SHEET'S OWN GROUPS, IN THE SHEET'S ORDER (Ali, 7 Sep: "In Design we
-    // need sub headers to break up all those key values, there are a lot, so
-    // some kind of grouping"). The headings are now the real screen's:
-    // Preset, Layout, Container, Text, Reviews, and Animation for a carousel
-    // only. Format-driven, so no group ever flickers, and a heading never
-    // renders without rows. Every row is always present within its group, so
-    // toggling never moves a row above the widget.
-    const groups = [
-      {
-        id: "preset",
-        heading: "Preset",
-        rows: [
-          {
-            k: "Design preset",
-            v: preset === "custom" ? "Custom" : DESIGN_PRESETS[preset].label,
-          },
-        ],
-      },
-      {
-        id: "layout",
-        heading: "Layout",
-        rows: [
-          { k: "Widget max height", v: `${d.maxHeight}px` },
-          {
-            k: "Desktop layout",
-            v: COLUMN_OPTIONS.find((o) => o.id === d.columns)?.label ?? "One column",
-          },
-          { k: "Reviews to show", v: `${d.count}` },
-        ],
-      },
-      {
-        id: "container",
-        heading: "Container",
-        rows: [
-          { k: "Background", v: d.bg },
-          { k: "Corner radius", v: `${d.radius}px` },
-          { k: "Border", v: d.borderOn ? `${d.borderWidth}px ${d.borderColor}` : "None" },
-          {
-            k: "Shadow",
-            v: shadowLabel(d.shadowOn, d.shadowX, d.shadowY, d.shadowBlur, d.shadowSpread, d.shadowColor),
-          },
-          { k: "Title", v: headerTitle(d) || "None" },
-          {
-            k: "Review summary",
-            v: SUMMARY_OPTIONS.find((o) => o.id === d.summary)?.label ?? "None",
-          },
-        ],
-      },
-      {
-        id: "text",
-        heading: "Text",
-        rows: [
-          { k: "Font", v: d.font },
-          { k: "Color", v: d.color },
-          { k: "Link color", v: d.linkColor },
-          { k: "Size", v: `${d.size}px` },
-          { k: "Alignment", v: ALIGN_OPTIONS.find((o) => o.id === d.align)?.label ?? "Left" },
-        ],
-      },
-      {
-        id: "reviews",
-        heading: "Reviews",
-        rows: [
-          { k: "Show on each review", v: shown.length ? shown.join(", ") : "Nothing extra" },
-          {
-            k: "Date format",
-            v: DATE_FORMATS.find((o) => o.id === d.dateFormat)?.label ?? "Hidden",
-          },
-          { k: "Character count", v: `${d.chars} characters` },
-          { k: "Schema", v: d.schema ? "Included" : "Not included" },
-          { k: "Background", v: d.reviewBg },
-          { k: "Corner radius", v: `${d.reviewRadius}px` },
-          {
-            k: "Border",
-            v: d.reviewBorderOn ? `${d.reviewBorderWidth}px ${d.reviewBorderColor}` : "None",
-          },
-          {
-            k: "Shadow",
-            v: shadowLabel(
-              d.reviewShadowOn,
-              d.reviewShadowX,
-              d.reviewShadowY,
-              d.reviewShadowBlur,
-              d.reviewShadowSpread,
-              d.reviewShadowColor,
-            ),
-          },
-        ],
-      },
-    ];
-    if (widget.format === "carousel") {
-      const c = carouselOf(d);
-      groups.push({
-        id: "animation",
-        heading: "Animation",
-        // One row per control, in the panel's order, so the card and the
-        // sheet cannot disagree about what a carousel is doing. The keys drop
-        // the panel's colons: these rows already read as key and value.
-        rows: [
-          { k: "Auto rotate slides", v: c.autoRotate ? "Yes" : "No" },
-          {
-            k: "Transition style",
-            v: TRANSITION_OPTIONS.find((o) => o.id === c.transition)?.label ?? "Fade",
-          },
-          { k: "Transition animation speed", v: `${c.speed} second${c.speed === 1 ? "" : "s"}` },
-          { k: "Show slide arrows", v: c.arrows ? "Yes" : "No" },
-          { k: "Show slide dots", v: c.dots ? "Yes" : "No" },
-        ],
-      });
-    }
-    return groups;
+    return `${d.chars} characters, ${shown.length ? `showing ${shown.join(", ")}` : "nothing extra shown"}`;
+  }
+  if (id === "animation") {
+    const c = carouselOf(d);
+    const t = TRANSITION_OPTIONS.find((o) => o.id === c.transition)?.label ?? "Fade";
+    return `${c.autoRotate ? "Auto rotating" : "Manual"}, ${t.toLowerCase()} over ${c.speed} second${
+      c.speed === 1 ? "" : "s"
+    }`;
   }
   return null;
 }
 
-// THE EMBED CODE, ONE COMPONENT (Ali, 7 Sep: "needs work"). Used by the
-// Embed rail card and by the list view's Embed sheet, so there is one layout,
-// not two. What it holds, and only this: a Copy button in its own row above
+// A PHONE GETS THE BOTTOM SHEET, everything else the right-hand one. Review
+// Manager's rule, and the Review Builder's template editor copies it too; a
+// side panel on a 390px screen leaves nothing to read the preview in.
+function useNarrowSheet() {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const sync = () => setNarrow(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return narrow;
+}
+
+// THE EMBED CODE, ONE COMPONENT (Ali, 7 Sep: "needs work"). Used by the list
+// view's Embed sheet and by the JSON feed's own preview, so there is one
+// layout, not two. The editor's Embed section used it too until 20 Sep, when
+// embed came off the rail; the component is untouched by that. What it holds,
+// and only this: a Copy button in its own row above
 // the code (never over it: the old absolute button sat on the text), the code
 // in a box that wraps or scrolls on its own, and three short steps. No card
 // round it, no Format or Showing rows; the card the reader came from already
@@ -2866,18 +2811,11 @@ function EmbedCode({ widget, disabled = false, steps = true, hook = "embed-code"
   );
 }
 
-// PREVIEW FIRST, EDIT IN A SHEET, one choice per card (Ali, 7 Sep, on the
-// Review Builder: "lead with preview for each section, and have an edit which
-// opens up a sheet"). The card shows what the customer will see, directly on
-// the card (see the no-frame note above); the controls are a deliberate act
-// in a side panel with the preview still visible behind. The Embed card is
-// the exception: nothing to edit, so no Edit button, and the code instead of
-// the widget.
 // WHAT STOPS A SAVE, and what the card says about it (Ali, 7 Sep: "Error
 // message is a bit LAME"). One kind at a time, checked in this order. It
-// renders as the DS warning Alert INSIDE the Reviews card, above its rows,
-// with a title and one specific sentence, where the rail has already jumped;
-// not as a bare line under the page. See App for when it clears.
+// renders as the DS warning Alert at the top of the Select reviews page,
+// above the filters it names, where Save has already sent you; not as a bare
+// line under the page. See App for when it clears.
 // ONE CHECK LEFT. The two hand-picked ones (nothing chosen, more than fifty
 // chosen) went with hand-picking itself; a showcase whose filters match
 // nothing is the only state left that cannot be saved into something useful.
@@ -2888,105 +2826,20 @@ function issueFor(widget, reviews) {
 const ISSUE_COPY = {
   match: {
     title: "No reviews match",
+    // IT NAMES THE FILTERS ABOVE IT NOW. It used to say "Open Select
+    // Reviews", which was the way in when this was a card with an Edit
+    // button; Save lands you on the filters themselves.
     body: () =>
-      "Open Select Reviews and widen the ratings, sources or dates so at least one review matches.",
+      "Widen the ratings, sources or dates above so at least one review matches.",
   },
 };
 
-function SectionCard({ section, widget, reviews, onEdit, issue = null }) {
-  // THE DESIGN SECTION STAYS ON THE RAIL FOR A JSON FEED. The wizard dropped
-  // the Design step when the format was JSON. Here a rail item that came and
-  // went as you changed the layout would be the layout jump Ali does not want,
-  // so the section stays and its Edit is disabled, with the description
-  // saying why. ASSUMPTION: Ali may prefer the section to hide as the
-  // Builder's rating section does.
-  const noDesign = section.id === "design" && widget.format === "json";
-  const embed = section.id === "embed";
-  return (
-    <Card className="min-w-0 max-w-none" dataHook={`widget-panel-${section.id}`}>
-      <CardHeader>
-        <CardTitle size="small" dataHook={`widget-panel-${section.id}-title`}>
-          {section.rail}
-        </CardTitle>
-        {sectionSummary(section.id, widget, reviews) ? (
-          <CardDescription dataHook={`widget-panel-${section.id}-desc`}>
-            {sectionSummary(section.id, widget, reviews)}
-          </CardDescription>
-        ) : null}
-        {embed ? null : (
-          <CardAction>
-            <Button
-              variant="outline"
-              size="sm"
-              dataHook={`widget-edit-${section.id}`}
-              onClick={onEdit}
-              disabled={noDesign}
-            >
-              Edit
-            </Button>
-          </CardAction>
-        )}
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {section.id === "reviews" && issue ? (
-          <AlertWarning
-            dataHook="reviews-issue"
-            title={ISSUE_COPY[issue].title}
-            description={ISSUE_COPY[issue].body(widget)}
-          />
-        ) : null}
-        {sectionRows(section.id, widget, reviews) ? (
-          /* Flat rows (Reviews) or grouped rows (Design) through one dl: a
-             group heading is a small muted line inside the list, so the
-             rows' hairlines run on beneath it. */
-          <dl
-            className="divide-border flex flex-col divide-y text-sm"
-            data-hook={`widget-panel-${section.id}-rows`}
-          >
-            {asGroups(sectionRows(section.id, widget, reviews)).flatMap((group) => [
-              group.heading ? (
-                <div
-                  key={`heading-${group.id}`}
-                  className={`pt-4 pb-1 first:pt-0 ${GROUP_HEADING_CLASS}`}
-                  data-hook={`widget-panel-${section.id}-group-${group.id}`}
-                >
-                  {group.heading}
-                </div>
-              ) : null,
-              ...group.rows.map((row) => (
-                <div key={`${group.id}-${row.k}`} className="flex items-baseline justify-between gap-3 py-1.5">
-                  <dt className="text-muted-foreground shrink-0">{row.k}</dt>
-                  <dd className="text-right">{row.v}</dd>
-                </div>
-              )),
-            ])}
-          </dl>
-        ) : null}
-        {embed ? (
-          <EmbedCode widget={widget} disabled={!widget.id} hook="widget-panel-embed-code" />
-        ) : (
-          /* THE REGISTRY'S PreviewFrame IS THE ONE WRAPPER around every showcase
-             render (Ali, 7 Sep: "I want this preview frame to be used, I think
-             it's good"): under the rows here, and in the Preview sheet.
-             surface="none" because the showcase paints its own ground. Code
-             never gets a frame (Ali: "we don't need it when we show things
-             like code"), so the Embed card above stays bare. */
-          <PreviewFrame surface="none" dataHook={`preview-frame-${section.id}`}>
-            <WidgetPreview widget={widget} reviews={reviews} />
-          </PreviewFrame>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+/* ---------------------------- widget design ------------------------------- */
 
-/* ------------------------------ sheet bodies ------------------------------ */
-
-// The controls that used to be the wizard's step bodies, one component per
-// sheet. Module scope, not inner declarations: a component declared inside
-// another remounts on every render and drops input focus. The reviews sheet
-// has no body component of its own: SelectReviews mounts straight into the
-// DrawerBody so its toolbar can stick (see the select reviews section).
+// The controls that were the wizard's Design step, then the Design sheet's
+// body, and are now the Widget Design page. Module scope, not inner
+// declarations: a component declared inside another remounts on every render
+// and drops input focus.
 // One write path for the carousel settings, merging over the defaults.
 function patchCarousel(setWidget, patch) {
   setWidget((w) => ({ ...w, design: { ...w.design, carousel: { ...carouselOf(w.design), ...patch } } }));
@@ -3345,12 +3198,14 @@ function PresetTiles({ design, value, onChange }) {
   );
 }
 
-// Returns a FRAGMENT: [sticky live preview, controls]. Mounted directly in
-// the sheet's scroller so the preview can stick (see SelectReviews for the
-// same rule).
-function DesignSheetBody({ widget, setWidget }) {
-  const c = carouselOf(widget.design);
+// ONE GROUP'S FIELDS, FOR THE SHEET THAT OPENS ON IT. The field markup is
+// exactly what the accordion groups held, data-hooks and all; only the box
+// around it changed, from an item in one long card to a sheet of its own.
+// Module scope, not inner declarations: a component declared inside another
+// remounts on every render and drops input focus.
+function DesignGroupFields({ id, widget, setWidget }) {
   const d = widget.design;
+  const c = carouselOf(d);
   const preset = presetOf(d);
   // ONE WRITE PATH for every design field, so no control carries its own
   // spread and nothing can forget a key.
@@ -3362,17 +3217,393 @@ function DesignSheetBody({ widget, setWidget }) {
   // one thing a look is not allowed to overwrite. What a preset DOES rewrite
   // beyond the styling (the Layout numbers, and the Reviews group's Schema,
   // name, icon and date-format settings) is spelled out in the same comment.
-  const applyPreset = (id) => {
-    const { title: _title, ...look } = DESIGN_PRESETS[id].values;
+  const applyPreset = (pid) => {
+    const { title: _title, ...look } = DESIGN_PRESETS[pid].values;
     set(look);
   };
-  // LIVE PREVIEW AT THE TOP OF THE SHEET (Ali, 7 Sep: "the problem here is
-  // that we can't actually see the changes live; maybe we would have one
-  // item shown as a preview?"). The sheet covers the card's preview, so a
-  // compact one rides here: the SAME WidgetPreview in the registry
-  // PreviewFrame. Sticky, a direct child of the DrawerBody, so the controls
-  // scroll under it.
-  //
+
+  if (id === "preset") return <PresetTiles design={d} value={preset} onChange={applyPreset} />;
+  if (id === "layout")
+    return (
+      <>
+      <NumberField
+        id="design-max-height"
+        label="Widget max height"
+        value={d.maxHeight}
+        min={200}
+        max={4000}
+        onChange={(n) => set({ maxHeight: n })}
+      />
+      <Field dataHook="design-columns-field">
+        <FieldLabel htmlFor="design-columns-1" dataHook="design-columns-label">
+          Desktop layout display
+        </FieldLabel>
+        {/* GLYPHS, NAMED. The real screen draws three grid glyphs and
+            no words, so each item carries its name as its accessible
+            label instead of as visible text. The guard on the change
+            keeps one column always chosen: a ToggleGroup sends an
+            empty value when you press the item that is already on. */}
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          dataHook="design-columns"
+          value={d.columns}
+          onValueChange={(v) => (v ? set({ columns: v }) : null)}
+          aria-label="Desktop layout display"
+        >
+          {COLUMN_OPTIONS.map((o) => (
+            <ToggleGroupItem
+              key={o.id}
+              id={`design-columns-${o.id}`}
+              value={o.id}
+              dataHook={`design-columns-${o.id}`}
+              aria-label={o.label}
+            >
+              <o.Icon className="size-4" />
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      </Field>
+      <SliderField
+        id="design-count"
+        label="Number of reviews to show"
+        value={d.count}
+        min={1}
+        max={50}
+        onChange={(n) => set({ count: n })}
+      />
+      </>
+    );
+  if (id === "container")
+    return (
+      <>
+      <ColorField id="design-bg" label="Background" value={d.bg} onChange={(v) => set({ bg: v })} />
+      <NumberField
+        id="design-radius"
+        label="Corner radius"
+        value={d.radius}
+        min={0}
+        max={64}
+        onChange={(n) => set({ radius: n })}
+      />
+      {/* A CHECKBOX THAT REVEALS ITS FIELDS, as the real screen has
+          it. The values stay on the record while the box is off, so
+          unticking and reticking gives back what was set rather than
+          the default. */}
+      <CheckRow
+        id="design-border"
+        label="Customize border"
+        checked={d.borderOn}
+        onChange={(v) => set({ borderOn: v })}
+      />
+      {d.borderOn ? (
+        <div className="grid grid-cols-2 gap-3 pl-6" data-hook="design-border-fields">
+          <NumberField
+            id="design-border-width"
+            label="Width"
+            value={d.borderWidth}
+            min={0}
+            max={20}
+            onChange={(n) => set({ borderWidth: n })}
+          />
+          <ColorField
+            id="design-border-color"
+            label="Color"
+            value={d.borderColor}
+            onChange={(v) => set({ borderColor: v })}
+          />
+        </div>
+      ) : null}
+      <CheckRow
+        id="design-shadow"
+        label="Customize shadow"
+        checked={d.shadowOn}
+        onChange={(v) => set({ shadowOn: v })}
+      />
+      {d.shadowOn ? (
+        <ShadowFields hook="design-shadow" prefix="shadow" design={d} set={set} />
+      ) : null}
+      <CheckRow
+        id="design-title-on"
+        label="Customize widget title"
+        checked={d.titleOn}
+        onChange={(v) => set({ titleOn: v })}
+      />
+      {d.titleOn ? (
+        <Field dataHook="design-title-field" className="pl-6">
+          <FieldLabel htmlFor="design-title" dataHook="design-title-label">
+            Title text
+          </FieldLabel>
+          <Input
+            id="design-title"
+            dataHook="design-title"
+            value={d.title ?? ""}
+            placeholder="Customer Reviews"
+            onChange={(e) => set({ title: e.target.value })}
+          />
+        </Field>
+      ) : null}
+      <Field dataHook="design-summary-field">
+        <FieldLabel htmlFor="design-summary" dataHook="design-summary-label">
+          Review summary
+        </FieldLabel>
+        {/* 10rem and left-aligned under its label, as an inline style
+            for the reason the Every select carries one: the preview's
+            precompiled stylesheet does not always carry a w-* step,
+            and an unavailable utility is worse than a value. */}
+        <div style={{ width: "10rem" }}>
+          <Select value={d.summary} onValueChange={(v) => set({ summary: v })}>
+            <SelectTrigger id="design-summary" dataHook="design-summary" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SUMMARY_OPTIONS.map((o) => (
+                <SelectItem key={o.id} value={o.id}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <FieldDescription dataHook="design-summary-desc">
+          All counts every review this location has. Selected counts only the reviews this
+          showcase publishes.
+        </FieldDescription>
+      </Field>
+      </>
+    );
+  if (id === "text")
+    return (
+      <>
+      <Field dataHook="design-font-field">
+        <FieldLabel htmlFor="design-font" dataHook="design-font-label">
+          Font
+        </FieldLabel>
+        {/* Each option is drawn in its own face, so the list shows the
+            difference rather than naming it. */}
+        <Select value={d.font} onValueChange={(v) => set({ font: v })}>
+          <SelectTrigger id="design-font" dataHook="design-font" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {FONTS.map((f) => (
+              <SelectItem key={f.id} value={f.id}>
+                <span style={{ fontFamily: f.stack }}>{f.id}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
+      <ColorField id="design-color" label="Color" value={d.color} onChange={(v) => set({ color: v })} />
+      <ColorField
+        id="design-link-color"
+        label="Link color"
+        value={d.linkColor}
+        onChange={(v) => set({ linkColor: v })}
+      />
+      <SliderField
+        id="design-size"
+        label="Size"
+        value={d.size}
+        min={14}
+        max={20}
+        suffix="px"
+        onChange={(n) => set({ size: n })}
+      />
+      <Field dataHook="design-align-field">
+        <FieldLabel htmlFor="design-align-left" dataHook="design-align-label">
+          Alignment
+        </FieldLabel>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          dataHook="design-align"
+          value={d.align}
+          onValueChange={(v) => (v ? set({ align: v }) : null)}
+          aria-label="Alignment"
+        >
+          {ALIGN_OPTIONS.map((o) => (
+            <ToggleGroupItem
+              key={o.id}
+              id={`design-align-${o.id}`}
+              value={o.id}
+              dataHook={`design-align-${o.id}`}
+              aria-label={o.label}
+            >
+              <o.Icon className="size-4" />
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      </Field>
+      </>
+    );
+  if (id === "reviews")
+    return (
+      <>
+      {/* The three on-by-default checkboxes as data, one row each, so
+          they read as one set and a fourth costs a line. */}
+      <div className="flex flex-col gap-3">
+        {REVIEW_TOGGLES.map((o) => (
+          <CheckRow
+            key={o.key}
+            id={`design-${o.key.toLowerCase()}`}
+            label={o.label}
+            checked={d[o.key] !== false}
+            onChange={(v) => set({ [o.key]: v })}
+          />
+        ))}
+      </div>
+      <RadioField
+        id="design-date-format"
+        label="Date format"
+        value={d.dateFormat}
+        options={DATE_FORMATS}
+        onChange={(v) => set({ dateFormat: v })}
+      />
+      {/* The count is what the preview actually cuts at, and the tail
+          is a "Read More" link in the link colour. */}
+      <RadioField
+        id="design-chars"
+        label="Reviews character count"
+        value={d.chars}
+        options={CHAR_COUNTS}
+        onChange={(v) => set({ chars: Number(v) })}
+      />
+      <ColorField
+        id="design-review-bg"
+        label="Background"
+        value={d.reviewBg}
+        onChange={(v) => set({ reviewBg: v })}
+      />
+      <NumberField
+        id="design-review-radius"
+        label="Corner radius"
+        value={d.reviewRadius}
+        min={0}
+        max={64}
+        onChange={(n) => set({ reviewRadius: n })}
+      />
+      <CheckRow
+        id="design-review-border"
+        label="Customize border"
+        checked={d.reviewBorderOn}
+        onChange={(v) => set({ reviewBorderOn: v })}
+      />
+      {d.reviewBorderOn ? (
+        <div className="grid grid-cols-2 gap-3 pl-6" data-hook="design-review-border-fields">
+          <NumberField
+            id="design-review-border-width"
+            label="Width"
+            value={d.reviewBorderWidth}
+            min={0}
+            max={20}
+            onChange={(n) => set({ reviewBorderWidth: n })}
+          />
+          <ColorField
+            id="design-review-border-color"
+            label="Color"
+            value={d.reviewBorderColor}
+            onChange={(v) => set({ reviewBorderColor: v })}
+          />
+        </div>
+      ) : null}
+      <CheckRow
+        id="design-review-shadow"
+        label="Customize shadow"
+        checked={d.reviewShadowOn}
+        onChange={(v) => set({ reviewShadowOn: v })}
+      />
+      {d.reviewShadowOn ? (
+        <ShadowFields hook="design-review-shadow" prefix="reviewShadow" design={d} set={set} />
+      ) : null}
+      </>
+    );
+  if (id === "animation")
+    return (
+      <>
+        {/* THE PRODUCT'S OWN FIVE, IN ITS ORDER (Ali, 20 Sep, from a
+            screenshot of the real product's carousel settings). Loop
+            and the Every select are gone: neither exists on that
+            screen, and a control nobody can reach is worse than a
+            default. What replaced them all answers in the preview
+            above, which is the point of this group sitting under it.
+
+            THE LABELS CARRY THE SCREEN'S COLONS, and the four groups
+            above carry none, so this group reads differently beside
+            them.
+            ASSUMPTION: the colon is the product's, quoted rather than
+            tidied away. If it came from the note and not the screen,
+            dropping it is five edits and nothing else moves. */}
+        <YesNoField
+          id="design-auto-rotate"
+          label="Auto rotate slides:"
+          value={c.autoRotate}
+          onChange={(v) => patchCarousel(setWidget, { autoRotate: v })}
+        />
+        <RadioField
+          id="design-transition"
+          label="Transition style:"
+          value={c.transition}
+          options={TRANSITION_OPTIONS}
+          onChange={(v) => patchCarousel(setWidget, { transition: v })}
+        />
+        {/* NOT DISABLED WHILE AUTO ROTATE IS NO, which is what the old
+            Every select did. The real screen offers five plain
+            controls, and greying one out would be a rule we invented;
+            it also reads as the animation's own duration to anyone who
+            takes the label at its word (see CarouselWidget). */}
+        <SliderField
+          id="design-transition-speed"
+          label="Transition animation speed (seconds):"
+          value={c.speed}
+          min={SPEED_MIN}
+          max={SPEED_MAX}
+          onChange={(n) => patchCarousel(setWidget, { speed: n })}
+        />
+        <YesNoField
+          id="design-arrows"
+          label="Show slide arrows:"
+          value={c.arrows}
+          onChange={(v) => patchCarousel(setWidget, { arrows: v })}
+        />
+        <YesNoField
+          id="design-dots"
+          label="Show slide dots:"
+          value={c.dots}
+          onChange={(v) => patchCarousel(setWidget, { dots: v })}
+        />
+      </>
+    );
+  return null;
+}
+
+// WIDGET DESIGN IS A PREVIEW-LED PAGE (Ali, 20 Sep: "So, we are leaning into
+// preview, and you can edit each part, just like we had preview and edit in
+// Review Builder"). Copied from that editor rather than re-derived: the thing
+// being made is shown, each part is a block with a heading and a line saying
+// what it is set to, and Edit opens a sheet holding only that part's fields.
+//
+// THE PREVIEW IS THE BIGGEST THING ON THE PAGE and it leads it, which is the
+// whole point of the change. It is no longer sticky: it used to ride the top
+// of a long scrolling form, explaining the control under your cursor, and
+// there is no long form here any more. The blocks under it are six short
+// cards, and while a sheet is open the preview behind is what moves as you
+// type.
+//
+// FULL WIDTH, BECAUSE THE RAIL IS GONE. WizardShell's column is a hard
+// max-w-4xl, 896 on a 1280 viewport, and the body gutter leaves 848. The
+// design page used to hand 256 of that to a rail and draw the widget in 568.
+// Widening the shell is one line in ds/wizard-shell.jsx, where it also widens
+// the Review Builder's template editor, and Ali reversed two attempts at that
+// on 7 Sep ("the width of both was completely fine before"), so 848 is the
+// number and it is his call, not this file's.
+function WidgetDesign({ widget, setWidget }) {
+  const groups = designGroupsFor(widget);
+  // WHICH PART'S SHEET IS OPEN, and nothing else. Edits are live, so the
+  // sheet has no draft of its own and Done only dismisses.
+  const [editing, setEditing] = useState(null);
+  const open = groups.find((g) => g.id === editing) ?? null;
+  const narrow = useNarrowSheet();
   // THE SHOWCASE'S REAL SET, NOT A SAMPLE. It used to be a hard two reviews
   // (three for a carousel), which quietly made three controls unjudgeable at
   // the moment you were setting them: "Number of reviews to show" changed
@@ -3383,488 +3614,135 @@ function DesignSheetBody({ widget, setWidget }) {
   // count itself, so every one of the three now answers.
   const sample = resolveReviews(widget);
   return (
-    <>
-      {/* BOUNDED, because the widget is not. Now that the preview holds the
-          real set it can run to four cards of 280-character reviews, and a
-          sticky block that tall would leave no room for the controls it
-          exists to explain. An inline style rather than a utility class so it
-          survives wherever this screen renders. The widget's own "Widget max
-          height" still bites first at anything under this, which is where
-          that setting is worth watching anyway. */}
-      {/* shrink-0 IS LOAD BEARING. This is a flex item in the sheet's
-          scrolling column and it carries overflow-y itself, so its automatic
-          minimum size is zero: the controls below it won the space and the
-          preview collapsed to a 25px hairline, which is what every Design
-          frame in the capture run was showing (20 Sep). The preview is the
-          one thing in this sheet that has to be visible while you change a
-          setting, so it never shrinks. */}
-      <div
-        className="bg-background sticky top-0 z-10 shrink-0 border-b px-4 py-3"
-        style={{ maxHeight: "45vh", overflowY: "auto" }}
-        data-hook="design-live-preview"
+    <div className="flex min-w-0 flex-col gap-4" data-hook="design-page">
+      <Card dataHook="design-preview-card" className="max-w-none gap-0 p-0" density="condensed">
+        <CardHeader className="px-4 pt-4 pb-3">
+          {/* SENTENCE CASE. "Widget Design" is the product's name for the
+              step; a card title is a heading, so it reads "Widget design". */}
+          <CardTitle dataHook="design-card-title">Widget design</CardTitle>
+          {/* The real screen's own line. */}
+          <CardDescription dataHook="design-intro">
+            Customize your widget so it displays your reviews how you want your customers to see them.
+          </CardDescription>
+        </CardHeader>
+        {/* BOUNDED, because the widget is not. The preview holds the real set,
+            so it can run to fifty cards of 280-character reviews, and a block
+            that tall would leave no room for the parts it exists to explain.
+            An inline style rather than a utility class so it survives wherever
+            this screen renders. The widget's own "Widget max height" still
+            bites first at anything under this, which is where that setting is
+            worth watching anyway. 60vh, up from the 45 it had as a sticky
+            strip: it is the subject of the page now, not a band above a
+            form. */}
+        <div className="px-4 pb-4" style={{ maxHeight: "60vh", overflowY: "auto" }} data-hook="design-live-preview">
+          <PreviewFrame surface="none" dataHook="preview-frame-design">
+            <WidgetPreview widget={widget} reviews={sample} />
+          </PreviewFrame>
+        </div>
+      </Card>
+
+      {/* ONE BLOCK PER PART. The heading is a CardTitle at the card's own
+          size, not the small one and not an accordion trigger, because not
+          being able to see where a section starts was the complaint. The line
+          under it says what the part is set to, so the block is worth reading
+          before you open it, and Edit is the DS outline button in CardAction,
+          exactly as the Review Builder draws it.
+          data-hook="design-group-<id>" is the hook the accordion trigger used
+          to carry, kept on the block that replaced it. */}
+      {groups.map((group) => (
+        <Card key={group.id} className="max-w-none" dataHook={`design-group-${group.id}`}>
+          <CardHeader>
+            <CardTitle dataHook={`design-group-${group.id}-title`}>{group.label}</CardTitle>
+            <CardDescription dataHook={`design-group-${group.id}-summary`}>
+              {designGroupSummary(group.id, widget)}
+            </CardDescription>
+            <CardAction>
+              <Button
+                variant="outline"
+                size="sm"
+                dataHook={`design-edit-${group.id}`}
+                onClick={() => setEditing(group.id)}
+              >
+                Edit
+              </Button>
+            </CardAction>
+          </CardHeader>
+        </Card>
+      ))}
+
+      {/* ONE SHEET, DRIVEN BY WHICH PART IS OPEN. A drawer per group would be
+          six copies of the same furniture. Right-hand from sm up, bottom on a
+          phone: Review Manager's rule, copied rather than reinvented, and the
+          same DRAWER_WIDTH clamp the preview and embed sheets on the list
+          page use, so every overlay on this screen is the same object. */}
+      <Drawer
+        open={open !== null}
+        onOpenChange={(o) => (o ? null : setEditing(null))}
+        direction={narrow ? "bottom" : "right"}
       >
-        <PreviewFrame surface="none" dataHook="preview-frame-design-sheet">
-          <WidgetPreview widget={widget} reviews={sample} />
-        </PreviewFrame>
-      </div>
-      <div className="flex flex-col gap-5 px-4 py-4" data-hook="design-controls">
-        {/* The real screen's own line, under the panel title. */}
-        <p className="text-muted-foreground text-sm" data-hook="design-intro">
-          Customize your widget so it displays your reviews how you want your customers to see them.
-        </p>
-        <PresetTiles design={d} value={preset} onChange={applyPreset} />
-        {/* FOUR COLLAPSIBLE GROUPS, in the real screen's order and with its
-            names: Layout, Container, Text, Reviews. DS Accordion,
-            type="multiple" so closing one never opens another, and every one
-            open on arrival: this is a settings list, not a quiz. Animation is
-            a fifth for the carousel, format-driven, so nothing appears or
-            disappears while you work. */}
-        <Accordion
-          type="multiple"
-          dataHook="design-groups"
-          defaultValue={["layout", "container", "text", "reviews", "animation"]}
+        {/* THE SHEET IS A PORTAL, so it renders on document.body, OUTSIDE
+            [data-hook="widget-settings-layout"] where WIZARD_TYPE_SCALE sets
+            the form controls to 13px. Without this the same fields come out a
+            size larger in the sheet than they did on the page (Ali, 7 Sep, on
+            the Builder: "the size of the text inputs varies"). Same rule,
+            re-scoped to the sheet. */}
+        <style>{`
+          [data-hook="design-sheet"] [data-slot="input"],
+          [data-hook="design-sheet"] [data-slot="textarea"],
+          [data-hook="design-sheet"] [data-slot="select-trigger"],
+          [data-hook="design-sheet"] [data-slot="select-value"] {
+            font-size: 0.8125rem;
+            line-height: 1.125rem;
+          }
+        `}</style>
+        <DrawerContent
+          dataHook="design-sheet"
+          className={`flex flex-col ${narrow ? "" : "h-full"} ${DRAWER_WIDTH}`}
+          style={narrow ? { marginTop: 0, maxHeight: "92svh" } : undefined}
         >
-          <AccordionItem value="layout">
-            <AccordionTrigger data-hook="design-group-layout">Layout</AccordionTrigger>
-            <AccordionContent className="flex flex-col gap-5 pt-1">
-              <NumberField
-                id="design-max-height"
-                label="Widget max height"
-                value={d.maxHeight}
-                min={200}
-                max={4000}
-                onChange={(n) => set({ maxHeight: n })}
-              />
-              <Field dataHook="design-columns-field">
-                <FieldLabel htmlFor="design-columns-1" dataHook="design-columns-label">
-                  Desktop layout display
-                </FieldLabel>
-                {/* GLYPHS, NAMED. The real screen draws three grid glyphs and
-                    no words, so each item carries its name as its accessible
-                    label instead of as visible text. The guard on the change
-                    keeps one column always chosen: a ToggleGroup sends an
-                    empty value when you press the item that is already on. */}
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  dataHook="design-columns"
-                  value={d.columns}
-                  onValueChange={(v) => (v ? set({ columns: v }) : null)}
-                  aria-label="Desktop layout display"
-                >
-                  {COLUMN_OPTIONS.map((o) => (
-                    <ToggleGroupItem
-                      key={o.id}
-                      id={`design-columns-${o.id}`}
-                      value={o.id}
-                      dataHook={`design-columns-${o.id}`}
-                      aria-label={o.label}
-                    >
-                      <o.Icon className="size-4" />
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-              </Field>
-              <SliderField
-                id="design-count"
-                label="Number of reviews to show"
-                value={d.count}
-                min={1}
-                max={50}
-                onChange={(n) => set({ count: n })}
-              />
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="container">
-            <AccordionTrigger data-hook="design-group-container">Container</AccordionTrigger>
-            <AccordionContent className="flex flex-col gap-5 pt-1">
-              <ColorField id="design-bg" label="Background" value={d.bg} onChange={(v) => set({ bg: v })} />
-              <NumberField
-                id="design-radius"
-                label="Corner radius"
-                value={d.radius}
-                min={0}
-                max={64}
-                onChange={(n) => set({ radius: n })}
-              />
-              {/* A CHECKBOX THAT REVEALS ITS FIELDS, as the real screen has
-                  it. The values stay on the record while the box is off, so
-                  unticking and reticking gives back what was set rather than
-                  the default. */}
-              <CheckRow
-                id="design-border"
-                label="Customize border"
-                checked={d.borderOn}
-                onChange={(v) => set({ borderOn: v })}
-              />
-              {d.borderOn ? (
-                <div className="grid grid-cols-2 gap-3 pl-6" data-hook="design-border-fields">
-                  <NumberField
-                    id="design-border-width"
-                    label="Width"
-                    value={d.borderWidth}
-                    min={0}
-                    max={20}
-                    onChange={(n) => set({ borderWidth: n })}
-                  />
-                  <ColorField
-                    id="design-border-color"
-                    label="Color"
-                    value={d.borderColor}
-                    onChange={(v) => set({ borderColor: v })}
-                  />
-                </div>
-              ) : null}
-              <CheckRow
-                id="design-shadow"
-                label="Customize shadow"
-                checked={d.shadowOn}
-                onChange={(v) => set({ shadowOn: v })}
-              />
-              {d.shadowOn ? (
-                <ShadowFields hook="design-shadow" prefix="shadow" design={d} set={set} />
-              ) : null}
-              <CheckRow
-                id="design-title-on"
-                label="Customize widget title"
-                checked={d.titleOn}
-                onChange={(v) => set({ titleOn: v })}
-              />
-              {d.titleOn ? (
-                <Field dataHook="design-title-field" className="pl-6">
-                  <FieldLabel htmlFor="design-title" dataHook="design-title-label">
-                    Title text
-                  </FieldLabel>
-                  <Input
-                    id="design-title"
-                    dataHook="design-title"
-                    value={d.title ?? ""}
-                    placeholder="Customer Reviews"
-                    onChange={(e) => set({ title: e.target.value })}
-                  />
-                </Field>
-              ) : null}
-              <Field dataHook="design-summary-field">
-                <FieldLabel htmlFor="design-summary" dataHook="design-summary-label">
-                  Review summary
-                </FieldLabel>
-                {/* 10rem and left-aligned under its label, as an inline style
-                    for the reason the Every select carries one: the preview's
-                    precompiled stylesheet does not always carry a w-* step,
-                    and an unavailable utility is worse than a value. */}
-                <div style={{ width: "10rem" }}>
-                  <Select value={d.summary} onValueChange={(v) => set({ summary: v })}>
-                    <SelectTrigger id="design-summary" dataHook="design-summary" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SUMMARY_OPTIONS.map((o) => (
-                        <SelectItem key={o.id} value={o.id}>
-                          {o.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <FieldDescription dataHook="design-summary-desc">
-                  All counts every review this location has. Selected counts only the reviews this
-                  showcase publishes.
-                </FieldDescription>
-              </Field>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="text">
-            <AccordionTrigger data-hook="design-group-text">Text</AccordionTrigger>
-            <AccordionContent className="flex flex-col gap-5 pt-1">
-              <Field dataHook="design-font-field">
-                <FieldLabel htmlFor="design-font" dataHook="design-font-label">
-                  Font
-                </FieldLabel>
-                {/* Each option is drawn in its own face, so the list shows the
-                    difference rather than naming it. */}
-                <Select value={d.font} onValueChange={(v) => set({ font: v })}>
-                  <SelectTrigger id="design-font" dataHook="design-font" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FONTS.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>
-                        <span style={{ fontFamily: f.stack }}>{f.id}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <ColorField id="design-color" label="Color" value={d.color} onChange={(v) => set({ color: v })} />
-              <ColorField
-                id="design-link-color"
-                label="Link color"
-                value={d.linkColor}
-                onChange={(v) => set({ linkColor: v })}
-              />
-              <SliderField
-                id="design-size"
-                label="Size"
-                value={d.size}
-                min={14}
-                max={20}
-                suffix="px"
-                onChange={(n) => set({ size: n })}
-              />
-              <Field dataHook="design-align-field">
-                <FieldLabel htmlFor="design-align-left" dataHook="design-align-label">
-                  Alignment
-                </FieldLabel>
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  dataHook="design-align"
-                  value={d.align}
-                  onValueChange={(v) => (v ? set({ align: v }) : null)}
-                  aria-label="Alignment"
-                >
-                  {ALIGN_OPTIONS.map((o) => (
-                    <ToggleGroupItem
-                      key={o.id}
-                      id={`design-align-${o.id}`}
-                      value={o.id}
-                      dataHook={`design-align-${o.id}`}
-                      aria-label={o.label}
-                    >
-                      <o.Icon className="size-4" />
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-              </Field>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="reviews">
-            <AccordionTrigger data-hook="design-group-reviews">Reviews</AccordionTrigger>
-            <AccordionContent className="flex flex-col gap-5 pt-1">
-              {/* The three on-by-default checkboxes as data, one row each, so
-                  they read as one set and a fourth costs a line. */}
-              <div className="flex flex-col gap-3">
-                {REVIEW_TOGGLES.map((o) => (
-                  <CheckRow
-                    key={o.key}
-                    id={`design-${o.key.toLowerCase()}`}
-                    label={o.label}
-                    checked={d[o.key] !== false}
-                    onChange={(v) => set({ [o.key]: v })}
-                  />
-                ))}
-              </div>
-              <RadioField
-                id="design-date-format"
-                label="Date format"
-                value={d.dateFormat}
-                options={DATE_FORMATS}
-                onChange={(v) => set({ dateFormat: v })}
-              />
-              {/* The count is what the preview actually cuts at, and the tail
-                  is a "Read More" link in the link colour. */}
-              <RadioField
-                id="design-chars"
-                label="Reviews character count"
-                value={d.chars}
-                options={CHAR_COUNTS}
-                onChange={(v) => set({ chars: Number(v) })}
-              />
-              <ColorField
-                id="design-review-bg"
-                label="Background"
-                value={d.reviewBg}
-                onChange={(v) => set({ reviewBg: v })}
-              />
-              <NumberField
-                id="design-review-radius"
-                label="Corner radius"
-                value={d.reviewRadius}
-                min={0}
-                max={64}
-                onChange={(n) => set({ reviewRadius: n })}
-              />
-              <CheckRow
-                id="design-review-border"
-                label="Customize border"
-                checked={d.reviewBorderOn}
-                onChange={(v) => set({ reviewBorderOn: v })}
-              />
-              {d.reviewBorderOn ? (
-                <div className="grid grid-cols-2 gap-3 pl-6" data-hook="design-review-border-fields">
-                  <NumberField
-                    id="design-review-border-width"
-                    label="Width"
-                    value={d.reviewBorderWidth}
-                    min={0}
-                    max={20}
-                    onChange={(n) => set({ reviewBorderWidth: n })}
-                  />
-                  <ColorField
-                    id="design-review-border-color"
-                    label="Color"
-                    value={d.reviewBorderColor}
-                    onChange={(v) => set({ reviewBorderColor: v })}
-                  />
-                </div>
-              ) : null}
-              <CheckRow
-                id="design-review-shadow"
-                label="Customize shadow"
-                checked={d.reviewShadowOn}
-                onChange={(v) => set({ reviewShadowOn: v })}
-              />
-              {d.reviewShadowOn ? (
-                <ShadowFields hook="design-review-shadow" prefix="reviewShadow" design={d} set={set} />
-              ) : null}
-            </AccordionContent>
-          </AccordionItem>
-
-          {widget.format === "carousel" ? (
-            <AccordionItem value="animation">
-              <AccordionTrigger data-hook="design-group-animation">Animation</AccordionTrigger>
-              <AccordionContent className="flex flex-col gap-5 pt-1">
-                {/* THE PRODUCT'S OWN FIVE, IN ITS ORDER (Ali, 20 Sep, from a
-                    screenshot of the real product's carousel settings). Loop
-                    and the Every select are gone: neither exists on that
-                    screen, and a control nobody can reach is worse than a
-                    default. What replaced them all answers in the preview
-                    above, which is the point of this group sitting under it.
-
-                    THE LABELS CARRY THE SCREEN'S COLONS, and the four groups
-                    above carry none, so this group reads differently beside
-                    them.
-                    ASSUMPTION: the colon is the product's, quoted rather than
-                    tidied away. If it came from the note and not the screen,
-                    dropping it is five edits and nothing else moves. */}
-                <YesNoField
-                  id="design-auto-rotate"
-                  label="Auto rotate slides:"
-                  value={c.autoRotate}
-                  onChange={(v) => patchCarousel(setWidget, { autoRotate: v })}
-                />
-                <RadioField
-                  id="design-transition"
-                  label="Transition style:"
-                  value={c.transition}
-                  options={TRANSITION_OPTIONS}
-                  onChange={(v) => patchCarousel(setWidget, { transition: v })}
-                />
-                {/* NOT DISABLED WHILE AUTO ROTATE IS NO, which is what the old
-                    Every select did. The real screen offers five plain
-                    controls, and greying one out would be a rule we invented;
-                    it also reads as the animation's own duration to anyone who
-                    takes the label at its word (see CarouselWidget). */}
-                <SliderField
-                  id="design-transition-speed"
-                  label="Transition animation speed (seconds):"
-                  value={c.speed}
-                  min={SPEED_MIN}
-                  max={SPEED_MAX}
-                  onChange={(n) => patchCarousel(setWidget, { speed: n })}
-                />
-                <YesNoField
-                  id="design-arrows"
-                  label="Show slide arrows:"
-                  value={c.arrows}
-                  onChange={(v) => patchCarousel(setWidget, { arrows: v })}
-                />
-                <YesNoField
-                  id="design-dots"
-                  label="Show slide dots:"
-                  value={c.dots}
-                  onChange={(v) => patchCarousel(setWidget, { dots: v })}
-                />
-              </AccordionContent>
-            </AccordionItem>
-          ) : null}
-        </Accordion>
-      </div>
-    </>
+          {/* Title only, no hint (Ali, 7 Sep: "drop the descriptions in the
+              review template drawers, looks crap"). The block you pressed
+              already said what this part is set to. */}
+          <SideSheetHeader
+            title={open ? open.label : "Design"}
+            dataHook="design-sheet-panel"
+            closeHook="design-sheet-close"
+          />
+          <DrawerBody
+            className="mx-0 mt-0 flex min-h-0 max-w-none grow flex-col gap-5 overflow-y-auto px-4 py-4"
+            style={{ scrollbarWidth: "thin", scrollbarColor: "var(--border) transparent" }}
+            data-hook="design-controls"
+          >
+            {open ? <DesignGroupFields id={open.id} widget={widget} setWidget={setWidget} /> : null}
+          </DrawerBody>
+          {/* THE DS FOOTER IS BUILT FOR A BOTTOM DRAWER: it ships
+              `mx-auto mt-auto w-full max-w-sm flex-col`, which centres itself
+              at 384px and stretches its children full width, so in a
+              right-hand sheet it draws a 352px slab in the middle of an empty
+              column. Review Manager and the Builder both override the same
+              three things; this copies them rather than inventing a fourth
+              idea. */}
+          <DrawerFooter className="mx-0 max-w-none flex-row items-center justify-end gap-2 border-t p-4">
+            {/* Edits are live, so this only dismisses. The preview behind has
+                already moved. */}
+            <Button variant="primary" dataHook="design-sheet-done" onClick={() => setEditing(null)}>
+              Done
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    </div>
   );
 }
 
-// THE SHEET IS A PORTAL, so it renders on document.body, outside the wizard
-// layout where WIZARD_TYPE_SCALE sets inputs to 13px. Same rule, re-scoped to
-// the sheet, so its fields match the ones on the page (copied from the Review
-// Builder, which hit the same thing).
-const SHEET_TYPE_SCALE = `
-[data-hook="section-sheet-panel"] [data-slot="input"],
-[data-hook="section-sheet-panel"] [data-slot="textarea"],
-[data-hook="section-sheet-panel"] [data-slot="select-trigger"],
-[data-hook="section-sheet-panel"] [data-slot="select-value"] {
-  font-size: 0.8125rem;
-  line-height: 1.125rem;
-}
-`;
-
-// ONE SHEET, DRIVEN BY WHICH SECTION IS OPEN. A drawer per section would be
-// three copies of the same chrome.
-//
-// COPIED FROM REVIEW MANAGER'S DRAWER via the Review Builder, not re-derived:
-// DrawerHeader, DrawerBody and DrawerFooter all ship `mx-auto w-full max-w-sm`
-// and phone-shaped padding, so all three carry the same overrides, and the
-// body additionally needs `min-h-0 grow overflow-y-auto` or the header and
-// footer do not pin. Right-hand from sm up, bottom on a phone where a side
-// panel would leave no room to read, and the same width clamp as the preview
-// and embed sheets on this screen (DRAWER_WIDTH), so every panel on RM reads
-// as the same object.
-//
-// THE REVIEWS SHEET DROPS THE BODY PADDING. SelectReviews' toolbar is `sticky
-// top-0` and has to be a direct child of this scroller with nothing between
-// it and the edge, so the toolbar and the table carry their own padding there.
-//
-// AND IT IS WIDER THAN THE REST. Select Reviews is a full-width step in the
-// real product, and its table is six columns: Date, Source, Rating, the
-// review, Position and Blacklist. At the 40rem every other panel on RM uses,
-// the review column is about eight words a line and the two controls fall off
-// the end. So that one section gets its own clamp, still bounded so it never
-// covers the settings card it was opened from.
-function SectionSheet({ section, widget, setWidget, narrow, onClose }) {
-  if (!section) return null;
-  const reviews = section.id === "reviews";
-  return (
-    <Drawer open onOpenChange={(o) => (o ? null : onClose())} direction={narrow ? "bottom" : "right"}>
-      <style>{SHEET_TYPE_SCALE}</style>
-      <DrawerContent
-        dataHook="section-sheet-panel"
-        className={`flex flex-col ${narrow ? "" : "h-full"} ${reviews ? REVIEWS_DRAWER_WIDTH : DRAWER_WIDTH}`}
-        style={narrow ? { marginTop: 0, maxHeight: "92svh" } : undefined}
-      >
-        {/* ONE SHEET HEADER ACROSS RM: SideSheetHeader from the registry
-            (Ali, 7 Sep: "the sheet headers also dont seem to cope with
-            descriptions very well"). Title alone here; the hint already sits
-            under the section name in the rail and on the card. closeHook
-            keeps the close button at "section-sheet-close"; the header takes
-            the "section-sheet" hook, so the panel is "section-sheet-panel". */}
-        <SideSheetHeader title={section.rail} dataHook="section-sheet" closeHook="section-sheet-close" />
-        <DrawerBody
-          // No padding of its own: both sheet bodies start with a sticky bar
-          // that must be a direct child of this scroller, so they carry
-          // their own gutters.
-          className="mx-0 mt-0 flex min-h-0 max-w-none grow flex-col gap-0 overflow-y-auto p-0"
-          style={{ scrollbarWidth: "thin", scrollbarColor: "var(--border) transparent" }}
-        >
-          {reviews ? (
-            <SelectReviews widget={widget} setWidget={setWidget} />
-          ) : (
-            <DesignSheetBody widget={widget} setWidget={setWidget} />
-          )}
-        </DrawerBody>
-        {/* Edits are live, so this only dismisses. The preview behind has
-            already moved. */}
-        <DrawerFooter className="mx-0 max-w-none flex-row items-center justify-end gap-2 border-t p-4">
-          <Button variant="primary" dataHook="section-sheet-done" onClick={onClose}>
-            Done
-          </Button>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
-  );
-}
+// THE SECTION SHEET IS GONE; THE PART SHEET REPLACED IT. The old one carried
+// a whole Select Reviews table (Ali, 20 Sep: "That drawer seems awfully large
+// with the table in it"), and that is a page now. What opens in a drawer on
+// the editor is one design part at a time, which is a short list of fields:
+// see WidgetDesign. Its width is DRAWER_WIDTH, the same clamp the preview and
+// embed drawers on the showcase LIST use. The 13px form scale each sheet has
+// to re-declare lives with the sheet that needs it, because a portal renders
+// outside the layout hook WIZARD_TYPE_SCALE is scoped to.
 
 /* =============================== detail view ============================== */
 
@@ -3930,40 +3808,17 @@ export default function RMReviewShowcasePage() {
   // equal drafts.
   const [opened, setOpened] = useState(null);
   const [leaving, setLeaving] = useState(false);
-  // Which rail section the settings page is showing.
-  const [sectionId, setSectionId] = useState("reviews");
-  // Which section's controls are open in the sheet. null = none.
-  const [editingId, setEditingId] = useState(null);
-  // Below sm a right-hand panel leaves nothing to read beside it, so the sheet
-  // comes up from the bottom instead. Same breakpoint as Review Manager.
-  const [sheetNarrow, setSheetNarrow] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 639px)");
-    const sync = () => setSheetNarrow(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-  // Below md the rail stacks above the card, so a footer with Back / Next
-  // walks the sections (Ali, 7 Sep: "we might have a footer for forward and
-  // back on tablets and mobiles"). From lg up there is no footer at all.
-  // "Tablets and mobiles" is below lg (1023px and under), not below md: a
-  // 768px tablet keeps the rail beside the card but still gets the footer,
-  // as asked. Desktop (lg and up) has no footer.
-  const [narrowShell, setNarrowShell] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 1023px)");
-    const sync = () => setNarrowShell(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
+  // WHICH OF THE TWO EDITOR PAGES IS OPEN, "reviews" or "design". It used to
+  // be which of three rail sections was showing; the rail is gone and the
+  // card picks the page now, so this is set on the way in and by Save when a
+  // filter set matches nothing.
+  const [editorPage, setEditorPage] = useState("reviews");
 
   const active = widgets.find((w) => w.id === activeId) ?? null;
   const draftReviews = resolveReviews(draft);
-  const sections = sectionsFor(draft);
-  const section = sections.find((s) => s.id === sectionId) ?? sections[0];
-  const editing = sections.find((s) => s.id === editingId) ?? null;
+  // A JSON feed has no design, so there is no design page to be on even if
+  // something asked for one.
+  const onDesign = editorPage === "design" && draft.format !== "json";
 
   // Edits go straight to the draft; the save-blocking alert clears itself below.
   const patchDraft = (next) => setDraft(next);
@@ -3974,26 +3829,27 @@ export default function RMReviewShowcasePage() {
     if (issue && issueFor(draft, draftReviews) !== issue) setIssue(null);
   }, [issue, draft, draftReviews]);
 
-  function openSettings(w) {
+  // THE CARD SAYS WHICH PAGE TO OPEN. Edit reviews and Edit design are the
+  // same editor on the same draft; only the page differs.
+  function openSettings(w, page = "reviews") {
     const d = { ...w };
     setDraft(d);
     setOpened(JSON.stringify(d));
-    setSectionId("reviews");
-    setEditingId(null);
+    setEditorPage(page === "design" && w.format !== "json" ? "design" : "reviews");
     setIssue(null);
     setView("build");
   }
-  const startEdit = (w) => openSettings(w);
+  const startEdit = (w) => openSettings(w, "reviews");
 
   // VALIDATED ON SAVE, NOT ON NEXT. The wizard checked each step as you left
-  // it; a settings page has no leaving, so the same three checks run when you
-  // press Save, and the rail jumps to the Reviews section, which is where all
-  // three are put right.
+  // it; a settings page has no leaving, so the check runs when you press
+  // Save. It can only be put right on Select reviews, so Save sends you
+  // there, from the design page as readily as from the reviews one.
   function saveDraft() {
     const kind = issueFor(draft, draftReviews);
     if (kind) {
       setIssue(kind);
-      setSectionId("reviews");
+      setEditorPage("reviews");
       return;
     }
     // Always an existing showcase: the three are fixed, so Save replaces.
@@ -4067,13 +3923,16 @@ export default function RMReviewShowcasePage() {
         </Button>
       </>
     );
-    // BELOW lg ONLY: Back and Next step through the rail sections, disabled
-    // at the ends, nothing else. From lg up the footer is not rendered, so
-    // the content scroller takes the height back.
-    const sectionIndex = sections.findIndex((s) => s.id === section.id);
+    // NO FOOTER AT ALL NOW. Back and Next used to walk the three rail
+    // sections below lg (Ali, 7 Sep: "we might have a footer for forward and
+    // back on tablets and mobiles"). There are no sections left to walk: the
+    // editor is two pages reached from the card, and a footer that stepped
+    // between Select reviews and Widget design would be a second way in
+    // disagreeing with the first. Save showcase and Close are in the header
+    // at every width, which is what the footer was traded for on 7 Sep.
     // THE BODY WEARS THE HEADER'S GUTTER (Ali, 20 Sep). The shell hands the
     // header and the body the same max-w-4xl column, but the DS page header
-    // insets its own contents and the body had none, so the rail sat a gutter
+    // insets its own contents and the body had none, so the body sat a gutter
     // left of the breadcrumb. The test is the one PageHeader makes itself:
     // the DS header engines carry the gutter, the proposal shell's does not.
     let nativeHeader = false;
@@ -4081,38 +3940,19 @@ export default function RMReviewShowcasePage() {
       nativeHeader = window.__gdsLayoutEngine === "native" || window.__gdsLayoutEngine === "native-fixed";
     } catch {}
     const bodyGutter = nativeHeader ? "px-4 md:px-6 lg:px-section-xs" : "";
-    const footer = narrowShell ? (
-      <>
-        <Button
-          variant="outline"
-          dataHook="widget-prev-section"
-          disabled={sectionIndex <= 0}
-          onClick={() => setSectionId(sections[sectionIndex - 1].id)}
-        >
-          Back
-        </Button>
-        <span className="grow" />
-        <Button
-          variant="ghost"
-          dataHook="widget-next-section"
-          disabled={sectionIndex >= sections.length - 1}
-          onClick={() => setSectionId(sections[sectionIndex + 1].id)}
-        >
-          Next
-        </Button>
-      </>
-    ) : undefined;
     const heading = FORMATS[draft.format].heading;
     return (
       <WizardShell
         dataHook="widget-settings"
         title={heading}
         header={
-          // THE SECTION IS THE TITLE, THE TYPE IS THE DESCRIPTION (Ali, 7 Sep:
-          // "the Page header should be 'Review Showcase' and the description
-          // should say list, carousel etc."). Same H1 as the list page, so
-          // the page does not change identity when you step into a showcase;
-          // the card's own title under it says which one. Date on the right.
+          // THE TYPE IS THE DESCRIPTION (Ali, 7 Sep: "the Page header should
+          // be 'Review Showcase' and the description should say list, carousel
+          // etc."), AND SO IS THE PAGE. Same H1 as the list page, so the page
+          // does not change identity when you step into a showcase, and the
+          // line under it now says both which showcase and which of the two
+          // editor pages you are on. That line is the only thing left that
+          // names the page, the rail having gone, so it is not decoration.
           <PageHeader
             dataHook="widget-page-header"
             // The SAME header as every other page (Ali, 8 Sep: "it doesn't
@@ -4120,7 +3960,7 @@ export default function RMReviewShowcasePage() {
             // so stepping into a showcase does not change the page's chrome.
             breadcrumbs={crumbs}
             title="Review Showcase"
-            description={heading}
+            description={`${heading}: ${onDesign ? "Widget design" : "Select reviews"}`}
             // THIS SHOWCASE'S DATE (Showcase audit, 10 Sep). "auto" binds the
             // account's own refresh date, so the header said "Last updated
             // August 18, 2026" while each showcase carried a real `updated`
@@ -4130,35 +3970,30 @@ export default function RMReviewShowcasePage() {
           />
         }
         steps={null}
-        footer={footer ? <div className={`flex w-full flex-wrap items-center gap-2 ${bodyGutter}`}>{footer}</div> : undefined}
         contentClassName="pt-6!"
       >
-        {/* minmax(0,1fr) BELOW md TOO (Ali, 7 Sep: "Preview seems to be pushing
-            the mobile view to horizontally scroll"). Measured at 390: the
-            single implicit `auto` column took the card's MIN-CONTENT width,
-            and a carousel's min-content is the sum of its five slides (the
-            overflow-hidden track still reports its contents), so the column
-            came out 706px wide and the page scrolled sideways. A 0-minimum
-            column lets the card shrink to the viewport and the track clip as
-            it should. */}
-        <div className={`grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[16rem_minmax(0,1fr)] ${bodyGutter}`}>
-          <SettingsRail sections={sections} value={section.id} onChange={setSectionId} />
-          <SectionCard
-            issue={issue}
-            section={section}
-            widget={draft}
-            reviews={draftReviews}
-            onEdit={() => setEditingId(section.id)}
-          />
+        {/* ONE FULL-WIDTH COLUMN, NO GRID. It was a two-column grid with a
+            256px rail on the left, and the note that used to live here about
+            minmax(0,1fr) below md was about that grid: a single implicit
+            `auto` column took the card's MIN-CONTENT width at 390, and a
+            carousel's min-content is the sum of its slides, so the column came
+            out 706px and the page scrolled sideways. A plain block cannot do
+            that, and min-w-0 on the two pages' own wrappers keeps the same
+            promise. Both pages are as wide as the shell allows, which is the
+            848 the table needed and the widget deserved. */}
+        <div className={`flex min-w-0 flex-col ${bodyGutter}`}>
+          {/* TWO PAGES, PICKED ON THE WAY IN (Ali, 20 Sep: "I think we would
+              have to select reviews on its own page, and then do the design
+              stuff on its own page"). The card on the list page says which,
+              Save sends you to Select reviews when a filter set matches
+              nothing, and the header says where you are. A JSON feed has no
+              design, so `onDesign` already refused it. */}
+          {onDesign ? (
+            <WidgetDesign widget={draft} setWidget={patchDraft} />
+          ) : (
+            <SelectReviews widget={draft} setWidget={patchDraft} issue={issue} />
+          )}
         </div>
-
-        <SectionSheet
-          section={editing}
-          widget={draft}
-          setWidget={patchDraft}
-          narrow={sheetNarrow}
-          onClose={() => setEditingId(null)}
-        />
 
         <AlertDialog dataHook="leave-wizard" open={leaving} onOpenChange={setLeaving}>
           <AlertDialogContent>
@@ -4216,7 +4051,8 @@ export default function RMReviewShowcasePage() {
           <BeaconPageStrip page="showcase" />
           <WidgetsDashboard
             widgets={widgets}
-            onEdit={startEdit}
+            onEditReviews={(w) => openSettings(w, "reviews")}
+            onEditDesign={(w) => openSettings(w, "design")}
             onView={(w) => { setSheet("preview"); setActiveId(w.id); }}
             onEmbed={(w) => { setSheet("embed"); setActiveId(w.id); }}
           />
