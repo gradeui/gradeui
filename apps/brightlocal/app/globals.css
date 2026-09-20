@@ -20,6 +20,14 @@
 @source "../lib/**/*.{ts,tsx,js,jsx}";
 @source "../ds/**/*.{js,jsx}";
 @source "../node_modules/@brightlocal/ui-components/dist/**/*.js";
+/* PROSE IS NOT A SOURCE. Automatic detection also scans the notes, and a
+   class NAME quoted inside one becomes a real candidate: the audit note
+   quoted an arbitrary colour utility with an ellipsis where the ramp step
+   should be, Tailwind compiled it, and the resulting declaration was not
+   parseable CSS, so globals.css failed to build and every page in the app
+   500'd. Notes describe the code, they never ship classes. */
+@source not "../notes/**";
+@source not "../../../scripts/**";
 
 /* Fonts: the preset's @font-face rules resolve --ds-font-* to the
    self-hosted woff2 files. The plain (non-utility) --font-* slots the
