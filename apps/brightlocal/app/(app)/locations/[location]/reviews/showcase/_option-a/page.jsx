@@ -3556,6 +3556,16 @@ export default function RMReviewShowcasePage() {
     // at the ends, nothing else. From lg up the footer is not rendered, so
     // the content scroller takes the height back.
     const sectionIndex = sections.findIndex((s) => s.id === section.id);
+    // THE BODY WEARS THE HEADER'S GUTTER (Ali, 20 Sep). The shell hands the
+    // header and the body the same max-w-4xl column, but the DS page header
+    // insets its own contents and the body had none, so the rail sat a gutter
+    // left of the breadcrumb. The test is the one PageHeader makes itself:
+    // the DS header engines carry the gutter, the proposal shell's does not.
+    let nativeHeader = false;
+    try {
+      nativeHeader = window.__gdsLayoutEngine === "native" || window.__gdsLayoutEngine === "native-fixed";
+    } catch {}
+    const bodyGutter = nativeHeader ? "px-4 md:px-6 lg:px-section-xs" : "";
     const footer = narrowShell ? (
       <>
         <Button
@@ -3605,7 +3615,7 @@ export default function RMReviewShowcasePage() {
           />
         }
         steps={null}
-        footer={footer}
+        footer={footer ? <div className={`flex w-full flex-wrap items-center gap-2 ${bodyGutter}`}>{footer}</div> : undefined}
         contentClassName="pt-6!"
       >
         {/* minmax(0,1fr) BELOW md TOO (Ali, 7 Sep: "Preview seems to be pushing
@@ -3616,7 +3626,7 @@ export default function RMReviewShowcasePage() {
             came out 706px wide and the page scrolled sideways. A 0-minimum
             column lets the card shrink to the viewport and the track clip as
             it should. */}
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[16rem_minmax(0,1fr)]">
+        <div className={`grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[16rem_minmax(0,1fr)] ${bodyGutter}`}>
           <SettingsRail sections={sections} value={section.id} onChange={setSectionId} />
           <SectionCard
             issue={issue}
