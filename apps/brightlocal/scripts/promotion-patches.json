@@ -759,6 +759,21 @@
       "why": "Review Builder: a config without review sites no longer white-screens the app (audit, 20 Sep). A template deliberately carries no sites (\"templates dont include review sites\", Ali, 7 Sep: CAMPAIGN_ONLY strips them), and the Pick a template step fed exactly that config to campaignSummary and to the customer preview, which both mapped over config.sites. Clicking any template row threw \"Cannot read properties of undefined\" and took the page with it, which also made the wizard steps behind that row unreachable. The customer preview lists the sites it has.",
       "find": "          {config.sites.map((s) => (\n",
       "replace": "          {(config.sites ?? []).map((s) => (\n"
+    },
+    {
+      "why": "A preview of a page the customer has not answered shows nothing selected: sampleRating handed every static preview a 9 (thumbs-up, 4 of 5 stars), which contradicted the email preview and the Preview as a customer drawer in the same frame.",
+      "find": "// WHAT A PREVIEW PRETENDS THE CUSTOMER PICKED. One place, because two previews\n// showing different sample answers for the same template is the drift Ali is\n// guarding against (\"I just want to make sure when we show a preview it is\n// always rendered the same\"). A 9 reads as a promoter on NPS, thumbs-up on\n// thumbs, 4 of 5 on stars: positive but not a perfect score, so the review-site\n// step is reachable and the page does not look staged.\nconst sampleRating = (config) =>\n  config.feedbackType === \"nps\" ? 9 : config.feedbackType === \"thumbs\" ? \"up\" : 4;\n",
+      "replace": "// WHAT A PREVIEW SHOWS AS THE CUSTOMER'S ANSWER: nothing. One place, because\n// two previews disagreeing about the same template is the drift Ali is\n// guarding against (\"I just want to make sure when we show a preview it is\n// always rendered the same\"). What was wrong was WHICH answer is the\n// consistent one. This used to hand back a sample 9 on NPS, thumbs-up on\n// thumbs, 4 of 5 on stars, so the Send step, both Go live steps and the\n// Rating question preview drew a filled-in answer on a page the customer has\n// not opened yet, while the email preview (value={null}) and the \"Preview as\n// a customer\" drawer (starts at null, fills in as you click) drew the same\n// page empty in the same frame. Consistent has to mean UNANSWERED: that is\n// the page as it arrives, and it is the one the customer surfaces already\n// agree on. The brand colour is not lost with the filled circle, the primary\n// \"Send feedback\" button on the same preview still wears it.\nconst sampleRating = () => null;\n"
+    },
+    {
+      "why": "sampleRating no longer reads the draft, so the contact-sheet, tab and full-size previews call it with nothing.",
+      "find": "        interactive={false}\n        rating={sampleRating(draft)}\n",
+      "replace": "        interactive={false}\n        rating={sampleRating()}\n"
+    },
+    {
+      "why": "Same call in the template Rating question preview.",
+      "find": "                interactive={false}\n                rating={sampleRating(draft)}\n",
+      "replace": "                interactive={false}\n                rating={sampleRating()}\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [

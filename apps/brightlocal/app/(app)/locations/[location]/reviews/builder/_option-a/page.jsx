@@ -1184,14 +1184,20 @@ function SiteMark({ id }) {
 
 // What the campaign asks for, in one cell: the feedback type when there is
 // a feedback step, otherwise the fact that there is not.
-// WHAT A PREVIEW PRETENDS THE CUSTOMER PICKED. One place, because two previews
-// showing different sample answers for the same template is the drift Ali is
+// WHAT A PREVIEW SHOWS AS THE CUSTOMER'S ANSWER: nothing. One place, because
+// two previews disagreeing about the same template is the drift Ali is
 // guarding against ("I just want to make sure when we show a preview it is
-// always rendered the same"). A 9 reads as a promoter on NPS, thumbs-up on
-// thumbs, 4 of 5 on stars: positive but not a perfect score, so the review-site
-// step is reachable and the page does not look staged.
-const sampleRating = (config) =>
-  config.feedbackType === "nps" ? 9 : config.feedbackType === "thumbs" ? "up" : 4;
+// always rendered the same"). What was wrong was WHICH answer is the
+// consistent one. This used to hand back a sample 9 on NPS, thumbs-up on
+// thumbs, 4 of 5 on stars, so the Send step, both Go live steps and the
+// Rating question preview drew a filled-in answer on a page the customer has
+// not opened yet, while the email preview (value={null}) and the "Preview as
+// a customer" drawer (starts at null, fills in as you click) drew the same
+// page empty in the same frame. Consistent has to mean UNANSWERED: that is
+// the page as it arrives, and it is the one the customer surfaces already
+// agree on. The brand colour is not lost with the filled circle, the primary
+// "Send feedback" button on the same preview still wears it.
+const sampleRating = () => null;
 
 const askLabel = (config) => askType(config).label;
 
@@ -3097,7 +3103,7 @@ function CampaignWizard({
         page={id === "feedback" ? "feedback" : "review"}
         config={draft}
         interactive={false}
-        rating={sampleRating(draft)}
+        rating={sampleRating()}
         setRating={() => {}}
         comment=""
         setComment={() => {}}
@@ -3790,7 +3796,7 @@ function CampaignWizard({
                 page="feedback"
                 config={draft}
                 interactive={false}
-                rating={sampleRating(draft)}
+                rating={sampleRating()}
                 setRating={() => {}}
                 comment=""
                 setComment={() => {}}
