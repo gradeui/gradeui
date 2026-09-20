@@ -912,7 +912,9 @@ const STATES = [
      && !!document.querySelector('[data-hook="widget-panel-design-group-text"]')
      && !!document.querySelector('[data-hook="widget-panel-design-group-reviews"]')
      && !document.querySelector('[data-hook="widget-panel-design-group-animation"]')`,
-    "List settings on Widget Design: every control in the sheet read back as a row, under the sheet's own headings, Preset, Layout, Container, Text and Reviews. No Animation group for a list."],
+    // TALL: the card is a list of named values, and the fold cut it mid row.
+    "List settings on Widget Design: every control in the sheet read back as a row, under the sheet's own headings, Preset, Layout, Container, Text and Reviews. No Animation group for a list.",
+    { tall: true }],
   ["widgets-10-list-embed", "widgets", async (p) => { await showcaseSettings(p, "list", "embed"); },
     `!!document.querySelector('[data-hook="widget-tab-embed"][aria-selected="true"]')
      && !!document.querySelector('[data-hook="widget-panel-embed-code-pre"]')`,
@@ -928,7 +930,9 @@ const STATES = [
      && !!document.querySelector('[data-hook="widget-panel-design-group-animation"]')`,
     // NOTE CORRECTED 20 Sep: Loop, Autoplay and Controls are gone from the
     // Animation group; the five below are the product's own.
-    "Carousel settings on Widget Design: the same groups as a list, plus Animation, which reads back auto rotate, the transition style and its speed, and whether the arrows and the dots are drawn."],
+    // TALL: the card is a list of named values, and the fold cut it mid row.
+    "Carousel settings on Widget Design: the same groups as a list, plus Animation, which reads back auto rotate, the transition style and its speed, and whether the arrows and the dots are drawn.",
+    { tall: true }],
   ["widgets-13-carousel-embed", "widgets", async (p) => { await showcaseSettings(p, "carousel", "embed"); },
     `!!document.querySelector('[data-hook="widget-tab-embed"][aria-selected="true"]')
      && !!document.querySelector('[data-hook="widget-panel-embed-code-pre"]')`,
@@ -1169,7 +1173,10 @@ const STATES = [
     await showcaseSheet(p, "carousel", "design");
     await scrollDesignSheetTo(p, '[data-hook="design-group-animation"]');
   }, expectDesignGroup("design-group-animation"),
-    "The Animation group, on the Carousel only: auto rotate slides, transition style, transition animation speed, show slide arrows and show slide dots, every one of them a Yes and No pair."],
+    // TALL: the group's last pair, show slide dots, had its No chopped in
+    // half by the bottom of the sheet, and the pair is the point of it.
+    "The Animation group, on the Carousel only: auto rotate slides, transition style, transition animation speed, show slide arrows and show slide dots, every one of them a Yes and No pair.",
+    { tall: true }],
   ["widgets-35-design-transition-slide", "widgets", async (p) => {
     await showcaseSheet(p, "carousel", "design");
     await scrollDesignSheetTo(p, '[data-hook="design-group-animation"]');
@@ -1583,7 +1590,10 @@ const STATES = [
     "Next without the confirmations: Please tick both confirmations to continue."],
   ["getreviews-42-send", "getreviews", async (p) => { await newCampaignTo(p, "send"); },
     `!!document.querySelector('[data-hook="preview-as-customer"]') && !!document.querySelector('[data-hook="preview-tile-email"]')`,
-    "Ready to send: the summary rows, the contact sheet of every customer page, Preview as a customer, and Send now in the footer."],
+    // TALL: the two preview tiles sit at the bottom of the step and the
+    // email's unsubscribe footer was sliced mid-address by the fold.
+    "Ready to send: the summary rows, the contact sheet of every customer page, Preview as a customer, and Send now in the footer.",
+    { tall: true }],
   ["getreviews-43-send-preview-full", "getreviews", async (p) => {
     await newCampaignTo(p, "send");
     await press(p, '[data-hook="preview-tile-email"]');
@@ -1603,10 +1613,15 @@ const STATES = [
   ["getreviews-46-go-live-link", "getreviews", async (p) => { await newCampaignTo(p, "golive", { channel: "Web link" }); },
     `!!document.querySelector('[data-hook="link-note"]')
      && /Ready to go live/.test(document.querySelector('[data-hook="wizard-step-title"]').textContent)`,
-    "A web link campaign skips the audience: Ready to go live, the link note, and Put live as the action."],
+    // TALL: the previewed feedback page runs past the fold, taking the
+    // Tell us more box, the consent line and Send feedback with it.
+    "A web link campaign skips the audience: Ready to go live, the link note, and Put live as the action.",
+    { tall: true }],
   ["getreviews-47-launch-kiosk", "getreviews", async (p) => { await newCampaignTo(p, "golive", { channel: "Kiosk" }); },
     `/Ready to launch the kiosk/.test(document.querySelector('[data-hook="wizard-step-title"]').textContent)`,
-    "A kiosk campaign's last step is titled Ready to launch the kiosk, with Launch kiosk as the action."],
+    // TALL: same preview, same three things falling off the bottom.
+    "A kiosk campaign's last step is titled Ready to launch the kiosk, with Launch kiosk as the action.",
+    { tall: true }],
   ["getreviews-48-kiosk-live", "getreviews", async (p) => {
     await newCampaignTo(p, "golive", { channel: "Kiosk" });
     await press(p, '[data-hook="wizard-next"]');
@@ -1749,8 +1764,10 @@ const STATES = [
     "The Contact details sheet: Wording above the form, Ask permission to quote them, and Permission wording."],
   ["getreviews-64-template-narrow", "getreviews", async (p) => { await templateEditor(p, "general"); },
     `!!document.querySelector('[data-hook="template-next-section"]')`,
+    // TALL as well as narrow: at 390 the General card is longer than the
+    // shell, so Rating type and everything under it sat behind the footer.
     "The template editor at 390 wide: the rail stacks above the card and the footer carries Back and Next between sections.",
-    { width: 390 }],
+    { width: 390, tall: true }],
 ];
 
 // --dump-states prints name/section/note as JSON and exits. Anything that
@@ -1793,19 +1810,17 @@ async function openRowWith(page, needle) {
 }
 const APP_OVERRIDES = {
   "templates-05-rule-activity": {
-    // Expanded, then scrolled so the failed send is in frame: the app's page
-    // is taller than the Studio screen and the Failed row sat half under the
-    // bottom edge (capture sweep, 17 Sep).
+    // Expanded, then shot tall (20 Sep). The app's page is taller than the
+    // Studio screen, so the Failed row sat half under the bottom edge
+    // (capture sweep, 17 Sep) and scrolling it into the middle only moved
+    // the problem: the top edge then sliced the Reusable replies sentence
+    // in half. The page is barely taller than the frame, so give the frame
+    // the page and both cards come out whole.
     drive: async (p) => {
       await press(p, '[data-slot="collapsible-trigger"]');
       await wait(900);
-      await inFrame(p, () => {
-        const failed = [...document.querySelectorAll('[data-hook^="run-outcome-"]')].find((b) => b.textContent.trim() === "Failed");
-        if (!failed) return false;
-        failed.scrollIntoView({ block: "center" });
-        return true;
-      });
     },
+    opts: { tall: true },
   },
   "manager-07-readonly-source": {
     drive: async (p) => { await openRowWith(p, "cannot be sent from here"); },

@@ -14,6 +14,15 @@ export interface DsChange {
 
 export const DS_CHANGES: DsChange[] = [
   {
+    id: "rating-unfilled-star",
+    title: "Unfilled stars do not read as part of the scale",
+    finding:
+      "Rating paints its base star fill-muted stroke-muted, and --muted is neutral-100. Measured on the Review Manager list, an unfilled star renders #F2F7F3 on a white row, 1.08:1, next to a #FACC15 filled star at 1.53:1. The remainder is not there to see: the two-star review at the top of the list reads as a two-star maximum rather than two out of five, and on a dimmed frame, with the reply drawer open over the list, it goes altogether. The same star is the only thing separating one rating row from another in the Tracker's rating breakdown and in the templates' scope badges, so a low rating is the case that loses most.",
+    workaround:
+      "app/custom.css draws the base star instead of tinting it: fill at neutral-200, stroke at neutral-400, which the icon's 1.33px outline carries at 2.37:1 on white. One rule on [data-slot=rating-star-base], so no call site changes and nothing added to the twenty-odd Rating usages. It is scoped with :has() rather than as a descendant of the engine element, because the drawer's rating portals to the end of <body> and that frame is the worse of the two. The filled overlay is untouched, and an outline still weighs less than a solid gold star, so a filled star keeps the lead.",
+    ask: "Give the base star a token of its own rather than --muted, with the fill and the stroke separately settable, and set the default so an empty star reads on white. An outline around neutral-400 does it without the empty stars out-weighing the filled ones, which is what a darker fill would cost.",
+  },
+  {
     id: "portal-title-type-role",
     title: "Overlay titles cannot reach the app's type rules",
     finding:
@@ -78,6 +87,13 @@ export const DS_CHANGES: DsChange[] = [
     finding: "bg-sidebar-background exists only in the mobile Sheet branch. On desktop the page background shows through, so re-pointing --sidebar-background recolours nothing.",
     workaround: "AppLayoutShell's sidebarTone paints the container directly and sets both the --sidebar-* and --color-sidebar-* variables.",
     ask: "Paint bg-sidebar-background on the desktop branch so the token themes the sidebar.",
+  },
+  {
+    id: "sidebar-edge",
+    title: "The desktop Sidebar paints no edge",
+    finding: "GlobalLayoutSidebar's aside carries no border on any side, and the desktop branch paints no background either, so nothing marks where the rail ends and the workspace begins. What stands in for it is the first content card's own left edge, and that edge belongs to the SCROLLING column: measured on the Review Tracker at 1280x900, the card border sits at x=304 while the rail ends at x=280, and scrolled to the bottom of the page the card ends at y=836, so the line stops 64px above the fold and the account footer at y=847 to 867 is left standing on bare canvas. Unscrolled the same card runs 427px past the fold and the seam looks full height, which is why it reads as an intermittent fault rather than a missing rule.",
+    workaround: "None, on purpose. A 1px var(--sidebar-border) right border was tried on [data-slot=sidebar-container] and taken out again the same night: the DS never drew that rule, so adding one is a new decision about the shell rather than a workaround for a bug, and it changed every screen in the prototype. It costs nothing to reinstate if Ali wants the rail separated, since the aside is border-box at a pinned 280px and nothing measured moved.",
+    ask: "Give the desktop aside a border-right on a token, or paint the sidebar background on the desktop branch. Either one separates the rail; today neither is there.",
   },
   {
     id: "card-max-width",

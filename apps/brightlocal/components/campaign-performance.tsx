@@ -249,13 +249,31 @@ export function CampaignPerformance({ reviews, sites, dataHook }: { reviews: num
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {activeBuckets.map((b) => (
-                      <TableRow key={b.id}>
-                        <TableCell>{b.label}</TableCell>
-                        <TableCell align="right" className="tabular-nums">
-                          {byBucket[b.id]}
-                        </TableCell>
-                      </TableRow>
+                    {activeBuckets.map((b, i) => (
+                      <React.Fragment key={b.id}>
+                        {/* The chart's Facebook break, in the table too, on the
+                            chart's own condition (see the Tracker card, which
+                            carries the long version of this note). Without it
+                            "Recommended" and "Not recommended" sit under
+                            "1 star" at the same pitch as every other row and
+                            read as two more star levels. This card's condition
+                            differs from the Tracker's because these filters can
+                            leave Facebook on its own, and then the heading has
+                            to lead the list rather than break it. */}
+                        {b.kind !== "star" && activeBuckets[i - 1]?.kind !== b.kind && activeBuckets[i - 1]?.kind !== "up" ? (
+                          <TableRow>
+                            <TableHead scope="colgroup" colSpan={2} dataHook={`${dataHook}-ratings-table-facebook-heading`}>
+                              Facebook recommendations
+                            </TableHead>
+                          </TableRow>
+                        ) : null}
+                        <TableRow>
+                          <TableCell>{b.label}</TableCell>
+                          <TableCell align="right" className="tabular-nums">
+                            {byBucket[b.id]}
+                          </TableCell>
+                        </TableRow>
+                      </React.Fragment>
                     ))}
                   </TableBody>
                   <Total value={total} />
@@ -290,6 +308,15 @@ export function CampaignPerformance({ reviews, sites, dataHook }: { reviews: num
                             nameKey="name"
                             cx="50%"
                             cy="50%"
+                            // CLOCKWISE FROM TWELVE, the Tracker's angles (Ali,
+                            // 20 Sep, on the Tracker's donut). Recharts starts
+                            // at 3 o'clock and sweeps anti clockwise, so the
+                            // rim met the sources in the reverse of the legend
+                            // reading down beside it. This card is the
+                            // Tracker's card, piece for piece, and it was the
+                            // piece still spinning the other way.
+                            startAngle={90}
+                            endAngle={-270}
                             innerRadius={62}
                             outerRadius={92}
                             paddingAngle={1}

@@ -96,7 +96,14 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
 
   // showcase: the reasons why
   return {
-    headline: starter ? "Three showcases are ready to go on your site." : `You have ${s.fiveStar.toLocaleString("en-GB")} five-star reviews ready for your website.`,
+    // "ready for your website" counts showcaseReady, not fiveStar: a Yelp
+    // review is five stars and still cannot be republished, so the two
+    // differ. The tile below counts the same thing, deliberately: it carried
+    // the plain five-star total, and that number sitting four lines under a
+    // headline promising a smaller one left the reader doing the subtraction
+    // (review, 20 Sep). The five-star total is still on this page, in the
+    // nugget, where it is a count and claims nothing about showing it.
+    headline: starter ? "Three showcases are ready to go on your site." : `You have ${s.showcaseReady.toLocaleString("en-GB")} five-star reviews ready for your website.`,
     line: [
       t("The people who read reviews on your own site are the ones who never look at Google, so this is the easiest win you have. "),
       ...(s.theme?.good ? [t("The thing customers keep praising is "), m(s.theme.text), t(". That is the quote to put on the booking page.")] : [t("Your best reviews are ready to show. Pick the ones the booking page should carry.")]),
@@ -105,7 +112,7 @@ export function pageBeaconFor(page: BeaconPage, s: ReviewStats, persona: Persona
       // The total lives here (Ali, 10 Sep: "in Review Showcase we also need
       // to show the total reviews somewhere"); the header keeps its showcase count.
       { value: s.total.toLocaleString("en-GB"), label: "reviews across every site" },
-      { value: String(s.fiveStar), label: "five-star reviews" },
+      { value: s.showcaseReady.toLocaleString("en-GB"), label: "five-star reviews ready to show" },
       { value: `${s.fourPlusPct}%`, label: "four stars or above this month" },
     ],
     cta: { label: "Pick the reviews to show", path: "reviews/manager" },

@@ -99,10 +99,7 @@ import {
   Check,
   Copy,
   Globe,
-  GoogleOriginal,
   FacebookOriginal,
-  YelpOriginal,
-  TrustpilotOriginal,
 } from "@brightlocal/icons";
 import {
   AppLayoutShell,
@@ -111,7 +108,12 @@ import {
   DateStamp,
   formatDate,
   useProposalData,
+  REVIEW_SOURCES,
 } from "@brightlocal/proposal";
+// The report's own dates live with the data the report produced: TODAY is
+// the prototype's today, LAST_REPORT_RUN the run this page reports on and
+// the Tracker header stamps.
+import { TODAY, LAST_REPORT_RUN } from "@/lib/reviews-data";
 
 /* ================================ reference =============================== */
 
@@ -136,26 +138,28 @@ import {
 // makes them read as different things. A row here and a row there should be
 // recognisable as the same directory without reading the word.
 //
-// FOUR BRANDS EXIST IN @brightlocal/icons — Google, Facebook, Yelp,
-// Trustpilot — and that is all. Tripadvisor, Better Business Bureau, Yell,
-// Thomson Local and Yellow Pages have no mark in the DS, so they take a
-// neutral Globe rather than a lookalike: an approximated brand mark on a
-// settings page is worse than an honest generic one, and it is the kind of
-// thing that ends up in a screenshot in front of the brand's own people.
-// Logged for BrightLocal — the directory list is fixed and known, so these
-// five are a reasonable ask of the icon set.
-const DIRECTORY_MARK = {
-  google: GoogleOriginal,
-  facebook: FacebookOriginal,
-  yelp: YelpOriginal,
-  trustpilot: TrustpilotOriginal,
-};
-
+// THE MARKS COME FROM REVIEW_SOURCES, the shared map the Tracker draws its
+// source menu from. This page used to keep its own four-brand map built
+// straight off @brightlocal/icons, which knows nothing about TripAdvisor, so
+// the one screen listed TripAdvisor under a grey globe while the Tracker
+// right next door drew its proper green mark: same source id, two answers.
+// Reading the shared map means there is only ever one answer.
+//
+// THE GLOBE STAYS for what the shared map does not carry. Better Business
+// Bureau, Yellow Pages, Yell and Thomson Local have no mark anywhere in the
+// app, so they take a neutral Globe rather than a lookalike: an approximated
+// brand mark on a settings page is worse than an honest generic one, and it
+// is the kind of thing that ends up in a screenshot in front of the brand's
+// own people. Logged for BrightLocal, the directory list is fixed and known,
+// so these four are a reasonable ask of the icon set.
 function DirectoryMark({ id }) {
-  const Icon = DIRECTORY_MARK[id] ?? Globe;
+  // Not SourceMark itself: it returns null for an id the map has never heard
+  // of, which would take the mark off those four rows entirely.
+  const entry = REVIEW_SOURCES[id];
+  const Icon = entry?.Icon ?? Globe;
   return (
     <Icon
-      className={`size-4 shrink-0 ${DIRECTORY_MARK[id] ? "" : "text-muted-foreground"}`}
+      className={`size-4 shrink-0 ${entry?.hasMark ? "" : "text-muted-foreground"}`}
       aria-hidden
     />
   );
@@ -215,7 +219,7 @@ const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 // send' and the radio buttons are next to each other so no spacing… space
 // at the start of the email addresses, the input below them is tiny").
 //
-// Three DS shapes go wrong here, and all three are worth writing down
+// Four DS shapes go wrong here, and all four are worth writing down
 // because none of them is a mistake in this screen's markup:
 //
 //  1. FIELD'S GAP IS 8px. That is right for a label above ONE control and
@@ -229,27 +233,60 @@ const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 //     the 16px left padding survives. The result is an email address that
 //     looks arbitrarily indented from its own label, which is exactly what
 //     Ali saw. Restoring a visible surface makes the indent read as a row,
-//     which is what the DS intended.
+//     which is what the DS intended. The row also has to be told its
+//     HEIGHT: ItemActions' remove button is a hardcoded 36px and py-2 puts
+//     it in a 52px row, so a saved address stood a step taller than the
+//     field you add one in. There is a shipped Item variant that solves
+//     the surface (`outline`), but InputListItems hardcodes `filled` and
+//     exposes no variant prop, so this is the only lever the screen has.
 //
 //  3. THE ADD INPUT COLLAPSES. It ships `h-9` (36px) and renders at 22px
 //     inside InputList's flex column. shrink-0 holds it at its own height.
 //     It also ships `text-base`, a step larger than every label around it —
 //     the same 16px-against-14px mismatch logged as DS finding 3.8.
 //
+//  4. THE GROUP HAS TWO GAP SCALES. InputList's root is `gap-4` while the
+//     ul inside it is `gap-2`, so the saved rows sit 8px apart and the
+//     add-input sits 16px below them. One control group, two rhythms, and
+//     the input stops reading as part of the list.
+//
 // One scoped block, not a className on each of the twenty controls.
 const SPACING_FIXES = `
 [data-hook="settings-page-body"] [data-slot="field"] > [data-slot="radio-group"] {
   margin-top: 0.5rem;
 }
-[data-hook="recipients-list"] [data-slot="list"] > li > div {
-  background: var(--muted);
+[data-hook="recipients-list"] {
+  /* 8px, the step the rows already use between themselves. InputList ships
+     its ul at gap-2 and its own root at gap-4, so one control group arrived
+     with two spacing scales and the add-input read as a separate thing
+     parked under the list rather than the last row of it. */
+  gap: 0.5rem;
+}
+[data-hook="recipients-list"] [data-slot="list"] > li > [data-slot="item"] {
+  /* A SAVED ROW IS A SURFACE, NOT AN ACCENT. --muted resolves to the same
+     #f2f7f3 as --accent in this theme, so the fill standing in for the
+     invisible bg-card was reading as an accent colour doing a container's
+     job. --secondary is the neutral surface token and is nobody's accent. */
+  background: var(--secondary);
+  /* The rest is the add-input's own geometry, copied so the saved rows and
+     the field below them read as one control group: 36px tall, 6px radius,
+     text starting at the same 12px. The row was 52px only because
+     ItemActions ships a 36px button inside py-2, so dropping the padding
+     hands the height to the button and it lands on the input's 36px. */
+  min-height: 2.25rem;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 0.75rem;
+  border-radius: 0.375rem;
+}
+[data-hook="recipients-list"] [data-slot="item-title"] {
   /* 14px, matching the add-input directly below and the label above (Ali,
      3 Sep: "these email addresses are too big text wise compared to the
-     input they are directly next to"). InputList ships its rows at
-     text-base leading-none font-medium, 16px, so two
-     controls in the same stack, holding the same kind of value, were set
-     two steps apart. Same DS finding as 3.8: the library's form surfaces
-     are 16px against 14px chrome, and here that lands twice in one field. */
+     input they are directly next to"). It has to land HERE, on the title:
+     ItemTitle ships text-base font-medium, so the same declaration on the
+     row container never reached the address and the row stayed at 16px.
+     Same DS finding as 3.8: the library's form surfaces are 16px against
+     14px chrome, and here that lands twice in one field. */
   font-size: 0.875rem;
   font-weight: 400;
 }
@@ -326,13 +363,15 @@ export default function RMReportSettingsPage() {
   const [runDay, setRunDay] = useState("Monday");
   // THE NEXT RUN FOLLOWS THE FORM. It used to be a fixed date, which put
   // "Run day: Monday" beside a Tuesday (capture sweep, 17 Sep). Counted on
-  // from the prototype's today, 9 Sep 2026 (TODAY in lib/reviews-data.ts),
-  // so the date is always still to come. Daily is the next day; weekly and
-  // fortnightly the next run day; monthly the first run day of the month
-  // still to come.
+  // from the prototype's today (TODAY in lib/reviews-data, read here rather
+  // than restated, so today moves in one place), so the date is always
+  // still to come. Daily is the next day; weekly and fortnightly the next
+  // run day; monthly the first run day of the month still to come.
   const nextRun = (() => {
     const DAY = 86400000;
-    const today = Date.UTC(2026, 8, 9);
+    // UTC midnight of TODAY, built from its parts: reading TODAY straight
+    // into a UTC sum would shift the day for anyone west of Greenwich.
+    const today = Date.UTC(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
     const iso = (t) => new Date(t).toISOString().slice(0, 10);
     const mondayFirst = (t) => (new Date(t).getUTCDay() + 6) % 7;
     const want = DAYS.indexOf(runDay);
@@ -379,9 +418,17 @@ export default function RMReportSettingsPage() {
   // ASSUMPTION, demo only: one manual run is left, so the first click runs
   // and the second is rejected. The real allowance is the subscription's,
   // and nothing here knows it.
-  const [lastRun, setLastRun] = useState("2026-09-07T06:00");
+  // THE SAME RUN THE TRACKER HEADER STAMPS. Last run and the Tracker's
+  // Last updated are one event, so they read one value and cannot drift
+  // apart the way they had (this said the 7th, the Tracker the 9th).
+  const [lastRun, setLastRun] = useState(LAST_REPORT_RUN);
   const [runState, setRunState] = useState("idle");
   const [manualRunsLeft, setManualRunsLeft] = useState(1);
+  // What a run finishing right now leaves behind: today at 10:12 UTC. Off
+  // TODAY, so it stays today whenever the prototype's today moves. Local
+  // state only: the Tracker cannot see this click, so it keeps showing the
+  // last scheduled run until the report is fetched again.
+  const justNow = `${TODAY.getFullYear()}-${String(TODAY.getMonth() + 1).padStart(2, "0")}-${String(TODAY.getDate()).padStart(2, "0")}T10:12Z`;
   const runNow = () => {
     if (runState === "running") return;
     if (manualRunsLeft < 1) {
@@ -390,7 +437,7 @@ export default function RMReportSettingsPage() {
     }
     setRunState("running");
     window.setTimeout(() => {
-      setLastRun("2026-09-09T10:12");
+      setLastRun(justNow);
       setManualRunsLeft((n) => n - 1);
       setRunState("idle");
     }, 6000);
@@ -486,7 +533,16 @@ export default function RMReportSettingsPage() {
             <AlertWarning
               dataHook="run-rejected"
               title="No manual runs left"
-              description={`Your plan's manual runs are used up, so this run did not start. The report still runs on its schedule, next on ${formatDate(nextRun)}.`}
+              description={
+                <>
+                  Your plan's manual runs are used up, so this run did not
+                  start. The report still runs on its schedule, next on{" "}
+                  {/* A date is one thing, so it wraps as one. At 1280 the
+                      sentence just overran the line and the break landed on
+                      the space inside the date, leaving "2026." on its own. */}
+                  <span className="whitespace-nowrap">{formatDate(nextRun)}</span>.
+                </>
+              }
               action={
                 <Button variant="outline" size="sm" dataHook="run-rejected-plans" asChild>
                   <a href="/account/subscription">See plans</a>
@@ -610,13 +666,24 @@ export default function RMReportSettingsPage() {
                             </Badge>
                           ) : null}
                         </div>
+                        {/* THIS ROW IS MISSING A MATCH, NOT A TICK (capture
+                            sweep, 20 Sep). The "no profile found" branch used
+                            to end "we will watch it from the next run", which
+                            read as a denial that the row is watched at all,
+                            while its box was ticked and the header counted it
+                            in "5 of 7 directories watched". Per the note on
+                            DIRECTORIES above, the tick IS the watching and the
+                            header counts ticks; what has failed here is the
+                            match. Facebook's line already says it that way
+                            round, so this one does too, and it stays one line
+                            at 20px like every other row. */}
                         <FieldDescription dataHook={`directory-${d.id}-desc`}>
                           {d.matched
                             ? d.matched
                             : d.needs === "connection"
                               ? "Facebook only sends us reviews once your account is connected, so nothing can be matched yet."
                               : on
-                                ? "We could not find a listing for this business. Add the URL and we will watch it from the next run."
+                                ? "We could not match a listing for this business. Add the URL and we will collect its reviews from the next run."
                                 : "Not being watched."}
                         </FieldDescription>
                         {/* THE ACTION LIVES INSIDE FieldContent (Ali, 3 Sep:

@@ -42,6 +42,18 @@
   border-left: 1px solid transparent;
 }
 
+/* THE SIDEBAR'S EDGE WAS REMOVED, ON PURPOSE (20 Sep). A border-right on
+   [data-slot="sidebar-container"] lived here under the native-fixed engine,
+   put there for the report that the rule beside the sidebar stops short on a
+   scrolled frame. Looking again, the DS never drew that rule: what stops
+   short is the content CARD's own left edge at x=304, which belongs to the
+   scrolling column, so nothing was restored by the border. Drawing a seam at
+   the rail's edge, x=280, is a new design decision about the shell, and it
+   landed on every screen and every frame of a screenshot run without Ali
+   having asked for it, so it comes out and goes to him as a question.
+   The finding itself is kept in the ledger: /docs/changes, "The desktop
+   Sidebar paints no edge". */
+
 /* Example variable overrides, off by default. Uncomment to try.
 :root {
   --ds-font-weight-normal: 400;
@@ -332,6 +344,32 @@
 :is([data-slot="dialog-title"], [data-slot="sheet-title"], [data-slot="drawer-title"], [data-slot="alert-dialog-title"]) {
   font-family: var(--font-sans);
   font-weight: var(--ds-font-weight-semibold, 600);
+}
+
+/* An unfilled star has to show the scale (20 Sep screenshot sweep). Rating
+   paints its base star fill-muted stroke-muted, and --muted is neutral-100,
+   which measures 1.08:1 on white. The remainder is not there: the two-star
+   review at the top of the Review Manager reads as a two-star maximum
+   rather than two out of five, and behind the dimmed drawer it goes
+   entirely. Draw the base star instead of tinting it, a fill one step up
+   the neutral ramp and a stroke three, which the 1.33px outline carries.
+   The gold overlay is untouched and an outline still weighs less than a
+   solid gold star, so a filled star keeps the lead.
+   Scoped with :has() rather than a descendant of the engine because the
+   drawer's rating portals to the end of <body>, outside that element, and
+   that frame is the worse of the two. Ledger: /docs/changes, "Unfilled
+   stars do not read as part of the scale". */
+:root:has([data-gds-layout-engine="native-fixed"]) [data-slot="rating-star-base"],
+:root:has([data-gds-layout-engine="modified"]) [data-slot="rating-star-base"] {
+  fill: var(--ds-tailwind-colors-neutral-200);
+  stroke: var(--ds-tailwind-colors-neutral-400);
+}
+/* The same separation the other way up, so the scale survives a dark
+   surface if one is ever switched on. */
+.dark:has([data-gds-layout-engine="native-fixed"]) [data-slot="rating-star-base"],
+.dark:has([data-gds-layout-engine="modified"]) [data-slot="rating-star-base"] {
+  fill: var(--ds-tailwind-colors-neutral-800);
+  stroke: var(--ds-tailwind-colors-neutral-600);
 }
 
 /* Inline code inside a sentence: 0.9em of the surrounding text (Figma:

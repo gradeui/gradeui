@@ -179,9 +179,23 @@ const STARTER_HUB_CARDS = [
 function hubCardsFor(h) {
   return [
     { ...HUB_CARDS[0], headline: String(h.needReply), parts: [{ k: "Replied", v: String(h.replied) }, { k: "Skipped", v: String(h.skipped) }, { k: "In your inbox", v: String(h.inbox) }], trend: h.oldestWaitingDays ? { dir: h.oldestWaitingDays > 3 ? "down" : "flat", text: `The oldest has waited ${h.oldestWaitingDays} days.` } : { dir: "up", text: "Nothing waiting. Every review has a reply." } },
-    { ...HUB_CARDS[1], headline: h.rating, parts: [{ k: "Reviews", v: h.total.toLocaleString("en-GB") }, { k: "Five star", v: String(h.fiveStar) }, { k: "Sources", v: String(h.sourceCount) }], trend: h.recent.ratingValue < h.ratingValue - 0.2 ? { dir: "down", text: `Last ${h.recent.kind === "days" ? "30 days" : `${Math.min(20, h.total)} reviews`} average ${h.recent.rating}, against ${h.rating} all time.` } : h.monthChangePct !== 0 ? { dir: h.monthChangePct > 0 ? "up" : "down", text: `Review velocity ${h.monthChangePct > 0 ? "up" : "down"} ${Math.abs(h.monthChangePct)}% on last month.` } : { dir: "flat", text: `Holding at ${h.rating}. Same pace as last month.` } },
+    // NO REVIEWS, NO PACE (Ali, 20 Sep). Every other branch below compares
+    // this month against last month or the recent window against all time,
+    // and an account that has connected nothing has neither, so the flat
+    // fallback read "Holding at 0.0. Same pace as last month." under a 0.0
+    // headline and three zero parts. monthChangePct is 0 on the empty
+    // profile because there is nothing to change, not because it held
+    // steady, which is the same conflation that had the Manager header
+    // claiming a last updated date on a first-run account. The zero case
+    // gets its own line, in the register the sibling cards already use for
+    // nothing-yet ("Nothing running", "Nothing to put in them yet").
+    { ...HUB_CARDS[1], headline: h.rating, parts: [{ k: "Reviews", v: h.total.toLocaleString("en-GB") }, { k: "Five star", v: String(h.fiveStar) }, { k: "Sources", v: String(h.sourceCount) }], trend: h.total === 0 ? { dir: "flat", text: "Nothing to chart yet. Ratings appear as reviews do." } : h.recent.ratingValue < h.ratingValue - 0.2 ? { dir: "down", text: `Last ${h.recent.kind === "days" ? "30 days" : `${Math.min(20, h.total)} reviews`} average ${h.recent.rating}, against ${h.rating} all time.` } : h.monthChangePct !== 0 ? { dir: h.monthChangePct > 0 ? "up" : "down", text: `Review velocity ${h.monthChangePct > 0 ? "up" : "down"} ${Math.abs(h.monthChangePct)}% on last month.` } : { dir: "flat", text: `Holding at ${h.rating}. Same pace as last month.` } },
     { ...HUB_CARDS[2], headline: String(h.running), headlineLabel: h.running === 1 ? "campaign running" : "campaigns running", parts: [{ k: "Scheduled", v: String(h.scheduled) }, { k: "Draft", v: String(h.draft) }, { k: "All time", v: String(h.campaignsAll) }], trend: h.spike && h.spikeDayCount > 0 ? { dir: "up", text: `${h.spike.campaign} brought ${h.spikeDayCount} ${h.spikeDayCount === 1 ? "review" : "reviews"} around ${h.spike.date}, when it went out.` } : h.running === 0 ? { dir: "flat", text: "Nothing running. Reviews arrive only when they arrive." } : { dir: "flat", text: `${h.thisMonth} reviews so far this month.` } },
-    { ...HUB_CARDS[3], headlineLabel: h.fiveStar === 0 ? "showcases set up" : "showcases", trend: h.fiveStar === 0 ? { dir: "flat", text: "Nothing to put in them yet." } : { dir: "up", text: `${h.fiveStar} five-star reviews ready to show.` } },
+    // "ready to show" is a promise about what the Showcase can publish, so
+    // it counts showcaseReady, not every five-star review: Yelp forbids
+    // reusing its reviews, and Select Reviews greys those rows out. Counting
+    // fiveStar here promised 836 where the picker offers 783.
+    { ...HUB_CARDS[3], headlineLabel: h.showcaseReady === 0 ? "showcases set up" : "showcases", trend: h.showcaseReady === 0 ? { dir: "flat", text: "Nothing to put in them yet." } : { dir: "up", text: `${h.showcaseReady.toLocaleString("en-GB")} five-star reviews ready to show.` } },
   ];
 }
 

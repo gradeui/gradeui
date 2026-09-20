@@ -17,6 +17,29 @@
 import { profileFor, type LocationProfile } from "@/lib/location-profiles";
 
 export const TODAY = new Date(2026, 8, 9); // 9 Sep 2026, the prototype's "today"
+
+/**
+ * THE LAST SUCCESSFUL RUN of this location's Review Tracker report, and the
+ * one date two screens have to agree on. The Tracker's "Last updated" and
+ * report settings' "Last run" name the same event: the Tracker IS the
+ * report, so its data can only be as fresh as the run that fetched it.
+ * They were two unrelated literals two days apart, so the Tracker claimed
+ * data newer than the run that produced it (capture sweep, 20 Sep).
+ *
+ * Counted, not typed: the report ships on Weekly / Monday, so the last run
+ * is the Monday before today at 06:00 UTC. That is the same schedule the
+ * settings screen's "Next run" counts forward on, which is why the pair
+ * reads Monday 7 Sep and Monday 14 Sep around a Wednesday today.
+ * A manual run moves the settings screen's copy of this forward to today;
+ * it does not move the constant, and the Tracker cannot see that click.
+ */
+export const LAST_REPORT_RUN = (() => {
+  const backToMonday = (TODAY.getDay() + 6) % 7 || 7; // on a Monday, last week's
+  const d = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate() - backToMonday);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T06:00Z`;
+})();
+
 const DAY = 86400000;
 const SPAN_DAYS = 37 * 30; // the Tracker's 37-month window
 
@@ -36,6 +59,14 @@ export interface Review {
   aiDraft: string;
 }
 
+// SOURCES A SHOWCASE CANNOT REPUBLISH. Yelp's terms forbid reusing their
+// reviews off-site, so Select Reviews lists a Yelp review with no Position
+// and no Blacklist under a banner saying why. That rule decides a COUNT as
+// well as a row, and the count is read on other pages, so it lives here
+// beside the data rather than inside the Showcase screen. (Showcase still
+// carries its own UNAVAILABLE_SOURCES; it should read this one.)
+export const SHOWCASE_BLOCKED_SOURCES = ["yelp"];
+
 export interface ReviewStats {
   /** Newest rows the Manager shows. */
   inbox: number;
@@ -46,6 +77,10 @@ export interface ReviewStats {
   ratingValue: number;
   total: number;
   fiveStar: number;
+  /** Five-star reviews a showcase could actually publish: fiveStar minus
+   *  the sources in SHOWCASE_BLOCKED_SOURCES. Say "ready to show" and this
+   *  is the number, not fiveStar. */
+  showcaseReady: number;
   sourceCount: number;
   /** Month to date against the previous full month. */
   thisMonth: number;
@@ -426,6 +461,7 @@ export function statsFor(location: string, persona?: { engagement?: string } | n
     ratingValue: avg,
     total: list.length,
     fiveStar: list.filter((x) => x.rating === 5).length,
+    showcaseReady: list.filter((x) => x.rating === 5 && !SHOWCASE_BLOCKED_SOURCES.includes(x.source)).length,
     sourceCount: profile.sources.length,
     thisMonth: thisMonth.length,
     lastMonth: lastMonth.length,

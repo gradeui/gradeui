@@ -4425,7 +4425,15 @@ function CampaignInsights({ campaign }) {
                     >
                       <AreaChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                         <CartesianGrid vertical={false} />
-                        <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
+                        {/* scale="band", or the last day's label is dragged off
+                            its own point. An AreaChart's category axis resolves
+                            to a POINT scale, which pins the final point on the
+                            plot's right edge, so recharts pulls the label left by
+                            half its width to keep it inside, and the crowding
+                            that causes drops the label before it. A BAND scale
+                            insets each point inside its own band, so there is
+                            nothing to pull. */}
+                        <XAxis dataKey="label" scale="band" tickLine={false} axisLine={false} tickMargin={8} />
                         <YAxis width={32} allowDecimals={false} tickLine={false} axisLine={false} tickMargin={8} />
                         <ChartTooltip content={<ChartTooltipContent />} />
                         <Area

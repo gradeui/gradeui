@@ -103,7 +103,7 @@ import { usePersona } from "@/lib/demo";
 import { ConnectedSites } from "@/components/connected-sites";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
-import { reviewsFor } from "@/lib/reviews-data";
+import { reviewsFor, LAST_REPORT_RUN } from "@/lib/reviews-data";
 import { BeaconPageStrip } from "@/components/review-summary";
 import { BeaconNugget } from "@/components/beacon-nugget";
 import {
@@ -344,6 +344,42 @@ function bucketTick(bucket, index) {
     return at.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
   return at.toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
 }
+
+// The pan label, and ONLY the pan label. bucketTick stays as it is because it
+// also draws every x axis tick, where a two digit year repeated twelve times
+// across the plot reads fine. Alone between the arrows it does not: "Sept 25
+// to Aug 26" looks like two days of one month rather than a year of them. So
+// the year is spelled out here, once at the end when both ends share it, on
+// both ends when the window crosses a year, the way you would write the range
+// down. Weekly carried no year at all before, which was the same ambiguity
+// wearing a different hat.
+function bucketRange(bucket, startIndex, endIndex) {
+  const from = new Date(TODAY.getTime() - startIndex * bucket.span * DAY_MS);
+  const to = new Date(TODAY.getTime() - endIndex * bucket.span * DAY_MS);
+  if (bucket.id === "yearly") return `${from.getFullYear()} to ${to.getFullYear()}`;
+  const part = (at, withYear) => {
+    const year = withYear ? ` ${at.getFullYear()}` : "";
+    if (bucket.id === "quarterly") return `Q${Math.floor(at.getMonth() / 3) + 1}${year}`;
+    if (bucket.id === "weekly")
+      return `${at.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}${year}`;
+    return `${at.toLocaleDateString("en-GB", { month: "short" })}${year}`;
+  };
+  return `${part(from, from.getFullYear() !== to.getFullYear())} to ${part(to, true)}`;
+}
+
+// One min-width PER BUCKET, not one number for all four. The label must not
+// resize as you pan, or the back arrow walks left and right with it, but with
+// the years spelled out the four buckets produce very different lengths, and a
+// single global maximum would park "2024 to 2026" in a hundred pixels of dead
+// space, which is the gap Ali already called out once. Each value is the widest
+// label its own bucket can reach, measured in this face at this size by panning
+// each one to both ends.
+const RANGE_MIN_WIDTH = {
+  weekly: "min-w-[197px]",
+  monthly: "min-w-[158px]",
+  quarterly: "min-w-[141px]",
+  yearly: "min-w-[93px]",
+};
 
 // index 0 = most recent bucket; larger index = further back. "new" counts
 // reviews INSIDE the bucket; "all" is cumulative — everything that had arrived
@@ -812,12 +848,25 @@ function ReviewPerformance() {
                       at a fixed index, so filtering the star rows away does not
                       leave it stranded or drop it. Review Manager's rating
                       menu already groups them this way; this is the same
-                      grouping in the chart. */}
-                  {bucket.kind !== "star" && activeBuckets[i - 1]?.kind === "star" ? (
+                      grouping in the chart.
+                      IT CANNOT ASK WHAT CAME BEFORE IT (review, 20 Sep). The
+                      test was "the row before me is a star row", and the
+                      ratings facet lets you untick all five star rows, which
+                      left Recommended and Not recommended heading nothing at
+                      all: the one list where the heading is the only thing
+                      saying these are not ratings. The campaign page's copy of
+                      this card already carries the robust form, so this is
+                      that condition, piece for piece: any non-star row whose
+                      predecessor is neither the same kind nor the up row, so
+                      the heading leads the pair whether or not stars sit above
+                      it. mt-2 rides on the same question, because a heading
+                      that leads the list has nothing above it to be spaced
+                      from. */}
+                  {bucket.kind !== "star" && activeBuckets[i - 1]?.kind !== bucket.kind && activeBuckets[i - 1]?.kind !== "up" ? (
                     <p
                       // No brand mark (Ali, 7 Sep: "drop the facebook icon on
                       // here, just the subtitle is fine"). The word does the job.
-                      className="text-muted-foreground mt-2 text-xs font-medium"
+                      className={`text-muted-foreground text-xs font-medium ${i > 0 ? "mt-2" : ""}`}
                       data-hook="ratings-facebook-heading"
                     >
                       Facebook recommendations
@@ -869,13 +918,42 @@ function ReviewPerformance() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {activeBuckets.map((bucket) => (
-                    <TableRow key={bucket.id}>
+                  {activeBuckets.map((bucket, i) => (
+                    <Fragment key={bucket.id}>
+                    {/* THE SAME BREAK THE CHART DRAWS (capture sweep, 20 Sep:
+                        insights-03-table-view). The chart spends a heading and
+                        a gap saying that 106 and 14 are Facebook
+                        recommendations, then the table listed "Recommended"
+                        and "Not recommended" straight under "1 star" at the
+                        same row pitch as every other row, so they read as a
+                        sixth and seventh star level under a heading that says
+                        "4.7 average", and that average is the stars only.
+                        Same condition as the chart above, deliberately, so the
+                        two views group identically and filtering the star rows
+                        away cannot strand the heading in one view and not the
+                        other. That condition is now the robust one (review,
+                        20 Sep): both views asked whether a star row came
+                        first, so unticking every star row, which the facet
+                        allows, dropped the heading from both.
+                        A spanning TableHead, not a styled TableCell: the DS
+                        has no group-row primitive, but TableHead keeps its
+                        bg-muted for thead only and is already meant to sit in
+                        the body, so scope="colgroup" gets the right semantics
+                        for free and the row heads the two under it. */}
+                    {bucket.kind !== "star" && activeBuckets[i - 1]?.kind !== bucket.kind && activeBuckets[i - 1]?.kind !== "up" ? (
+                      <TableRow>
+                        <TableHead scope="colgroup" colSpan={2} dataHook="ratings-table-facebook-heading">
+                          Facebook recommendations
+                        </TableHead>
+                      </TableRow>
+                    ) : null}
+                    <TableRow>
                       <TableCell>{bucket.label}</TableCell>
                       <TableCell align="right" className="tabular-nums">
                         {byBucket[bucket.id]}
                       </TableCell>
                     </TableRow>
+                    </Fragment>
                   ))}
                 </TableBody>
                 {/* The DS way to a total: TableFooter, its own tinted band, and
@@ -901,11 +979,17 @@ function ReviewPerformance() {
                 Other (Ali, 3 Sep). It counted only the named slices, so a
                 location collecting reviews on seven sites was told it had
                 four — the grouping is a drawing decision about the donut,
-                not a claim about where the reviews came from. */}
+                not a claim about where the reviews came from.
+                SAY THE NOUN ONCE. This read "Sources 7 sources", where the
+                matching heading on the left reads "Ratings 4.7 average" and
+                never repeats itself. The qualifier carries the fact instead,
+                and "with reviews" is exactly what the count is: groupSources
+                drops the sources sitting on zero, so a site that is connected
+                but has collected nothing is not in the 7. */}
             <p className="mb-3 flex items-baseline gap-2 text-sm font-medium">
               Sources
               <span className="text-muted-foreground font-normal" data-hook="sources-summary">
-                {sourceCount} {sourceCount === 1 ? "source" : "sources"}
+                {sourceCount} with reviews
               </span>
             </p>
             {/* ONE SITE, NO DONUT (Ali, 10 Sep): a single slice says nothing,
@@ -930,6 +1014,17 @@ function ReviewPerformance() {
                         nameKey="name"
                         cx="50%"
                         cy="50%"
+                        // CLOCKWISE FROM TWELVE, because the legend beside it reads
+                        // downwards. Recharts defaults to 0 through 360, which starts at
+                        // 3 o'clock and lays each next slice ANTI clockwise, so anyone
+                        // walking the rim the normal way met the sources in reverse:
+                        // Google, Other, TripAdvisor, Yelp, Facebook against a legend
+                        // saying Google, Facebook, Yelp, TripAdvisor, Other (Ali, 20 Sep).
+                        // 90 is twelve o'clock and the negative sweep turns the arc the
+                        // way the eye does, so row one and slice one meet at the top and
+                        // Other, the catch all, still lands last.
+                        startAngle={90}
+                        endAngle={-270}
                         innerRadius={62}
                         outerRadius={92}
                         paddingAngle={1}
@@ -986,14 +1081,37 @@ function ReviewPerformance() {
                           tooltip on focus. Nothing depends on hover alone
                           either way, because the table view beside the chart
                           lists every source at full count. */}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            data-hook="sources-other-row"
-                            className="flex w-full cursor-help items-center justify-between gap-4 rounded-sm text-left"
-                          >
-                            <span className="flex items-center gap-2">
+                      {/* IT HANGS OFF THE LABEL, AND THE NOTE LEADS THE ROW.
+                          Two placement facts, both learned off the screen
+                          (20 Sep). Radix centres the arrow on whatever it is
+                          anchored to, so while the trigger was the whole
+                          justify-between row the arrow sat in the empty gap
+                          between "Other" and its count, 73px from the word it
+                          points at; the anchor is the label alone now, and the
+                          count rides outside it. And the tooltip opens 7px
+                          under the row, which is where the note used to sit:
+                          151px of opaque panel landed on a 201px line and left
+                          the words "total are" hanging in mid air. Opening it
+                          upwards instead only moved the fault up the legend,
+                          cutting a source name in half and leaving the counts
+                          beside the panel with nothing to name them. With the
+                          note above the row it explains, the tooltip opens down
+                          into the card's own bottom padding and covers nothing
+                          at all. */}
+                      <p
+                        className="text-muted-foreground mt-1 text-xs"
+                        data-hook="sources-grouping-note"
+                      >
+                        {groupingNote}
+                      </p>
+                      <div className="flex items-center justify-between gap-4">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              data-hook="sources-other-row"
+                              className="flex cursor-help items-center gap-2 rounded-sm text-left"
+                            >
                               <span
                                 className="size-2.5 rounded-[2px]"
                                 style={{ background: OTHER_COLOUR }}
@@ -1001,32 +1119,26 @@ function ReviewPerformance() {
                               <span className="text-sm font-medium underline decoration-dotted underline-offset-4">
                                 Other
                               </span>
-                            </span>
-                            <span className="text-muted-foreground text-sm tabular-nums">
-                              {grouping.otherValue}
-                            </span>
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent dataHook="sources-other-tooltip" side="bottom" align="start">
-                          <span className="flex flex-col gap-1">
-                            {grouping.grouped.map((row) => (
-                              <span key={row.id} className="flex items-center justify-between gap-4">
-                                <span className="flex items-center gap-2">
-                                  <SourceMark source={row.id} />
-                                  {row.name}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent dataHook="sources-other-tooltip" side="bottom" align="start">
+                            <span className="flex flex-col gap-1">
+                              {grouping.grouped.map((row) => (
+                                <span key={row.id} className="flex items-center justify-between gap-4">
+                                  <span className="flex items-center gap-2">
+                                    <SourceMark source={row.id} />
+                                    {row.name}
+                                  </span>
+                                  <span className="tabular-nums">{row.value}</span>
                                 </span>
-                                <span className="tabular-nums">{row.value}</span>
-                              </span>
-                            ))}
-                          </span>
-                        </TooltipContent>
-                      </Tooltip>
-                      <p
-                        className="text-muted-foreground mt-1 text-xs"
-                        data-hook="sources-grouping-note"
-                      >
-                        {groupingNote}
-                      </p>
+                              ))}
+                            </span>
+                          </TooltipContent>
+                        </Tooltip>
+                        <span className="text-muted-foreground text-sm tabular-nums">
+                          {grouping.otherValue}
+                        </span>
+                      </div>
                     </>
                   ) : null}
                 </div>
@@ -1113,6 +1225,10 @@ function TimelinePeriodBar({
   // would buy nothing.
   bucketControl,
   range,
+  // A min-w class from RANGE_MIN_WIDTH, picked at the call site where the
+  // bucket lives. Passed as the class rather than the bucket id so the literal
+  // strings stay in one place for Tailwind to find.
+  rangeWidth,
   shown,
   total,
   unit,
@@ -1172,14 +1288,16 @@ function TimelinePeriodBar({
           <ChevronLeft className="size-4" />
         </Button>
         {/* min-w so the arrows do not shift as the label changes width while
-            you pan, but sized to the WIDEST label the four buckets can
-            actually produce, which measures 118.9px in this face and size
-            ("28 Sept – 21 Sept" and "Sept 25 – Sept 26" tie for it). It was
-            130, so every label floated in up to 15px of dead space and the
-            arrows read as pushed away from it (Ali, 18 Aug: the pagination
-            gap "seems a little large"). 120 holds every case with nothing
-            to spare. */}
-        <span className="text-muted-foreground min-w-[120px] text-center text-sm tabular-nums">
+            you pan, sized to the widest label THIS bucket can produce. It was
+            one number for all four (130, then 120), which worked while every
+            label was about 120px wide; spelling the years out spread them from
+            93 to 196, so the number now comes from RANGE_MIN_WIDTH. Keep them
+            snug: at 130 every label floated in up to 15px of dead space and the
+            arrows read as pushed away from it (Ali, 18 Aug: the pagination gap
+            "seems a little large"). */}
+        <span
+          className={`text-muted-foreground ${rangeWidth} text-center text-sm tabular-nums`}
+        >
           {range}
         </span>
         <Button
@@ -1236,7 +1354,11 @@ function ReviewTimeline() {
         : bucket.id === "weekly"
           ? "weeks"
           : "months";
-  const range = series.length ? `${series[0].label} to ${series[series.length - 1].label}` : "";
+  // series[0] is the OLDEST point (buildSeries counts k down from
+  // window - 1), so the window runs from offset + series.length - 1 back to
+  // offset. Built from those indices rather than from the two end labels
+  // because the labels are axis ticks, which must stay abbreviated.
+  const range = series.length ? bucketRange(bucket, offset + series.length - 1, offset) : "";
 
   const activeSources = SOURCES.filter((source) => sources.includes(source.id));
   // The stacked bar has the SAME problem as the donut and the same fix: one
@@ -1381,6 +1503,7 @@ function ReviewTimeline() {
             />
           }
           range={range}
+          rangeWidth={RANGE_MIN_WIDTH[bucket.id]}
           shown={series.length}
           total={totalPeriods}
           unit={periodUnit}
@@ -1412,7 +1535,15 @@ function ReviewTimeline() {
               >
                 <LineChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                   <CartesianGrid vertical={false} />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
+                  {/* scale="band", to sit under the same months as the source
+                      chart below. Recharts reads the x scale off the CHART TYPE,
+                      not the axis: a LineChart's "auto" category axis resolves to
+                      a POINT scale pinned to the plot edges, a BarChart's to a
+                      BAND scale centred inside each band. Two identical axes, two
+                      different x positions, drifting half a band across the row,
+                      so Sept 25 sat 70px left of its own bar. Naming the scale
+                      puts every month over the bar it belongs to. */}
+                  <XAxis dataKey="label" scale="band" tickLine={false} axisLine={false} tickMargin={8} />
                   <YAxis
                     // Separators here too, or the axis prints 1116 beside a
                     // donut centre reading 1,116 (6 Sep). Widened to fit the
@@ -1470,6 +1601,7 @@ function ReviewTimeline() {
         <div>
           <PanTitle title="Source timeline" />
           {view === "chart" ? (
+            <>
             <div className="h-64 w-full">
               <ChartContainer
                 config={chartConfig}
@@ -1530,6 +1662,45 @@ function ReviewTimeline() {
                 </BarChart>
               </ChartContainer>
             </div>
+            {/* THE KEY TO THE STACK. Five colours across twelve bars, and
+                until this nothing on screen said which source was which.
+                Same swatch, mark and type as the donut's legend a card
+                above, fed from the same `colourOf`, so a colour cannot mean
+                Google there and something else here. It sits UNDER the
+                chart, not beside it, because the bars take the card's full
+                width; left to right it reads in the order the stack builds
+                upwards, which is the order the donut's rows read downwards.
+                NO COUNTS: the donut is one period, so its rows carry one
+                number each, but a bar here holds twelve and the scope menu
+                changes which window a single number would mean. The table
+                behind the chart is where the numbers are. */}
+            <div
+              className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2"
+              data-hook="source-timeline-legend"
+            >
+              {grouping.named.map((row) => (
+                <span key={row.id} className="flex items-center gap-2">
+                  <span
+                    className="size-2.5 rounded-[2px]"
+                    style={{ background: colourOf[row.id] }}
+                  />
+                  <SourceMark source={row.id} />
+                  <span className="text-sm">{row.name}</span>
+                </span>
+              ))}
+              {/* Other last, because it rides at the top of the stack, and
+                  with no mark: it is a bucket, not a site. */}
+              {grouping.grouped.length > 0 ? (
+                <span className="flex items-center gap-2">
+                  <span
+                    className="size-2.5 rounded-[2px]"
+                    style={{ background: OTHER_COLOUR }}
+                  />
+                  <span className="text-sm">Other</span>
+                </span>
+              ) : null}
+            </div>
+            </>
           ) : (
             <Table dataHook="source-timeline-table">
               <TableHeader>
@@ -1641,9 +1812,13 @@ export default function RMReviewTrackerPage() {
                   <span className="text-foreground font-medium tabular-nums">{HEADLINE_RATING}</span> average rating
                 </span>
               )}
-              // "auto" binds data.aiInsights.lastUpdated, so the line follows
-              // a dataset switch instead of hardcoding a date into the screen.
-              lastUpdated="auto"
+              // THE RUN THAT FETCHED THIS DATA, not the dataset's own stamp.
+              // It was "auto", which binds data.aiInsights.lastUpdated, the
+              // DS dataset's 9 Sep. That put "Last updated September 9" here
+              // beside "Last run September 7" in report settings: data two
+              // days fresher than the run that produced it. The Tracker IS
+              // the report, so both now print the one value.
+              lastUpdated={LAST_REPORT_RUN}
               actions={
                 <>
                   {/* No size: PageHeader sizes its own CTAs and its cluster

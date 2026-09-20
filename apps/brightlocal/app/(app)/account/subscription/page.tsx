@@ -153,13 +153,19 @@ export default function SubscriptionPage() {
             <ol className="grid gap-3 lg:grid-cols-3">
               {PLANS.map((plan, i) => {
                 const isCurrent = currentPlan === plan.id;
+                // "ready for your website" is showcaseReady, not fiveStar
+                // (review, 20 Sep): Yelp forbids republishing its reviews, so
+                // a five-star Yelp review is counted in fiveStar and can never
+                // go on the site. The sentence promises a website, so it takes
+                // the number the website can actually have. Same rule as the
+                // Showcase strip in lib/beacon-pages.ts.
                 const unlocks =
                   plan.id === "track"
                     ? "See where you rank and where your listings are wrong."
                     : plan.id === "manage"
                       ? "AI insights on top of that, and your business details kept right everywhere."
                       : stats.needReply > 0
-                        ? `Your ${stats.needReply} waiting reviews answered, campaigns to ask for more, and ${stats.fiveStar} five-star reviews ready for your website.`
+                        ? `Your ${stats.needReply} waiting reviews answered, campaigns to ask for more, and ${stats.showcaseReady} five-star reviews ready for your website.`
                         : "Every review in one inbox, campaigns to ask for more, and your best reviews on your website.";
                 return (
                   <li key={plan.id} className={`relative flex flex-col gap-3 rounded-[20px] p-5 ${isCurrent ? "bg-[var(--ds-tailwind-colors-neutral-950)] text-[var(--ds-tailwind-colors-base-white)]" : "bg-[var(--ds-tailwind-colors-neutral-100)]"}`} data-hook={`upgrade-step-${plan.id}`}>
@@ -242,7 +248,11 @@ export default function SubscriptionPage() {
                     attaching a count that belongs to another number. */}
                 <li>Answers your five-star Google reviews automatically, in your tone, an hour after they land.</li>
                 <li>Asks customers for reviews by email, SMS and a QR code at the till.</li>
-                <li>{stats.fiveStar > 0 ? `Puts the best of your ${stats.fiveStar} five-star reviews on your website.` : "Puts your best reviews on your website."}</li>
+                {/* showcaseReady, not fiveStar: this line puts reviews ON
+                    the website, and the Yelp ones cannot go there (review,
+                    20 Sep). Counting all five-star reviews here promised more
+                    than the Showcase can show. */}
+                <li>{stats.showcaseReady > 0 ? `Puts the best of your ${stats.showcaseReady} five-star reviews on your website.` : "Puts your best reviews on your website."}</li>
               </ul>
             </div>
             <Art keywords={["review", "stars"]} className="hidden size-28 lg:block" />

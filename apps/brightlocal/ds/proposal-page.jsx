@@ -1642,6 +1642,19 @@ function NativePageHeader({
     .map((crumb) =>
       crumb.bind === "location" ? { ...crumb, label: data.location.name } : crumb,
     );
+  // The nearest ancestor is what the phone trail collapses to.
+  const backCrumb = trail[trail.length - 1];
+  // preventDefault because a crumb with no handler is still an <a href="#">,
+  // and letting it through scrolls the page to the top on the way out.
+  const crumbClick = (crumb) =>
+    crumb.onClick
+      ? (event) => {
+          event.preventDefault();
+          crumb.onClick();
+        }
+      : crumb.href
+        ? undefined
+        : (event) => event.preventDefault();
   const date = lastUpdatedValue ? (
     <DateStamp label="Last updated" value={lastUpdatedValue} dataHook={`${dataHook}-last-updated`} />
   ) : statusRight ? (
@@ -1649,8 +1662,47 @@ function NativePageHeader({
   ) : null;
   return (
     <GlobalLayoutContentHeader dataHook={dataHook} data-gds-layout-engine="native">
+      {/* PHONE: the nearest ancestor only, as a back link.
+          The deepest trail here is five items (four ancestors plus the page),
+          and the DS's BreadcrumbList is flex-nowrap AND whitespace-nowrap with
+          no min-w-0 or truncate on the items, so under its intrinsic width it
+          cannot wrap, cannot shrink and cannot ellipsize: it can only spill.
+          On the template editor at 390 the ol measured 278 wide holding 551 of
+          content, and WizardShell's overflow-hidden cut it mid word, "Reviews
+          > Re". Measured the sweep: the five crumbs only stop overhanging
+          their own column at about 695, so md is the first breakpoint where
+          the whole trail is honest, and below it the one crumb that gets you
+          home is the one worth showing. Same answer the composed header above
+          already gives, which is where the pattern comes from (Ali on this
+          screen: "I dont want weird back links like this", the trail itself is
+          the way back).
+          Two sibling conditionals rather than one fragment: the DS header slots
+          its children BY TYPE, and React.Children does not see through a
+          fragment, so a wrapped pair would land in the title slot. */}
       {trail.length ? (
-        <Breadcrumb dataHook={`${dataHook}-breadcrumbs`}>
+        <Breadcrumb dataHook={`${dataHook}-breadcrumbs-back`} className="min-w-0 md:hidden">
+          <BreadcrumbList>
+            {/* min-w-0 on the li as well as the link: the li is a flex item of
+                the ol, and min-width:auto would hold it at its content width,
+                so the truncate below would never fire. */}
+            <BreadcrumbItem className="min-w-0">
+              <BreadcrumbLink
+                href={backCrumb.href ?? "#"}
+                data-grade-goto={backCrumb.goto}
+                data-grade-transition={backCrumb.transition}
+                onClick={crumbClick(backCrumb)}
+                className="inline-flex min-w-0 items-center gap-1.5"
+              >
+                <ArrowLeft className="size-4 shrink-0" />
+                <span className="truncate">{backCrumb.label}</span>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      ) : null}
+      {/* md+: the full trail, the page itself as the last crumb. */}
+      {trail.length ? (
+        <Breadcrumb dataHook={`${dataHook}-breadcrumbs`} className="hidden min-w-0 md:block">
           <BreadcrumbList>
             {trail.map((crumb, i) => (
               <React.Fragment key={`${crumb.label}-${i}`}>
@@ -1659,16 +1711,7 @@ function NativePageHeader({
                     href={crumb.href ?? "#"}
                     data-grade-goto={crumb.goto}
                     data-grade-transition={crumb.transition}
-                    onClick={
-                      crumb.onClick
-                        ? (event) => {
-                            event.preventDefault();
-                            crumb.onClick();
-                          }
-                        : crumb.href
-                          ? undefined
-                          : (event) => event.preventDefault()
-                    }
+                    onClick={crumbClick(crumb)}
                   >
                     {crumb.label}
                   </BreadcrumbLink>

@@ -1083,27 +1083,44 @@ function ReplyActions({ review, draft, sending, onSend, onSkip, onEdit, onDelete
 // product that stop and say something read as one thing. It is not an
 // EmptyState itself: that takes an ICON in a circle, and a moment worth
 // marking wants the illustration.
-function ReplySent({ review, business, remaining }) {
+// TWO NUMBERS, TWO QUESTIONS. `remaining` is every review still needing
+// action, which is what the Needs action tab and the hub card count and so
+// the only honest number to print. `queued` is the ones this screen can post
+// to, which is the only honest thing to end the queue on: the read-only rows
+// in the gap between them have no Send and no Skip, so an ending measured on
+// `remaining` never arrives.
+function ReplySent({ review, business, remaining, queued }) {
   if (!review) return null;
   const source = SOURCES[review.source]?.name ?? "the review site";
-  const clear = remaining === 0;
+  // Nothing left to write from here, which is this screen's own finish line.
+  const done = queued === 0;
+  // And nothing left anywhere, on an account whose waiting reviews are all on
+  // sources that take replies.
+  const clear = done && remaining === 0;
   // One illustration, chosen by MEANING rather than by name (lib/
   // illustrations, which is what that file exists for): applause for a reply
-  // that went, and the confetti kept back for the bigger moment, a queue with
-  // nothing left in it.
-  const Art = pickIllustration(clear ? ["milestone", "celebrate"] : ["win", "congratulations"]);
+  // that went, and the confetti kept back for the bigger moment, the reply
+  // box with nothing left to write in it.
+  const Art = pickIllustration(done ? ["milestone", "celebrate"] : ["win", "congratulations"]);
   return (
-    // ONE COMPOSED BLOCK. my-auto so the moment sits in the middle of the
-    // drawer rather than at the top of a mostly empty panel: the body is a
-    // flex column, so this takes the space above and below evenly (capture,
-    // 20 Sep). max-w-sm so everything in it shares one narrow column: the
-    // reply used to run the full 607px of the panel while the two lines
-    // above it stayed centred, which is what made the block read as
-    // stretched apart rather than as a thing sitting in the middle (Ali,
-    // 20 Sep). mx-auto because a flex child with a max width otherwise sits
-    // against the left edge instead of centring.
+    // ONE COMPOSED BLOCK, ANCHORED TO THE TOP. The leftover height here
+    // cannot be removed, only placed: the drawer is full height on purpose
+    // (see REVIEW_DRAWER_STYLE) and this moment is 232px of content in a
+    // 738px column. my-auto split that leftover into two equal 269px voids,
+    // above and below, which is what left the block reading as a stamp
+    // adrift in a panel that had failed to render (Ali, 20 Sep). Anchored to
+    // the top, the white falls once, below the content, where a panel's
+    // empty space belongs and where the footer's border closes it off.
+    // py-8 over the body's own py-4 puts 48px between the header's divider
+    // and the illustration, which is the shared EmptyState's own py-12: this
+    // block already borrows that component's type and spacing, so it keeps
+    // its vertical rhythm too. max-w-sm so everything in it shares one
+    // narrow column: the reply used to run the full 607px of the panel while
+    // the two lines above it stayed centred, which is what made the block
+    // read as pulled apart (Ali, 20 Sep). mx-auto because a flex child with
+    // a max width otherwise sits against the left edge instead of centring.
     <div
-      className="mx-auto my-auto flex w-full max-w-sm flex-col items-center gap-2 text-center"
+      className="mx-auto flex w-full max-w-sm flex-col items-center gap-2 py-8 text-center"
       data-hook={`reply-sent-${review.id}`}
     >
       {/* aria-hidden on a WRAPPER, the way StripArt does it: the illustration
@@ -1122,7 +1139,17 @@ function ReplySent({ review, business, remaining }) {
       >
         {clear
           ? "That was the last one. Nothing else is waiting for a reply."
-          : `${remaining} more ${remaining === 1 ? "review needs" : "reviews need"} a reply.`}
+          : done
+            // The queue this screen owns is empty and the inbox is not, so
+            // the line says both: the finish, and exactly what is sitting
+            // behind it and why it is not a job for this page. Saying
+            // "nothing else is waiting" here would be a lie about four
+            // reviews, and printing the bare count would be a demand with no
+            // way to meet it.
+            ? `That was the last one you can reply to from here. ${remaining} ${
+                remaining === 1 ? "review is" : "reviews are"
+              } on sources that only take replies on their own site.`
+            : `${remaining} more ${remaining === 1 ? "review needs" : "reviews need"} a reply.`}
       </p>
       {/* The same muted box a sent reply gets everywhere else on this panel,
           so it reads as the reply itself rather than as a receipt for it. */}
@@ -1830,6 +1857,16 @@ function ReviewsInbox() {
     [reviews],
   );
 
+  // WHAT IS LEFT THAT THIS SCREEN CANNOT ANSWER: still needing action, on a
+  // source that only takes replies on its own site. Four rows on the engaged
+  // account, on Apple Maps, Yahoo! Local and TripAdvisor. They have no Send
+  // and no Skip, by the design of the read-only panel, so nothing a person
+  // does here ever moves them out of Needs action.
+  const waitingElsewhere = useMemo(
+    () => reviews.filter((r) => r.status === "needs" && !canReply(r)),
+    [reviews],
+  );
+
   // HOW MANY ARE WAITING, in the terms the rest of the product uses: every
   // row still needing action, on any source. replyQueue is narrower on
   // purpose, because it is what Next opens and Next cannot land on a review
@@ -1838,9 +1875,14 @@ function ReviewsInbox() {
   // the hub card in front of it, both said 25 (Ali, 20 Sep). The gap was the
   // four Needs action rows on read-only sources. The count and the queue
   // answer two different questions, so they are two different things.
-  // It also decides `clear`, which now means what the tab means: nothing
-  // left in Needs action, rather than nothing left that this screen can
-  // answer.
+  //
+  // THE COUNT IS ALL IT DECIDES. Letting it decide "that was the last one"
+  // too broke the state machine: the four read-only rows can never leave
+  // Needs action, so the total floored at four, the final state was
+  // unreachable, and the last reply on the account landed on a panel saying
+  // four still needed answering with only Close under it. The sentence
+  // counts every waiting review; whether this was the last one is settled by
+  // replyQueue, which is the work this screen can actually do.
   const needsReply = useMemo(
     () => reviews.filter((r) => r.status === "needs").length,
     [reviews],
@@ -1865,8 +1907,15 @@ function ReviewsInbox() {
   // survives the send. An inbox is worked from the top, so the top is where
   // Reply to the next one goes.
   const nextNeeds = replyQueue[0] ?? null;
-  const openNext = () => {
-    if (!nextNeeds) return;
+  // WHERE THE REST OF THE WORK IS once this screen has run out of its own:
+  // the first Needs action row on a read-only source. Only offered when
+  // there is no next reply to write, and it is the whole reason the last
+  // reply no longer dead-ends. A panel that says four are still waiting owes
+  // the person a door to them, and the read-only panel is that door: it
+  // names the source and carries Open in Apple Maps.
+  const nextElsewhere = nextNeeds ? null : (waitingElsewhere[0] ?? null);
+  const openInQueue = (review) => {
+    if (!review) return;
     // NEXT LANDS ON A ROW THE TABLE IS SHOWING. The top of the queue can sit
     // behind the tab you are standing on or a facet you set, so the view goes
     // back to the top of Needs action before the review opens, rather than
@@ -1874,7 +1923,7 @@ function ReviewsInbox() {
     setTab("needs");
     clearFilters();
     table.setPageIndex(0);
-    setActiveId(nextNeeds.id);
+    setActiveId(review.id);
   };
 
   const draft = activeId && drafts[activeId] !== undefined ? drafts[activeId] : "";
@@ -2461,7 +2510,12 @@ function ReviewsInbox() {
             className="animate-entrance-fade mt-0 flex min-h-0 max-w-none flex-1 flex-col overflow-y-auto py-4"
           >
           {sent ? (
-            <ReplySent review={sent} business={business} remaining={needsReply} />
+            <ReplySent
+              review={sent}
+              business={business}
+              remaining={needsReply}
+              queued={replyQueue.length}
+            />
           ) : (
           <ReplyBody
             review={active}
@@ -2494,12 +2548,14 @@ function ReviewsInbox() {
           <DrawerFooter className="max-w-none flex-row items-center justify-end border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             {sent ? (
               <>
-                {/* THE OBVIOUS NEXT STEPS AND NOTHING ELSE: another review to
-                    answer, or done. Close takes the primary when the queue is
-                    clear, because finishing is the action then. */}
+                {/* THE OBVIOUS NEXT STEP AND NOTHING ELSE: the next review
+                    to answer, or, once there is none, the first of the ones
+                    this screen cannot answer. Close takes the primary only
+                    when neither exists, because finishing is the action then
+                    and nothing else is. */}
                 <DrawerClose asChild>
                   <Button
-                    variant={nextNeeds ? "outline" : "primary"}
+                    variant={nextNeeds || nextElsewhere ? "outline" : "primary"}
                     dataHook={`sent-close-${sent.id}`}
                   >
                     Close
@@ -2509,9 +2565,22 @@ function ReviewsInbox() {
                   <Button
                     variant="primary"
                     dataHook={`sent-next-${sent.id}`}
-                    onClick={openNext}
+                    onClick={() => openInQueue(nextNeeds)}
                   >
                     Reply to the next one
+                  </Button>
+                ) : nextElsewhere ? (
+                  // The reply box is done for the day, the inbox is not. This
+                  // opens the first of the ones only their own site accepts,
+                  // where the panel says which site and offers the way out to
+                  // it, so the count in the line above always has somewhere
+                  // to lead.
+                  <Button
+                    variant="primary"
+                    dataHook={`sent-elsewhere-${sent.id}`}
+                    onClick={() => openInQueue(nextElsewhere)}
+                  >
+                    See the ones left
                   </Button>
                 ) : null}
               </>
@@ -2585,15 +2654,19 @@ export default function RMReviewManagerDataTablePage() {
               { label: "Reviews", goto: "screen:dmrotrhbcxk66" },
             ]}
             title="Review Manager"
-            // A NUMBER, NOT A SENTENCE (Ali, 7 Sep: "for each page header directly off
-            // the hub page, our page description can be used to display some information
-            // rather than yet more boring text"). The figure is read from the same data
-            // the page renders, never typed in, so it moves when the data does.
-            description={(
-              <span data-hook="page-stat">
-                <span className="text-foreground font-medium tabular-nums">{seedRowsFor(persona, locationKey).length}</span> reviews
-              </span>
-            )}
+            // A SENTENCE, NOT A NUMBER. This used to read
+            // "{seedRowsFor(persona, locationKey).length} reviews" (Ali, 7 Sep:
+            // "our page description can be used to display some information
+            // rather than yet more boring text"), but that count is the raw
+            // seed list for the location, read up here, while the five tabs and
+            // the three facets that narrow it live inside the inbox one level
+            // down. Tick the 1 star facet and the header still said 60 over a
+            // table of 4. The pager under the table already counts the filtered
+            // rows, which is why counts came off the table titles too (Ali, 17
+            // Sep: "we have pagination"), so the description says what the page
+            // is for rather than restating a total it cannot see. Same route
+            // the Review Builder hub took for the identical shape.
+            description="Read and reply to every review for this location."
             // "auto" binds data.aiInsights.lastUpdated, so the line follows a
             // dataset switch instead of hardcoding a date into the screen.
             // ONLY ONCE THERE ARE REVIEWS. That timestamp is the AI Insights
