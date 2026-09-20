@@ -749,6 +749,16 @@
       "why": "Customer preview: the footer calls itself a preview (Ali, 20 Sep: \"let's not say exactly\"). It renders the customer page in a drawer at a different width, so \"exactly\" was a promise the preview cannot keep.",
       "find": "\"This is exactly what your customer sees.\"",
       "replace": "\"This is a preview of what your customer sees.\""
+    },
+    {
+      "why": "Review Builder: a config without review sites no longer white-screens the app (audit, 20 Sep). A template deliberately carries no sites (\"templates dont include review sites\", Ali, 7 Sep: CAMPAIGN_ONLY strips them), and the Pick a template step fed exactly that config to campaignSummary and to the customer preview, which both mapped over config.sites. Clicking any template row threw \"Cannot read properties of undefined\" and took the page with it, which also made the wizard steps behind that row unreachable. The summary row is skipped when there are none, because a template's sites are chosen on the campaign.",
+      "find": "  rows.push({ k: \"Review sites\", v: config.sites.map((s) => siteById(s.site).label).join(\", \") });\n",
+      "replace": "  if (config.sites?.length) {\n    rows.push({ k: \"Review sites\", v: config.sites.map((s) => siteById(s.site).label).join(\", \") });\n  }\n"
+    },
+    {
+      "why": "Review Builder: a config without review sites no longer white-screens the app (audit, 20 Sep). A template deliberately carries no sites (\"templates dont include review sites\", Ali, 7 Sep: CAMPAIGN_ONLY strips them), and the Pick a template step fed exactly that config to campaignSummary and to the customer preview, which both mapped over config.sites. Clicking any template row threw \"Cannot read properties of undefined\" and took the page with it, which also made the wizard steps behind that row unreachable. The customer preview lists the sites it has.",
+      "find": "          {config.sites.map((s) => (\n",
+      "replace": "          {(config.sites ?? []).map((s) => (\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [
@@ -2316,6 +2326,16 @@
       "why": "Customer preview: the footer calls itself a preview (Ali, 20 Sep: \"let's not say exactly\"). It renders the customer page in a drawer at a different width, so \"exactly\" was a promise the preview cannot keep.",
       "find": "\"This is exactly what your customer sees.\"",
       "replace": "\"This is a preview of what your customer sees.\""
+    },
+    {
+      "why": "Review Builder: a config without review sites no longer white-screens the app (audit, 20 Sep). A template deliberately carries no sites (\"templates dont include review sites\", Ali, 7 Sep: CAMPAIGN_ONLY strips them), and the Pick a template step fed exactly that config to campaignSummary and to the customer preview, which both mapped over config.sites. Clicking any template row threw \"Cannot read properties of undefined\" and took the page with it, which also made the wizard steps behind that row unreachable. The summary row is skipped when there are none, because a template's sites are chosen on the campaign.",
+      "find": "  rows.push({ k: \"Review sites\", v: config.sites.map((s) => siteById(s.site).label).join(\", \") });\n",
+      "replace": "  if (config.sites?.length) {\n    rows.push({ k: \"Review sites\", v: config.sites.map((s) => siteById(s.site).label).join(\", \") });\n  }\n"
+    },
+    {
+      "why": "Review Builder: a config without review sites no longer white-screens the app (audit, 20 Sep). A template deliberately carries no sites (\"templates dont include review sites\", Ali, 7 Sep: CAMPAIGN_ONLY strips them), and the Pick a template step fed exactly that config to campaignSummary and to the customer preview, which both mapped over config.sites. Clicking any template row threw \"Cannot read properties of undefined\" and took the page with it, which also made the wizard steps behind that row unreachable. The customer preview lists the sites it has.",
+      "find": "          {config.sites.map((s) => (\n",
+      "replace": "          {(config.sites ?? []).map((s) => (\n"
     }
   ],
   "app/(app)/locations/[location]/page.jsx": [
@@ -2867,6 +2887,16 @@
       "why": "Customer preview: the footer calls itself a preview (Ali, 20 Sep: \"let's not say exactly\"). It renders the customer page in a drawer at a different width, so \"exactly\" was a promise the preview cannot keep.",
       "find": "\"This is exactly what your customer sees.\"",
       "replace": "\"This is a preview of what your customer sees.\""
+    },
+    {
+      "why": "Review Builder: a config without review sites no longer white-screens the app (audit, 20 Sep). A template deliberately carries no sites (\"templates dont include review sites\", Ali, 7 Sep: CAMPAIGN_ONLY strips them), and the Pick a template step fed exactly that config to campaignSummary and to the customer preview, which both mapped over config.sites. Clicking any template row threw \"Cannot read properties of undefined\" and took the page with it, which also made the wizard steps behind that row unreachable. The summary row is skipped when there are none, because a template's sites are chosen on the campaign.",
+      "find": "  rows.push({ k: \"Review sites\", v: config.sites.map((s) => siteById(s.site).label).join(\", \") });\n",
+      "replace": "  if (config.sites?.length) {\n    rows.push({ k: \"Review sites\", v: config.sites.map((s) => siteById(s.site).label).join(\", \") });\n  }\n"
+    },
+    {
+      "why": "Review Builder: a config without review sites no longer white-screens the app (audit, 20 Sep). A template deliberately carries no sites (\"templates dont include review sites\", Ali, 7 Sep: CAMPAIGN_ONLY strips them), and the Pick a template step fed exactly that config to campaignSummary and to the customer preview, which both mapped over config.sites. Clicking any template row threw \"Cannot read properties of undefined\" and took the page with it, which also made the wizard steps behind that row unreachable. The customer preview lists the sites it has.",
+      "find": "          {config.sites.map((s) => (\n",
+      "replace": "          {(config.sites ?? []).map((s) => (\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/builder/hub-and-spoke/page.jsx": [
@@ -3229,6 +3259,16 @@
       "why": "Customer preview: the footer calls itself a preview (Ali, 20 Sep: \"let's not say exactly\"). It renders the customer page in a drawer at a different width, so \"exactly\" was a promise the preview cannot keep.",
       "find": "\"This is exactly what your customer sees.\"",
       "replace": "\"This is a preview of what your customer sees.\""
+    },
+    {
+      "why": "Review Builder: a config without review sites no longer white-screens the app (audit, 20 Sep). A template deliberately carries no sites (\"templates dont include review sites\", Ali, 7 Sep: CAMPAIGN_ONLY strips them), and the Pick a template step fed exactly that config to campaignSummary and to the customer preview, which both mapped over config.sites. Clicking any template row threw \"Cannot read properties of undefined\" and took the page with it, which also made the wizard steps behind that row unreachable. The summary row is skipped when there are none, because a template's sites are chosen on the campaign.",
+      "find": "  rows.push({ k: \"Review sites\", v: config.sites.map((s) => siteById(s.site).label).join(\", \") });\n",
+      "replace": "  if (config.sites?.length) {\n    rows.push({ k: \"Review sites\", v: config.sites.map((s) => siteById(s.site).label).join(\", \") });\n  }\n"
+    },
+    {
+      "why": "Review Builder: a config without review sites no longer white-screens the app (audit, 20 Sep). A template deliberately carries no sites (\"templates dont include review sites\", Ali, 7 Sep: CAMPAIGN_ONLY strips them), and the Pick a template step fed exactly that config to campaignSummary and to the customer preview, which both mapped over config.sites. Clicking any template row threw \"Cannot read properties of undefined\" and took the page with it, which also made the wizard steps behind that row unreachable. The customer preview lists the sites it has.",
+      "find": "          {config.sites.map((s) => (\n",
+      "replace": "          {(config.sites ?? []).map((s) => (\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/manager/templates/page.jsx": [

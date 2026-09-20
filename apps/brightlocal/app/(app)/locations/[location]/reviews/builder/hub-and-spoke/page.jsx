@@ -780,7 +780,9 @@ function campaignSummary(config) {
   if (config.ask === "feedback") {
     rows.push({ k: "Feedback type", v: FEEDBACK_TYPES[config.feedbackType].label });
   }
-  rows.push({ k: "Review sites", v: config.sites.map((s) => siteById(s.site).label).join(", ") });
+  if (config.sites?.length) {
+    rows.push({ k: "Review sites", v: config.sites.map((s) => siteById(s.site).label).join(", ") });
+  }
   return rows;
 }
 
@@ -1237,7 +1239,7 @@ function CustomerPage({ page, config, interactive, rating, setRating, comment, s
         )}
         <p className="text-muted-foreground max-w-sm text-sm">{resolveVars(config.invite, business)}</p>
         <div className="flex w-full max-w-xs flex-col gap-2">
-          {config.sites.map((s) => (
+          {(config.sites ?? []).map((s) => (
             <Button key={s.site} variant="outline" dataHook={`customer-site-${s.site}`} className="justify-start">
               <SiteMark id={s.site} />
               Review us on {siteById(s.site).label}
