@@ -645,7 +645,15 @@ function TemplatesView({ templates, setTemplates, rules }) {
                   </Button>
                 </div>
               </div>
-              <p className="text-muted-foreground text-sm">{resolveVars(t.body, null, business)}</p>
+              {/* RAW tokens, both of them. This row is the library entry, not
+                  a preview against a review: there is no reviewer to name here,
+                  so a filled-in business name sitting next to a raw
+                  {{firstname}} reads as a half-written reply. The drawer's
+                  textarea and the rule editor's template picker both show the
+                  string exactly as it was typed, and the subtitle above says
+                  the tokens are filled in per review, which is true at send
+                  time and only at send time. */}
+              <p className="text-muted-foreground text-sm">{t.body}</p>
               {used.length > 0 ? (
                 // Shown on the row, not only in the delete dialog: knowing a
                 // template is load-bearing should not require trying to
@@ -760,9 +768,14 @@ function TemplatesView({ templates, setTemplates, rules }) {
             <div className="flex flex-col gap-2">
               <p className="text-sm font-medium">Ratings this template is for</p>
               <RatingPicker selected={ratings} onChange={setRatings} idPrefix="tpl-rating" />
+              {/* Points at the tick, because "leave everything unticked"
+                  describes a state the box cannot show: the Any rating row
+                  above ticks ITSELF the moment nothing else is ticked, and
+                  clicking it clears the rest. An empty `ratings` array is
+                  still what gets stored, the row is just how it is said. */}
               <p className="text-muted-foreground text-sm">
-                Auto-reply rules offer this template first when their ratings overlap. Leave
-                everything unticked for a reply that suits any rating.
+                Auto-reply rules offer this template first when their ratings overlap. Tick Any
+                rating for a reply that suits every rating.
               </p>
             </div>
           </DrawerBody>
