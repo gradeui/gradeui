@@ -100,11 +100,13 @@ import {
   AppLayoutShell,
   ProposalSidebar,
   PageHeader,
+  EmptyState,
   useProposalData,
   formatDate,
   formatDateTime
 } from "@brightlocal/proposal";
 import { SideSheetHeader } from "@brightlocal/side-sheet-header";
+import { usePersona } from "@/lib/demo";
 
 /* ------------------------------ interim mark ------------------------------ */
 
@@ -596,6 +598,17 @@ function TemplatesView({ templates, setTemplates, rules }) {
       <Separator dataHook="templates-rule" />
 
       <div className="flex flex-col gap-3">
+        {/* THE DEFAULT VIEW FOR A NEW CUSTOMER, so it says what a template is
+            for and offers the one action. New template stays in the section
+            header, where it is on a full page, so the state does not repeat
+            it. */}
+        {templates.length === 0 ? (
+          <EmptyState
+            dataHook="templates-empty-state"
+            title="No templates yet"
+            description="A template is a reply you can reuse, with the reviewer's name and your business name filled in. Write one here and it is offered whenever you reply."
+          />
+        ) : null}
         {templates.map((t) => {
           const used = rulesUsing(t);
           return (
@@ -966,6 +979,13 @@ function AutoReplyView({ templates, rules, setRules }) {
           same way. */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3">
+          {rules.length === 0 ? (
+            <EmptyState
+              dataHook="rules-empty-state"
+              title="No auto-reply rules yet"
+              description="A rule sends one of your templates on its own when a new review matches it, so a five star Google review can be answered the moment it arrives."
+            />
+          ) : null}
           {rules.map((rule) => {
             const tpl = templates.find((t) => t.id === rule.templateId);
             const ruleScope = SCOPES[rule.scope] ?? SCOPES.location;
@@ -1277,18 +1297,28 @@ function AutoReplyView({ templates, rules, setRules }) {
 /* --------------------------------- shell ---------------------------------- */
 
 export default function RMReplyTemplatesPage() {
-  const [templates, setTemplates] = useState(DEFAULT_TEMPLATES);
-  const [rules, setRules] = useState([
-    {
-      id: "rule1",
-      sources: AUTO_REPLY_SOURCES,
-      ratings: ["5"],
-      templateId: "t1",
-      delayMinutes: 60,
-      enabled: true,
-      scope: "location",
-    },
-  ]);
+  // DAY ONE HAS NEITHER (Margarita: the zero states "are the default view for
+  // every new customer"). An account with nothing connected has written no
+  // templates and made no rules, so the seeded pair only belongs to an account
+  // that has been using the product.
+  const persona = usePersona();
+  const fresh = persona.engagement === "empty";
+  const [templates, setTemplates] = useState(fresh ? [] : DEFAULT_TEMPLATES);
+  const [rules, setRules] = useState(
+    fresh
+      ? []
+      : [
+          {
+            id: "rule1",
+            sources: AUTO_REPLY_SOURCES,
+            ratings: ["5"],
+            templateId: "t1",
+            delayMinutes: 60,
+            enabled: true,
+            scope: "location",
+          },
+        ],
+  );
 
   return (
     <SidebarProvider>
@@ -1337,7 +1367,7 @@ export default function RMReplyTemplatesPage() {
               { label: "Review Manager", goto: "screen:dmsxf5zjggd0n" },
             ]}
             title="Reply templates"
-            description="Reusable replies, and the rules that send them for you."
+            description="Reply templates used by Review Manager."
           />
         }
       >

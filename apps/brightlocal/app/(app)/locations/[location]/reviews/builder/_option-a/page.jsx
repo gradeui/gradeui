@@ -196,6 +196,12 @@ import {
 } from "@brightlocal/ui-components/drawer";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@brightlocal/ui-components/tabs";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@brightlocal/ui-components/accordion";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@brightlocal/ui-components/tooltip";
 import { Popover, PopoverTrigger, PopoverContent } from "@brightlocal/ui-components/popover";
 import {
   Command,
@@ -234,8 +240,6 @@ import {
   PaginationNext,
   PaginationEllipsis,
 } from "@brightlocal/ui-components/pagination";
-// The funnel is <ReviewFunnel/> from the proposal lib — the DS ships no
-// Funnel, and wrapping recharts by hand renders nothing (see its sidecar).
 import {
   Menu,
   Mail,
@@ -278,7 +282,6 @@ import {
   PageHeader,
   StatCard,
   DateStamp,
-  ReviewFunnel,
   Dropzone,
   FeedbackControl,
   FeedbackScore,
@@ -5434,23 +5437,26 @@ function CampaignInsights({ campaign }) {
                         </p>
                         <ViewToggle view={funnelView} onChange={setFunnelView} idPrefix="funnel" />
                       </div>
-                      {/* A REAL FUNNEL (Ali, 3 Sep: "next up need a funnel
-                          chart"), replacing the four Progress bars. Same data,
-                          same greys as ReviewFunnel's ramp — the shape now does what
-                          the word says. The last shape is a rectangle: a point
-                          at the bottom would draw "visited a review site" as if
-                          it tapered to nobody. Labels sit to the right of each
-                          step, name and count together, in the margin reserved
-                          for them. Fixed-height wrapper per the DS chart rule,
-                          capped at max-w-md so four steps do not stretch into
-                          four flat ribbons on a wide card. */}
-                      {/* <ReviewFunnel/>, not a hand-wrapped FunnelChart (6 Sep).
-                          The inline version rendered NOTHING: a FunnelChart will
-                          not take its size from the ResponsiveContainer that
-                          ChartContainer owns. The lib component measures its own
-                          width and hands the chart explicit pixels, which is the
-                          only shape that keeps the DS chart context and stays
-                          responsive. See the ReviewFunnel sidecar. */}
+                      {/* BARS, NOT A FUNNEL GRAPHIC (Ali, 20 Sep: "In review
+                          builder we are getting rid of the funnel graphic, it
+                          wasnt liked by anyone, just bars I think"). The
+                          trapezoid stack was a shape you had to decode before
+                          you could read anything off it, and every number it
+                          carried was already in the DOM rows beside it: the
+                          step name, the count, the drop from the step above.
+                          So the rows stay and the geometry goes.
+                          The taper stays too, as length rather than slope:
+                          each bar is that step's share of the FIRST step, so
+                          Sent is full width and the rest fall away from it in
+                          the same proportions the funnel drew.
+                          NEUTRAL, the same treatment as the Review Tracker's
+                          ratings bars (neutral-500 on neutral-100, h-2). These
+                          bars count people, they do not pass a verdict, and
+                          Progress has no neutral colour of its own so both
+                          ends are set here.
+                          Fixed-width tabular columns for the count and the
+                          drop, so they stack into two straight edges however
+                          long a step name gets. */}
                       {funnelView === "table" ? (
                         <Table dataHook="insights-funnel-table">
                           <TableHeader>
@@ -5475,9 +5481,77 @@ function CampaignInsights({ campaign }) {
                           </TableBody>
                         </Table>
                       ) : (
-                        <>
-                          <ReviewFunnel data={funnel} dataHook="insights-funnel-chart" height={240} showDrop />
-                        </>
+                        <TooltipProvider>
+                          {/* Capped at about the width the funnel graphic
+                              used, so the section keeps its weight in the card
+                              and five bars do not stretch into five flat
+                              ribbons. */}
+                          <div className="flex max-w-xl flex-col gap-2" data-hook="insights-funnel-chart">
+                            {funnel.map((step, i) => {
+                              // Share of Sent sets the bar; the drop is
+                              // step-to-step, the number legacy shows and the
+                              // one the funnel's right-hand column showed.
+                              const top = funnel[0]?.v ?? 0;
+                              const prev = i > 0 ? funnel[i - 1].v : null;
+                              const drop = prev ? Math.round(((prev - step.v) / prev) * 100) : null;
+                              return (
+                                <div
+                                  key={step.k}
+                                  className="flex items-center gap-3"
+                                  data-hook={`insights-funnel-row-${i}`}
+                                >
+                                  {/* One column wide enough for "Visited a
+                                      review site" without wrapping, so every
+                                      bar starts on the same edge. */}
+                                  <span className="flex w-44 shrink-0 items-center gap-1.5">
+                                    <span className="text-sm font-medium whitespace-nowrap">{step.k}</span>
+                                    {step.info ? (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          {/* A real button, so the definition is
+                                              reachable by keyboard and not by
+                                              hover alone.
+                                              The hook keeps the -chart- in its
+                                              name: this is the same button
+                                              ReviewFunnel drew beside each
+                                              band, and it built the name off
+                                              its dataHook. Only the rows around
+                                              it are new, so only they get new
+                                              names. */}
+                                          <button
+                                            type="button"
+                                            aria-label={`What ${step.k} counts`}
+                                            data-hook={`insights-funnel-chart-info-${i}`}
+                                            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex cursor-pointer items-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                                          >
+                                            <Info className="size-3.5" />
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{step.info}</TooltipContent>
+                                      </Tooltip>
+                                    ) : null}
+                                  </span>
+                                  <Progress
+                                    dataHook={`insights-funnel-bar-${i}`}
+                                    value={step.v}
+                                    // `|| 1` only guards a campaign that somehow
+                                    // reports no sends: max 0 has no ratio.
+                                    max={top || 1}
+                                    ariaLabel={`${step.v.toLocaleString("en-GB")} recipients`}
+                                    indicatorClassName="bg-[var(--ds-tailwind-colors-neutral-500)]"
+                                    className="h-2 flex-1 bg-[var(--ds-tailwind-colors-neutral-100)]"
+                                  />
+                                  <span className="w-14 shrink-0 text-right text-sm font-semibold tabular-nums">
+                                    {step.v.toLocaleString("en-GB")}
+                                  </span>
+                                  <span className="text-muted-foreground w-14 shrink-0 text-right text-xs tabular-nums">
+                                    {drop === null ? "" : `\u2193 ${drop}%`}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </TooltipProvider>
                       )}
                     </div>
                   </div>

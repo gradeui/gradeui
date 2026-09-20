@@ -190,6 +190,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@brightlocal/ui-compon
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@brightlocal/ui-components/accordion";
 import { Popover, PopoverTrigger, PopoverContent } from "@brightlocal/ui-components/popover";
 import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@brightlocal/ui-components/tooltip";
+import {
   Command,
   CommandList,
   CommandGroup,
@@ -227,8 +233,6 @@ import {
   PaginationNext,
   PaginationEllipsis,
 } from "@brightlocal/ui-components/pagination";
-// The funnel is <ReviewFunnel/> from the proposal lib — the DS ships no
-// Funnel, and wrapping recharts by hand renders nothing (see its sidecar).
 import {
   Menu,
   Mail,
@@ -270,7 +274,6 @@ import {
   PageHeader,
   StatCard,
   DateStamp,
-  ReviewFunnel,
   Dropzone,
   FeedbackControl,
   FeedbackScore,
@@ -4995,23 +4998,23 @@ function CampaignInsights({ campaign }) {
                         </p>
                         <ViewToggle view={funnelView} onChange={setFunnelView} idPrefix="funnel" />
                       </div>
-                      {/* A REAL FUNNEL (Ali, 3 Sep: "next up need a funnel
-                          chart"), replacing the four Progress bars. Same data,
-                          same greys as ReviewFunnel's ramp — the shape now does what
-                          the word says. The last shape is a rectangle: a point
-                          at the bottom would draw "visited a review site" as if
-                          it tapered to nobody. Labels sit to the right of each
-                          step, name and count together, in the margin reserved
-                          for them. Fixed-height wrapper per the DS chart rule,
-                          capped at max-w-md so four steps do not stretch into
-                          four flat ribbons on a wide card. */}
-                      {/* <ReviewFunnel/>, not a hand-wrapped FunnelChart (6 Sep).
-                          The inline version rendered NOTHING: a FunnelChart will
-                          not take its size from the ResponsiveContainer that
-                          ChartContainer owns. The lib component measures its own
-                          width and hands the chart explicit pixels, which is the
-                          only shape that keeps the DS chart context and stays
-                          responsive. See the ReviewFunnel sidecar. */}
+                      {/* BARS, NOT A FUNNEL GRAPHIC (Ali, 20 Sep: "In review
+                          builder we are getting rid of the funnel graphic, it
+                          wasnt liked by anyone, just bars I think"). The
+                          trapezoid stack spent the width on a shape and pushed
+                          the only things anyone reads, the step name, the count
+                          and the drop, into a label column beside it. One row
+                          per step puts them back on a single line, and the bars
+                          still taper: each width is that step's share of Sent,
+                          which is the taper the funnel was drawing.
+                          NEUTRAL, the same treatment as Review Tracker's
+                          ratings bars: these rows count people falling away,
+                          they do not pass a verdict, so neutral-500 on
+                          neutral-100. Progress has no neutral colour of its
+                          own, so both are set here. Ramp steps, not an opacity
+                          mix, per the house rule on colour.
+                          The heading, the chart/table switch and the table view
+                          are untouched. */}
                       {funnelView === "table" ? (
                         <Table dataHook="insights-funnel-table">
                           <TableHeader>
@@ -5036,9 +5039,86 @@ function CampaignInsights({ campaign }) {
                           </TableBody>
                         </Table>
                       ) : (
-                        <>
-                          <ReviewFunnel data={funnel} dataHook="insights-funnel-chart" height={240} showDrop />
-                        </>
+                        <TooltipProvider>
+                          {/* ASSUMPTION: max-w-xl (576px) holds the rows at
+                              roughly the width the funnel block had (its own
+                              cap was 560px). Ali asked for bars, not for this
+                              block to grow into the full card: four ribbons
+                              the width of the Results tiles would read as a
+                              progress dialog rather than a drop-off. */}
+                          <div className="flex max-w-xl flex-col gap-3" data-hook="insights-funnel-chart">
+                            {funnel.map((step, i) => {
+                              const prev = i > 0 ? funnel[i - 1].v : null;
+                              // The drop from the step ABOVE, as the funnel
+                              // showed it: of the people who got this far, the
+                              // share that did not go on. Not the share of
+                              // Sent, which is what the table's own column
+                              // already reports.
+                              const drop = prev ? Math.round(((prev - step.v) / prev) * 100) : null;
+                              const slug = step.k.toLowerCase().replaceAll(" ", "-");
+                              return (
+                                <div
+                                  key={step.k}
+                                  className="flex items-center gap-3"
+                                  data-hook={`insights-funnel-${slug}`}
+                                >
+                                  {/* One fixed label column so the bars all
+                                      start at the same x, sized for "Visited
+                                      Review Site" with its (i) beside it. */}
+                                  <span className="flex w-44 shrink-0 items-center gap-1.5">
+                                    <span className="text-sm font-medium whitespace-nowrap">{step.k}</span>
+                                    {/* The step tooltips came off the funnel
+                                        with it, and they are the only place
+                                        "Opened" says whether it means the email
+                                        or the feedback page. Kept as a real
+                                        button so the (i) stays reachable by
+                                        keyboard. */}
+                                    {step.info ? (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <button
+                                            type="button"
+                                            aria-label={`What ${step.k} counts`}
+                                            data-hook={`insights-funnel-info-${slug}`}
+                                            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex cursor-pointer items-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                                          >
+                                            <Info className="size-3.5" />
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{step.info}</TooltipContent>
+                                      </Tooltip>
+                                    ) : null}
+                                  </span>
+                                  {/* Share of the FIRST step, not of the
+                                      widest bar: Sent is the 100% the funnel
+                                      tapered from, so Sent draws full width and
+                                      every step below is narrower. The || 1 is
+                                      only a divide-by-zero guard; this section
+                                      does not render for a campaign with
+                                      nothing sent. */}
+                                  <Progress
+                                    dataHook={`insights-funnel-bar-${slug}`}
+                                    value={step.v}
+                                    max={funnel[0].v || 1}
+                                    ariaLabel={`${step.k}: ${step.v.toLocaleString("en-GB")} recipients`}
+                                    indicatorClassName="bg-[var(--ds-tailwind-colors-neutral-500)]"
+                                    className="h-2 flex-1 bg-[var(--ds-tailwind-colors-neutral-100)]"
+                                  />
+                                  {/* Count and drop each get a fixed column of
+                                      their own, so the four rows stack into two
+                                      straight edges however long the step names
+                                      get. */}
+                                  <span className="w-14 shrink-0 text-right text-sm font-semibold tabular-nums">
+                                    {step.v.toLocaleString("en-GB")}
+                                  </span>
+                                  <span className="text-muted-foreground w-14 shrink-0 text-right text-xs tabular-nums">
+                                    {drop === null ? "" : `\u2193 ${drop}%`}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </TooltipProvider>
                       )}
                     </div>
                   </div>
