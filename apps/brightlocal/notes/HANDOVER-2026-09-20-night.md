@@ -62,19 +62,48 @@ promotion silently reverts it.
 
 - Six of tonight's Manager fixes were being reverted by stale entries that
   still held the pre-fix code. Fixed tonight.
-- **Fourteen Showcase entries no longer find their anchors, and that predates
-  tonight.** `check:promotions` says "all current" because it hashes the
-  Studio source for drift; it never tests whether a `find` still matches. So
-  the check cannot see this class of rot.
-- Those fourteen are deliberately NOT repaired yet: the Showcase page is
-  mid-restructure in the other session, so anything written now anchors
-  against source that is about to move. When it settles, they get rewritten in
-  one pass.
-- **A decision for you:** once the restructure lands, most of those fourteen
-  will describe a screen that no longer exists. Deleting them is probably more
-  honest than re-anchoring them, and anything Studio can carry should move
-  into the Studio screen instead of living as a patch. That is your call, not
-  an agent's.
+- The Showcase key was broken and is now rewritten, after the restructure
+  settled: seventeen entries kept, twenty two deleted, nineteen added. Most of
+  the deletions are not repairs declined, their subject is gone.
+- One of those entries had been failing to match at all, which means the
+  promoter would have exited there and the thirteen entries behind it had
+  never run once. All thirteen produced text that does not survive into the
+  app file anyway.
+- **`check:promotions` cannot see any of this.** It hashes the Studio source
+  against the stamp in the page header for drift. It never asks whether a
+  `find` still matches, which is how one broken entry sat there with thirteen
+  dead ones behind it while the guard stayed green. The real audit is to dump
+  the Studio source, replay every entry, and report each one's match count
+  instead of exiting at the first miss.
+
+## The decision waiting for you: Showcase and Studio
+
+Showcase was rebuilt into two pages tonight (a full bleed Select reviews, and
+a preview-led Widget design with a card per part). Its promotion key has been
+rewritten to match, and it is provably correct: every entry matches exactly
+once, and the real promoter reproduces the app file byte for byte.
+
+But look at what carrying it costs. The find and replace payload for this one
+screen is **246,612 bytes, to produce a file of 188,914**. The patch is bigger
+than the thing it patches. Only 10,801 bytes of that is genuinely app-side
+work; the other 235,811 is the restructure itself, which is plain JSX that
+Studio could hold. Roughly 23 to 1, against a file whose own `_why` says to
+keep these minimal because anything Studio can carry belongs in Studio.
+
+**My recommendation: promote the app copy back into Studio**, drop the
+Showcase key to the dozen or so genuinely app-side entries, and stop carrying
+the screen twice.
+
+The sharp end is not tidiness, it is the embed. The `/e/` embed and the flow
+videos render the STUDIO screen, not the app, so today they still show the
+old rail and drawer. Every video recorded from here demonstrates a screen
+that no longer exists, and `check:promotions` will keep saying "all current"
+while that is true, because it hashes for drift and never asks whether a find
+still matches.
+
+I did not do it tonight on purpose: it writes to your Studio project, the
+canvas clobbers MCP saves if it is open, and if it went wrong the embed and
+the videos would break with nobody awake to notice. It wants you there.
 
 ## Where the numbers come from, since they keep being mistaken for bugs
 
@@ -84,14 +113,26 @@ promotion silently reverts it.
 - **4.7** is the location's all-time average. Both numbers are right and they
   will keep looking like a contradiction to anyone reading two screens.
 
-## Still running when this was written
+## The reply queue, which one of tonight's own fixes broke
 
-The reply-queue fix in `manager/page.jsx`, the Manager and hub patch entries,
-and syncing `ds/facet-menu.jsx` with its Studio registry twin. One earlier fix
-made the reply-sent celebration's final state unreachable: counting every
-"needs action" row included four on read-only sources that offer neither Send
-nor Skip, so the panel could say four still need a reply with no way to answer
-any of them. That is what the reply-queue agent is settling.
+Making the celebration's count agree with the tab behind it meant counting
+every "needs action" row, including four on read-only sources that offer
+neither Send nor Skip. So the count floored at four, the panel could say four
+still need a reply with no way to answer any of them, and the designed "that
+was the last one" ending became dead code.
+
+It now has three endings. The count still counts everything, so it still
+agrees with the tab and the hub card, but "that was the last one" is decided
+on the reviews this screen can actually post to. When that queue empties with
+read-only rows left it says so, and the button becomes "See the ones left",
+which opens the first of them where the alert offers Open in Apple Maps.
+Proved by driving all 22 repliable reviews to done, and the true-empty ending
+proved separately on the starter persona.
+
+One judgement call in it is yours: the celebration now fires when there is
+nothing left this screen can write, so on the engaged account you get the
+confetti with four still sitting in the tab. Holding it back for a literally
+empty inbox is a one line change.
 
 ## For whoever picks this up
 
