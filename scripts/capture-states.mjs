@@ -403,6 +403,40 @@ async function scrollDesignSheet(page) {
   return moved;
 }
 
+// Scroll the Design sheet so a NAMED GROUP sits directly under the sticky
+// preview. Every one of the five groups is open from the moment the sheet
+// mounts (the Accordion's defaultValue carries all of them), so "on the
+// Container group" is a scroll position rather than a click, and a pixel
+// offset would be a guess at how tall the groups above it are. Takes the
+// preview's own height off the top, because that block is sticky inside the
+// same scroller and a group parked at the exact offset would sit under it.
+async function scrollDesignSheetTo(page, selector) {
+  const moved = await inFrame(page, (sel) => {
+    let sc = document.querySelector('[data-hook="design-controls"]');
+    while (sc && sc.scrollHeight - sc.clientHeight < 40) sc = sc.parentElement;
+    const node = document.querySelector(sel);
+    if (!sc || !node) return false;
+    const preview = document.querySelector('[data-hook="design-live-preview"]');
+    const head = preview ? preview.getBoundingClientRect().height : 0;
+    const top = node.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop;
+    sc.scrollTop = Math.max(0, top - head - 8);
+    return sc.scrollTop;
+  }, selector);
+  await wait(900);
+  return moved;
+}
+
+// The Select Reviews sheet with its Filter panel open. Four states start
+// here. The panel re-seeds its draft from the showcase every time it opens,
+// so each one gets the same four columns whatever the state before it did,
+// and nothing it touches reaches the showcase until Apply Filters.
+async function showcaseFilter(page, id) {
+  await showcaseSheet(page, id, "reviews");
+  await press(page, '[data-hook="picker-filter"]');
+  await waitForHook(page, '[data-hook="picker-filter-panel"]');
+  await wait(800);
+}
+
 async function hover(page, selector) {
   await inFrame(page, (sel) => {
     const el = document.querySelector(sel);
@@ -481,16 +515,6 @@ async function draftToRecipients(page) {
   await wait(500);
 }
 
-// Untick every ticked review in the open picker. Bounded, because a loop
-// that waits for "none left" would spin forever if a press stopped landing.
-async function untickAll(page, max = 8) {
-  for (let i = 0; i < max; i += 1) {
-    const did = await press(page, '[data-hook^="picker-check-"][data-state="checked"]');
-    if (!did) return;
-    await wait(350);
-  }
-}
-
 // ── the states ────────────────────────────────────────────────────────
 const expectDrawer = `!!document.querySelector('[role="dialog"]')`;
 // "A panel opened" is not the same as "the REPLIABLE panel opened". Every
@@ -502,6 +526,24 @@ const expectComposer = `(() => {
   return !!d && !!d.querySelector("textarea")
     && !!d.querySelector('[data-hook^="ai-"]')
     && !!d.querySelector('[data-hook^="send-"]');
+})()`;
+// A DESIGN GROUP IS ONLY SHOT IF IT IS ON SCREEN. Existence is not enough
+// here and asserting it would be the failure this suite exists to prevent:
+// all five groups exist the moment the sheet mounts, so a state whose scroll
+// went nowhere would pass and hand back a frame of the group above it. The
+// check is geometric instead: the trigger sits below the sticky preview and
+// inside the sheet's own scroller.
+const expectDesignGroup = (hook) => `(() => {
+  const preview = document.querySelector('[data-hook="design-live-preview"]');
+  const node = document.querySelector('[data-hook="${hook}"]');
+  if (!preview || !node) return false;
+  let sc = document.querySelector('[data-hook="design-controls"]');
+  while (sc && sc.scrollHeight - sc.clientHeight < 40) sc = sc.parentElement;
+  if (!sc) return false;
+  const p = preview.getBoundingClientRect();
+  const n = node.getBoundingClientRect();
+  const s = sc.getBoundingClientRect();
+  return n.top >= p.bottom - 2 && n.bottom <= s.bottom;
 })()`;
 const expectFailure = (frag) =>
   `(() => { const d = document.querySelector('[role="dialog"]');
@@ -681,13 +723,29 @@ const STATES = [
     "Per-rule run history, including a failed send, so auto-reply failures have somewhere to live."],
 
   // ── Review Showcase ──────────────────────────────────────────────────
-  // REWRITTEN 7 Sep 2026 for the RAIL version (dmt094lhmpwbs), then widened
-  // the same day to EVERY STATE (Ali: "capture every state ... and all copy
-  // used in the product"). Three fixed showcases (List, Carousel, JSON feed);
-  // a settings page per showcase with a Reviews / Design / Embed rail (JSON:
-  // Reviews / Embed) and Save / Close in the page header; Reviews and Design
-  // open a right-hand sheet. The Design card and sheet group their controls
-  // under Display / Information / Animation (Animation on the carousel only).
+  // REWRITTEN 7 Sep 2026 for the RAIL version, widened the same day to EVERY
+  // STATE (Ali: "capture every state ... and all copy used in the product"),
+  // and rewritten again 20 Sep when the screen was rebuilt twice in a day to
+  // match BrightLocal's real Widget Design screen.
+  //
+  // WHAT THE SCREEN IS NOW. Three fixed showcases (List, Carousel, JSON feed)
+  // as cards; a settings page per showcase with a Reviews / Widget Design /
+  // Embed rail (JSON: Reviews / Embed) and Save showcase / Close in the page
+  // header; Reviews and Widget Design open a right-hand sheet.
+  //   Widget Design is preset tiles over a DS Accordion of Layout, Container,
+  //   Text and Reviews, plus Animation on a carousel. The old Display /
+  //   Information / Animation grouping is gone, and so are light and dark mode
+  //   (Ali, 20 Sep: "in showcase we won't have dark and light mode") and the
+  //   "Reviews by brightlocal" line under a widget.
+  //   Animation is the product's own five: Auto rotate slides, Transition
+  //   style, Transition animation speed, Show slide arrows, Show slide dots,
+  //   as Yes / No pairs. Loop, Autoplay and the Every select are gone.
+  //   Reviews is the product's Select Reviews step: a dismissible Yelp notice,
+  //   a Filter panel of four columns behind Apply Filters, Auto select
+  //   reviews, a result count, and a table carrying a Position select and a
+  //   Blacklist toggle per review. Hand-picked versus live feed is gone, and
+  //   with it the mode cards, the four facet menus, the Limit select and the
+  //   per-review tick boxes.
   ["widgets-01-list", "widgets", async () => {},
     `(() => {
        for (const id of ["list", "carousel", "json"]) {
@@ -697,7 +755,11 @@ const STATES = [
        }
        return !document.querySelector('[role="dialog"]');
      })()`,
-    "The three showcases as cards: each card's title, caption and summary rows, with Preview, Edit and the overflow."],
+    // THE NOTE SAYS WHERE THE THIRD FOOTER WENT. Two-up plus a page header
+    // puts the JSON feed card's own footer just under 900px, so a caption
+    // promising Preview, Edit and the overflow on all three was describing
+    // two of them. widgets-03 scrolls down and shoots that third footer.
+    "The three showcases as cards, two up: each carries the same title, caption and seven summary rows, over a footer with Preview, Edit and the overflow. The JSON feed wraps onto a second row, so its footer sits below the fold of this frame."],
   ["widgets-02-overflow-embed-code", "widgets", async (p) => {
     await press(p, '[data-hook="widget-carousel-menu-button"]');
     await wait(700);
@@ -735,7 +797,14 @@ const STATES = [
   },
     `!!document.querySelector('[data-hook="widget-preview-drawer"][data-state="open"]')
      && !!document.querySelector('[data-hook="widget-carousel-next"]')`,
-    "The Preview sheet for the Carousel: arrows, dots and the Reviews by brightlocal line."],
+    // NOTE CORRECTED 20 Sep: it used to promise a "Reviews by brightlocal"
+    // line, which the rebuild dropped along with light and dark mode, so the
+    // caption was describing furniture that is no longer drawn. It no longer
+    // promises the arrows either: the showcase shows 25 reviews, so the dot
+    // row is 25 dots wide and pushes both arrows off the panel. The hook is
+    // still asserted, because they ARE rendered; they are just not readable
+    // in this frame. Flagged rather than fixed, the screen is not ours.
+    "The Preview sheet for the Carousel: one slide at a time, with a dot per review under it, and Edit showcase in the footer."],
   ["widgets-06-embed-sheet-list", "widgets", async (p) => {
     await press(p, '[data-hook="widget-list-menu-button"]');
     await wait(700);
@@ -766,12 +835,21 @@ const STATES = [
     `!!document.querySelector('[data-hook="widget-settings-layout"]')
      && !!document.querySelector('[data-hook="widget-tab-reviews"][aria-selected="true"]')
      && !!document.querySelector('[data-hook="widget-panel-reviews-rows"]')`,
-    "List settings on Reviews: Review Showcase / List in the header with Save showcase and Close, the rail, and the hand-picked rows over the preview."],
+    // NOTE CORRECTED 20 Sep: the rows under this card were "the hand-picked
+    // rows" and hand-picking is gone. They are the Select Reviews model now.
+    "List settings on Reviews: Review Showcase with List under it in the page header, Save showcase and Close beside them, the rail, and the rows that say which reviews this showcase publishes, over the widget itself."],
   ["widgets-09-list-design", "widgets", async (p) => { await showcaseSettings(p, "list", "design"); },
+    // THE CARD READS THE SHEET BACK, GROUP FOR GROUP, and the sheet's groups
+    // changed, so the hooks did: design-group-display and
+    // design-group-information no longer exist anywhere on the screen.
     `!!document.querySelector('[data-hook="widget-tab-design"][aria-selected="true"]')
-     && !!document.querySelector('[data-hook="widget-panel-design-group-display"]')
+     && !!document.querySelector('[data-hook="widget-panel-design-group-preset"]')
+     && !!document.querySelector('[data-hook="widget-panel-design-group-layout"]')
+     && !!document.querySelector('[data-hook="widget-panel-design-group-container"]')
+     && !!document.querySelector('[data-hook="widget-panel-design-group-text"]')
+     && !!document.querySelector('[data-hook="widget-panel-design-group-reviews"]')
      && !document.querySelector('[data-hook="widget-panel-design-group-animation"]')`,
-    "List settings on Design: the Display and Information groups as rows, with no Animation group for a list."],
+    "List settings on Widget Design: every control in the sheet read back as a row, under the sheet's own headings, Preset, Layout, Container, Text and Reviews. No Animation group for a list."],
   ["widgets-10-list-embed", "widgets", async (p) => { await showcaseSettings(p, "list", "embed"); },
     `!!document.querySelector('[data-hook="widget-tab-embed"][aria-selected="true"]')
      && !!document.querySelector('[data-hook="widget-panel-embed-code-pre"]')`,
@@ -779,11 +857,15 @@ const STATES = [
   ["widgets-11-carousel-reviews", "widgets", async (p) => { await showcaseSettings(p, "carousel", "reviews"); },
     `!!document.querySelector('[data-hook="widget-tab-reviews"][aria-selected="true"]')
      && !!document.querySelector('[data-hook="widget-carousel-preview"]')`,
-    "Carousel settings on Reviews: the live-feed rows (Ratings, Sources, Period, Limit, Left out, Showing now)."],
+    // NOTE CORRECTED 20 Sep: Ratings, Sources, Period, Limit and Left out were
+    // the live-feed rows. Limit and Left out went with hand-picking.
+    "Carousel settings on Reviews: the same rows as every other showcase, this one narrowed to Google over the last twelve months, over the live carousel."],
   ["widgets-12-carousel-design", "widgets", async (p) => { await showcaseSettings(p, "carousel", "design"); },
     `!!document.querySelector('[data-hook="widget-tab-design"][aria-selected="true"]')
      && !!document.querySelector('[data-hook="widget-panel-design-group-animation"]')`,
-    "Carousel settings on Design: Display, Information and the Animation group with Loop, Autoplay and Controls."],
+    // NOTE CORRECTED 20 Sep: Loop, Autoplay and Controls are gone from the
+    // Animation group; the five below are the product's own.
+    "Carousel settings on Widget Design: the same groups as a list, plus Animation, which reads back auto rotate, the transition style and its speed, and whether the arrows and the dots are drawn."],
   ["widgets-13-carousel-embed", "widgets", async (p) => { await showcaseSettings(p, "carousel", "embed"); },
     `!!document.querySelector('[data-hook="widget-tab-embed"][aria-selected="true"]')
      && !!document.querySelector('[data-hook="widget-panel-embed-code-pre"]')`,
@@ -791,7 +873,7 @@ const STATES = [
   ["widgets-14-json-reviews", "widgets", async (p) => { await showcaseSettings(p, "json", "reviews"); },
     `!!document.querySelector('[data-hook="widget-tab-reviews"][aria-selected="true"]')
      && !document.querySelector('[data-hook="widget-tab-design"]')`,
-    "JSON feed settings: a two-item rail (Reviews, Embed) and the feed rows."],
+    "JSON feed settings: a two-item rail, Reviews and Embed, because a feed carries no design of its own. The same rows, and this is the one showcase with auto select off."],
   ["widgets-15-json-embed", "widgets", async (p) => { await showcaseSettings(p, "json", "embed"); },
     `(() => {
        const b = document.querySelector('[data-hook="widget-panel-embed-code-copy"]');
@@ -799,109 +881,138 @@ const STATES = [
      })()`,
     "JSON feed settings on Embed: the URL with Copy URL and the developer steps."],
 
-  // THE REVIEWS SHEET, both modes and everything in its bar.
-  ["widgets-16-reviews-sheet-handpicked", "widgets", async (p) => { await showcaseSheet(p, "list", "reviews"); },
+  // SELECT REVIEWS, the sheet and everything in it.
+  // ALL TEN OF THESE ARE NEW OR REBUILT (20 Sep). What was here drove the
+  // Hand-picked / Live feed pair, its four facet menus, the Limit select and
+  // the tick box on each review card, and not one of those exists any more:
+  //   16 reviews-sheet-handpicked  -> 16 select-reviews-sheet (the whole step)
+  //   17 handpicked-sources-facet  -> 18 filter-panel (the four columns)
+  //   18 handpicked-tooltip        -> 20 auto-select-tooltip
+  //   19 feed-ratings-facet        -> 18, same panel
+  //   20 feed-period-facet         -> 19 filter-custom-dates
+  //   21 feed-limit-menu           -> 22 position-select, the one per-review
+  //                                   number the product actually offers
+  //   22 feed-unticked             -> 23 blacklist-on
+  //   23 feed-tooltip              -> 24 yelp-unavailable
+  //   24 no-reviews-chosen         -> gone. The two hand-picked save blocks
+  //                                   (nothing chosen, more than fifty chosen)
+  //                                   went with hand-picking; one check is
+  //                                   left and 26 shoots it.
+  ["widgets-16-select-reviews-sheet", "widgets", async (p) => { await showcaseSheet(p, "list", "reviews"); },
+    `!!document.querySelector('[data-hook="reviews-yelp-notice"]')
+     && !!document.querySelector('[data-hook="picker-filter"]')
+     && !!document.querySelector('[data-hook="select-reviews-table"]')
+     && !!document.querySelector('[data-hook^="select-position-"]')
+     && !!document.querySelector('[data-hook^="select-blacklist-"]')
+     && /results/.test(document.querySelector('[data-hook="picker-count"]').textContent)`,
+    "Select Reviews for the List: the Yelp notice, the step's title and line, then the sticky bar with Filter, Auto select reviews and the result count, over a table of reviews carrying a Position and a Blacklist each."],
+  ["widgets-17-select-reviews-notice-dismissed", "widgets", async (p) => {
+    await showcaseSheet(p, "list", "reviews");
+    await press(p, '[data-hook="reviews-yelp-notice-dismiss"]');
+    await wait(700);
+    await blur(p);
+  },
+    `!document.querySelector('[data-hook="reviews-yelp-notice"]')
+     && !!document.querySelector('[data-hook="picker-heading"]')
+     && !!document.querySelector('[data-hook="select-reviews-table"]')`,
+    "The Yelp notice dismissed. It is a standing rule rather than an error, so it closes and the step reads from its own title down."],
+  ["widgets-18-filter-panel", "widgets", async (p) => {
+    await showcaseFilter(p, "list");
+    await blur(p);
+  },
     `(() => {
-       const on = document.querySelector('#widget-mode-picked');
-       return !!on && on.getAttribute("data-state") === "checked"
-         && !document.querySelector('[data-hook="picker-facet-period"]')
-         && /chosen/.test(document.querySelector('[data-hook="picker-count"]').textContent);
+       const panel = document.querySelector('[data-hook="picker-filter-panel"]');
+       if (!panel) return false;
+       for (const h of ["filter-ratings-field", "filter-nps-field", "filter-date-field",
+                        "filter-sources-field", "picker-filter-apply"]) {
+         if (!panel.querySelector('[data-hook="' + h + '"]')) return false;
+       }
+       return true;
      })()`,
-    "Hand-picked: the two mode cards with their captions, sources and ratings facets, the N of 50 chosen line, and ticked review cards on the dark shell."],
-  ["widgets-17-handpicked-sources-facet", "widgets", async (p) => {
-    await showcaseSheet(p, "list", "reviews");
-    await press(p, '[data-hook="picker-facet-sources"]');
+    "The Filter dropdown open: Star Rating, Feedback Score (NPS), Date and Review Sources in four columns, with Apply Filters at the foot. Nothing changes until that is pressed, so closing the panel is a cancel."],
+  ["widgets-19-filter-custom-dates", "widgets", async (p) => {
+    await showcaseFilter(p, "list");
+    await press(p, '[data-hook="filter-date-custom-label"]');
     await wait(700);
     await blur(p);
   },
-    `!!document.querySelector('[data-hook="picker-facet-sources-command"]')
-     && !!document.querySelector('[data-hook="picker-facet-sources-google"]')`,
-    "The sources facet open: All sources with its total, then each source with its mark and count."],
-  ["widgets-18-handpicked-tooltip", "widgets", async (p) => {
+    `!!document.querySelector('[data-hook="filter-date-range"]')
+     && !!document.querySelector('[data-hook="filter-date-start"]')
+     && !!document.querySelector('[data-hook="filter-date-end"]')`,
+    "Custom date range chosen: Start and End appear under the date options, one above the other so each gets the whole column."],
+  ["widgets-20-auto-select-tooltip", "widgets", async (p) => {
     await showcaseSheet(p, "list", "reviews");
-    await hover(p, '[data-hook^="picker-row-"][data-selected="false"] [data-hook^="picker-check-wrap-"]');
+    await hover(p, '[data-hook="picker-auto-select-info"]');
   },
-    `[...document.querySelectorAll('[role="tooltip"]')].some((t) => /Tick to include/.test(t.textContent))`,
-    "Hovering an unticked box in Hand-picked: the Tick to include this review tooltip."],
-  ["widgets-19-feed-ratings-facet", "widgets", async (p) => {
-    await showcaseSheet(p, "carousel", "reviews");
-    await press(p, '[data-hook="picker-facet-ratings"]');
+    `[...document.querySelectorAll('[role="tooltip"]')].some((t) => /joins this showcase on its own/.test(t.textContent))`,
+    "The info beside Auto select reviews, hovered: leave it on and any new review matching the filters joins this showcase on its own."],
+  ["widgets-21-auto-select-off", "widgets", async (p) => {
+    await showcaseSheet(p, "list", "reviews");
+    await press(p, '#picker-auto-select-switch');
     await wait(700);
+    await blur(p);
+  },
+    `document.querySelector('#picker-auto-select-switch')?.getAttribute("data-state") === "unchecked"`,
+    "Auto select reviews turned off: the showcase stays as it is today and stops taking new reviews on its own."],
+  ["widgets-22-position-select", "widgets", async (p) => {
+    await showcaseSheet(p, "list", "reviews");
+    await press(p, '[data-hook^="select-position-"]');
+    await wait(900);
+  },
+    `(() => {
+       const opts = [...document.querySelectorAll('[role="option"]')];
+       return opts.length > 3 && opts.some((o) => o.textContent.trim() === "-1");
+     })()`,
+    "The Position select on one review, open: minus one for no position, then one place per review, so a review can be pinned to the top of the widget."],
+  ["widgets-23-blacklist-on", "widgets", async (p) => {
+    await showcaseSheet(p, "list", "reviews");
+    await press(p, '[data-hook^="select-blacklist-"]');
+    await wait(700);
+    await blur(p);
+  },
+    `!!document.querySelector('[data-hook^="select-blacklist-"][data-state="checked"]')`,
+    "Blacklist turned on for one review: it stays in the table, and it is kept off the site."],
+  ["widgets-24-yelp-unavailable", "widgets", async (p) => {
+    // FILTERED TO YELP ALONE, rather than hunting a Yelp row in a table
+    // sorted by date. Yelp is 61 of the 1,116 reviews in this pool, so which
+    // page one of them lands on is luck; the source filter makes every row
+    // one, which is also the clearest way to read the rule.
+    await showcaseFilter(p, "list");
+    await press(p, '[data-hook="filter-sources-all"]');
+    await wait(400);
+    await press(p, '[data-hook="filter-source-yelp"]');
+    await wait(400);
+    await press(p, '[data-hook="picker-filter-apply"]');
+    await wait(1200);
+    await hover(p, '[data-hook^="select-unavailable-"]');
+  },
+    `!!document.querySelector('[data-hook^="select-unavailable-"]')
+     && !document.querySelector('[data-hook^="select-blacklist-"]')
+     && [...document.querySelectorAll('[role="tooltip"]')].some((t) => /cannot go in a showcase/.test(t.textContent))`,
+    "Filtered to Yelp alone: every row reads Unavailable where its Position would be, with no Blacklist beside it, and the tooltip repeats the notice's reason. Yelp does not allow its reviews to be republished."],
+  ["widgets-25-no-reviews-in-filter", "widgets", async (p) => {
+    // FEEDBACK SCORE: POSITIVE is the one filter in this data that is
+    // guaranteed to match nothing. A score comes from a Get Reviews campaign
+    // and this pool models none, which the table's own empty line says.
+    await showcaseFilter(p, "list");
+    await press(p, '[data-hook="filter-nps-positive-label"]');
+    await wait(400);
+    await press(p, '[data-hook="picker-filter-apply"]');
+    await wait(1200);
     await blur(p);
   },
     `(() => {
-       const on = document.querySelector('#widget-mode-feed');
-       return !!on && on.getAttribute("data-state") === "checked"
-         && !!document.querySelector('[data-hook="picker-facet-ratings-command"]')
-         && !!document.querySelector('[data-hook="picker-facet-ratings-4plus"]');
+       const list = document.querySelector('[data-hook="picker-list"]');
+       return !!list && /A feedback score comes from a Get Reviews campaign/.test(list.textContent)
+         && /of 0 results/.test(document.querySelector('[data-hook="picker-count"]').textContent);
      })()`,
-    "Live feed with the ratings facet open: All ratings, 5 stars, 4 stars and above, Recommended (Facebook), each with a glyph and count."],
-  ["widgets-20-feed-period-facet", "widgets", async (p) => {
-    await showcaseSheet(p, "carousel", "reviews");
-    await press(p, '[data-hook="picker-facet-period"]');
-    await wait(700);
-    await blur(p);
-  },
-    `!!document.querySelector('[data-hook="picker-facet-period-command"]')
-     && !!document.querySelector('[data-hook="picker-facet-period-365"]')`,
-    "The period menu open: All time, Last 30 days, Last 90 days, Last 12 months with counts."],
-  ["widgets-21-feed-limit-menu", "widgets", async (p) => {
-    await showcaseSheet(p, "carousel", "reviews");
-    await press(p, '[data-hook="picker-limit"]');
-    await wait(700);
-    await blur(p);
-  },
-    `!!document.querySelector('[data-hook="picker-limit-command"]')
-     && !!document.querySelector('[data-hook="picker-limit-all"]')`,
-    "The limit menu open: No limit, 3, 5, 10 and 20 reviews."],
-  ["widgets-22-feed-unticked", "widgets", async (p) => {
-    await showcaseSheet(p, "carousel", "reviews");
-    await press(p, '[data-hook^="picker-check-"][data-state="checked"]');
-    await wait(600);
-    await blur(p);
-  },
-    `!!document.querySelector('[data-hook^="picker-row-"][data-selected="false"]')
-     && /left out/.test(document.querySelector('[data-hook="picker-count"]').textContent)`,
-    "One review unticked on a live feed: the card fades and the count line gains left out."],
-  ["widgets-23-feed-tooltip", "widgets", async (p) => {
-    await showcaseSheet(p, "carousel", "reviews");
-    await hover(p, '[data-hook^="picker-check-wrap-"]');
-  },
-    `[...document.querySelectorAll('[role="tooltip"]')].some((t) => /Included in the feed/.test(t.textContent))`,
-    "Hovering a ticked box on a live feed: the Included in the feed, untick to leave this review out tooltip."],
-  ["widgets-24-no-reviews-chosen", "widgets", async (p) => {
-    await showcaseSheet(p, "list", "reviews");
-    await untickAll(p);
-    await press(p, '[data-hook="section-sheet-done"]');
-    await wait(900);
-    await press(p, '[data-hook="widget-save"]');
-    await wait(900);
-  },
-    `!!document.querySelector('[data-hook="reviews-issue"]')
-     && /No reviews chosen/.test(document.querySelector('[data-hook="reviews-issue"]').textContent)`,
-    "Save with nothing ticked: the No reviews chosen alert on the Reviews card, with the tick-one-or-switch line."],
-  ["widgets-25-no-reviews-match", "widgets", async (p) => {
-    await showcaseSheet(p, "carousel", "reviews");
-    // Facebook only, five stars only: recommendations never match a star
-    // rating, so the feed is empty by construction.
-    await press(p, '[data-hook="picker-facet-sources"]');
-    await wait(600);
-    await press(p, '[data-hook="picker-facet-sources-google"]');
-    await wait(300);
-    await press(p, '[data-hook="picker-facet-sources-facebook"]');
-    await wait(300);
-    await escape(p);
-    // Tick 5 stars FIRST: an empty ratings list reads as "all", so unticking
-    // the two that are on would widen the feed rather than narrow it.
-    await press(p, '[data-hook="picker-facet-ratings"]');
-    await wait(600);
-    await press(p, '[data-hook="picker-facet-ratings-5"]');
-    await wait(300);
-    await press(p, '[data-hook="picker-facet-ratings-4plus"]');
-    await wait(300);
-    await press(p, '[data-hook="picker-facet-ratings-rec"]');
-    await wait(300);
-    await escape(p);
+    "A filter that matches nothing: Feedback Score set to Positive. The table says why in its own words, because a feedback score comes from a Get Reviews campaign and this location has none."],
+  ["widgets-26-no-reviews-match", "widgets", async (p) => {
+    await showcaseFilter(p, "list");
+    await press(p, '[data-hook="filter-nps-positive-label"]');
+    await wait(400);
+    await press(p, '[data-hook="picker-filter-apply"]');
+    await wait(1000);
     await press(p, '[data-hook="section-sheet-done"]');
     await wait(900);
     await press(p, '[data-hook="widget-save"]');
@@ -909,53 +1020,115 @@ const STATES = [
   },
     `!!document.querySelector('[data-hook="reviews-issue"]')
      && /No reviews match/.test(document.querySelector('[data-hook="reviews-issue"]').textContent)`,
-    "Save with a feed that matches nothing: the No reviews match alert and its widen-the-filters line."],
+    // Reachable in the app again. It used to be skipped here, because the old
+    // way in was a Facebook-only carousel and that still matched reviews in
+    // this location's data; a Positive feedback score matches nothing
+    // anywhere, so the one save-blocking check finally has a shot.
+    "Save with a filter that matches nothing: the rail jumps to Reviews and the No reviews match alert sits above the rows, naming what to widen."],
 
-  // THE DESIGN SHEET.
-  ["widgets-26-design-sheet-list", "widgets", async (p) => { await showcaseSheet(p, "list", "design"); },
+  // WIDGET DESIGN, the sheet.
+  ["widgets-27-design-sheet-list", "widgets", async (p) => { await showcaseSheet(p, "list", "design"); },
     `!!document.querySelector('[data-hook="design-live-preview"]')
-     && !!document.querySelector('[data-hook="design-group-display"]')
-     && !!document.querySelector('[data-hook="design-group-information"]')
+     && !!document.querySelector('[data-hook="design-intro"]')
+     && !!document.querySelector('[data-hook="design-preset-field"]')
+     && !!document.querySelector('[data-hook="design-group-layout"]')
+     && !!document.querySelector('[data-hook="design-group-container"]')
+     && !!document.querySelector('[data-hook="design-group-text"]')
+     && !!document.querySelector('[data-hook="design-group-reviews"]')
      && !document.querySelector('[data-hook="design-group-animation"]')`,
-    "The Design sheet for the List: the sticky preview, then Display (Mode, Corners, Review text, Show on each review, branding) and Information (Title, summary), and no Animation."],
-  ["widgets-27-design-sheet-carousel-animation", "widgets", async (p) => {
+    // THE NOTE DOES NOT PROMISE THE LIVE PREVIEW, and the sheet is meant to
+    // have one. Measured on the running app: design-live-preview is 25px tall
+    // with 675px of content in it, so the widget it exists to show is clipped
+    // to a hairline strip above the controls. It is a flex item in a scrolling
+    // column, it carries overflow-y auto, so its automatic minimum size is 0
+    // and it is the one thing in the sheet that can be squashed. Flagged, not
+    // fixed: the screen is not this file's to edit. Every Design state below
+    // reads the same way, which is why none of their notes mention it either.
+    "The Widget Design sheet for the List: the line about customizing, then the preset tiles, then Layout, Container, Text and Reviews as groups. No Animation on a list."],
+  ["widgets-28-design-presets", "widgets", async (p) => {
     await showcaseSheet(p, "carousel", "design");
-    await scrollDesignSheet(p);
+    await scrollDesignSheetTo(p, '[data-hook="design-preset-field"]');
   },
     `(() => {
-       const prev = document.querySelector('[data-hook="design-live-preview"]');
-       let sc = document.querySelector('[data-hook="design-controls"]');
-       while (sc && sc.scrollHeight - sc.clientHeight < 40) sc = sc.parentElement;
-       if (!prev || !sc || sc.scrollTop < 150) return false;
-       const dp = prev.getBoundingClientRect(), ds = sc.getBoundingClientRect();
-       return Math.abs(dp.top - ds.top) < 4 && !!document.querySelector('[data-hook="design-group-animation"]');
+       for (const id of ["modern", "classic", "bootstrap"]) {
+         if (!document.querySelector('[data-hook="design-preset-' + id + '-tile"]')) return false;
+       }
+       if (document.querySelector('[data-hook="design-preset-custom-tile"]')) return false;
+       return document.querySelector('#design-preset-modern')?.getAttribute("data-state") === "checked";
      })()`,
-    "The Carousel's Design sheet scrolled to Animation (Loop, Autoplay, Every, Show arrows, Show dots) with the preview still pinned at the top."],
-  ["widgets-28-design-autoplay-on", "widgets", async (p) => {
+    "The preset tiles: Modern, Classic and Bootstrap, each showing what it does rather than naming it. Picking one sets every control below it."],
+  ["widgets-29-design-preset-custom", "widgets", async (p) => {
+    // The one control that turns a preset into Custom in a single press, and
+    // it is down in Container, so the sheet scrolls there, presses, and comes
+    // back up: the tile is the thing this frame is about.
     await showcaseSheet(p, "carousel", "design");
-    await scrollDesignSheet(p);
-    await press(p, '#design-autoplay');
-    await wait(600);
+    await scrollDesignSheetTo(p, '[data-hook="design-group-container"]');
+    await press(p, '[data-hook="design-border"]');
+    await wait(700);
+    await scrollDesignSheetTo(p, '[data-hook="design-preset-custom-tile"]');
     await blur(p);
   },
     `(() => {
-       const sw = document.querySelector('#design-autoplay');
-       const ev = document.querySelector('[data-hook="design-every"]');
-       return !!sw && sw.getAttribute("data-state") === "checked" && !!ev && !ev.hasAttribute("disabled") && !ev.hasAttribute("data-disabled");
+       const tile = document.querySelector('[data-hook="design-preset-custom-tile"]');
+       const preview = document.querySelector('[data-hook="design-live-preview"]');
+       if (!tile || !preview) return false;
+       if (document.querySelector('#design-preset-custom')?.getAttribute("data-state") !== "checked") return false;
+       return tile.getBoundingClientRect().top >= preview.getBoundingClientRect().bottom - 2;
      })()`,
-    "Autoplay switched on: the Every select is enabled and reads its seconds value."],
-  ["widgets-29-design-mode-dark", "widgets", async (p) => {
+    // THE REPLACEMENT FOR THE OLD MODE / DARK FRAME. That state pressed
+    // design-theme-dark-label and shot the preview repainting; showcase has no
+    // modes any more (Ali, 20 Sep: "in showcase we won't have dark and light
+    // mode"), so the nearest thing that matters is the other change a setting
+    // makes at once, up in the tiles. Not the preview: see widgets-27 for why
+    // nothing in this sheet can be shot against it.
+    "One setting changed, and a Custom tile joins the three presets, already chosen. It is a readout rather than something to pick, and it goes again the moment a preset is chosen back."],
+  ["widgets-30-design-group-layout", "widgets", async (p) => {
+    await showcaseSheet(p, "list", "design");
+    await scrollDesignSheetTo(p, '[data-hook="design-group-layout"]');
+  }, expectDesignGroup("design-group-layout"),
+    "The Layout group: widget max height, the three desktop layouts as glyphs, and how many reviews to show."],
+  ["widgets-31-design-group-container", "widgets", async (p) => {
+    await showcaseSheet(p, "list", "design");
+    await scrollDesignSheetTo(p, '[data-hook="design-group-container"]');
+  }, expectDesignGroup("design-group-container"),
+    "The Container group: the widget's own background, corner radius, border and shadow, its title, and which review summary it carries."],
+  ["widgets-32-design-group-text", "widgets", async (p) => {
+    await showcaseSheet(p, "list", "design");
+    await scrollDesignSheetTo(p, '[data-hook="design-group-text"]');
+  }, expectDesignGroup("design-group-text"),
+    "The Text group: the font, shown in its own face, then the text and link colours, the size, and the alignment."],
+  ["widgets-33-design-group-reviews", "widgets", async (p) => {
+    await showcaseSheet(p, "list", "design");
+    await scrollDesignSheetTo(p, '[data-hook="design-group-reviews"]');
+  }, expectDesignGroup("design-group-reviews"),
+    "The Reviews group: what each review shows, the date format and the character count, then the review card's own background, radius, border and shadow."],
+  ["widgets-34-design-group-animation", "widgets", async (p) => {
     await showcaseSheet(p, "carousel", "design");
-    await press(p, '[data-hook="design-theme-dark-label"]');
+    await scrollDesignSheetTo(p, '[data-hook="design-group-animation"]');
+  }, expectDesignGroup("design-group-animation"),
+    "The Animation group, on the Carousel only: auto rotate slides, transition style, transition animation speed, show slide arrows and show slide dots, every one of them a Yes and No pair."],
+  ["widgets-35-design-transition-slide", "widgets", async (p) => {
+    await showcaseSheet(p, "carousel", "design");
+    await scrollDesignSheetTo(p, '[data-hook="design-group-animation"]');
+    await press(p, '[data-hook="design-auto-rotate-yes-label"]');
+    await wait(500);
+    await press(p, '[data-hook="design-transition-slide-label"]');
     await wait(700);
     await blur(p);
   },
-    `!!document.querySelector('[data-hook="preview-frame-design-sheet"] .bg-neutral-900')`,
-    "Mode switched to Dark on the Carousel: the sticky preview repaints dark at once."],
-  ["widgets-30-leave-dialog", "widgets", async (p) => {
+    `document.querySelector('#design-auto-rotate-yes')?.getAttribute("data-state") === "checked"
+     && document.querySelector('#design-transition-slide')?.getAttribute("data-state") === "checked"`,
+    // The old frame here switched Autoplay on to show the Every select come
+    // alive; both controls are gone. The pair below is what the product asks
+    // instead. Answering Yes is safe for a still: the run asks for reduced
+    // motion and the screen refuses to start auto rotate under it, so nothing
+    // is caught mid-slide.
+    "Auto rotate slides answered Yes and the transition set to Slide: the answers the product asks for, on the pair of controls that were a switch and a seconds select before."],
+  ["widgets-36-leave-dialog", "widgets", async (p) => {
     await showcaseSheet(p, "carousel", "design");
-    await press(p, '[data-hook="design-theme-dark-label"]');
-    await wait(500);
+    await scrollDesignSheetTo(p, '[data-hook="design-preset-field"]');
+    await press(p, '[data-hook="design-preset-bootstrap-label"]');
+    await wait(700);
     await press(p, '[data-hook="section-sheet-done"]');
     await wait(900);
     await press(p, '[data-hook="widget-cancel"]');
@@ -963,7 +1136,7 @@ const STATES = [
   },
     `!!document.querySelector('[data-hook="leave-title"]') && !!document.querySelector('[data-hook="leave-confirm"]')`,
     "Close after a change: Leave without saving your changes, the sentence about what reverts, Keep editing and Discard and leave."],
-  ["widgets-31-settings-narrow", "widgets", async (p) => { await showcaseSettings(p, "carousel", "reviews"); },
+  ["widgets-37-settings-narrow", "widgets", async (p) => { await showcaseSettings(p, "carousel", "reviews"); },
     `!!document.querySelector('[data-hook="widget-next-section"]')`,
     "Carousel settings at 390 wide: the rail stacks above the card and the footer carries Back and Next between sections.",
     { width: 390 }],
@@ -1575,7 +1748,6 @@ const APP_OVERRIDES = {
       await wait(900);
     },
   },
-  "widgets-25-no-reviews-match": { skip: "in the app's Minus 1 Studios data a Facebook-only carousel still matches reviews, so the No reviews match alert cannot be reached this way" },
   "manager-12-fail-permission-seeded": {
     // Reachable again since the demo failures are picked from the rows the
     // app renders rather than the Studio seed (20 Sep). The row is found by

@@ -1479,7 +1479,14 @@ const carouselOf = (design) => {
 // its ::before, centred. Tokens only: input for a dot, muted-foreground at
 // reduced opacity for the current one, as the DS itself does.
 const CAROUSEL_DOTS_STYLE = `
-[data-hook="widget-carousel-dots"] { gap: 0; border: 0; background: transparent; padding: 0; }
+[data-hook="widget-carousel-dots"] {
+  gap: 0; border: 0; background: transparent; padding: 0;
+  /* ONE DOT PER REVIEW, AND A SHOWCASE CAN HOLD 25 (20 Sep). At 24px each
+     that is a 600px row, which pushed the arrows off the card on the
+     settings page and off the panel in the Preview sheet. Wrapping keeps
+     every dot reachable and keeps the arrows where they belong. */
+  flex-wrap: wrap; justify-content: center; max-width: 100%;
+}
 [data-hook="widget-carousel-dots"] [data-slot="carousel-dot"] {
   width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center;
   background: transparent; border-radius: 9999px;
@@ -1696,7 +1703,9 @@ function CarouselWidget({ widget, reviews, skin }) {
               <CarouselPrevious size="sm" dataHook="widget-carousel-prev" className="static translate-x-0 translate-y-0" />
             ) : null}
             {c.dots ? (
-              <CarouselDots dataHook="widget-carousel-dots" slideAriaLabel="Go to review {slide}" />
+              <div className="flex min-w-0 flex-1 justify-center">
+                <CarouselDots dataHook="widget-carousel-dots" slideAriaLabel="Go to review {slide}" />
+              </div>
             ) : null}
             {c.arrows ? (
               <CarouselNext size="sm" dataHook="widget-carousel-next" className="static translate-x-0 translate-y-0" />
@@ -3272,7 +3281,18 @@ function PresetThumb({ id, src }) {
       alt=""
       data-hook={`design-preset-${id}-thumb`}
       className="block w-full"
-      style={{ aspectRatio: "1 / 1", objectFit: "cover", borderRadius: "0.25rem" }}
+      // CAPPED, BECAUSE THE SHEET IS WIDER THAN THE PANEL (20 Sep). The
+      // artwork is square, so two-up in a 960px sheet drew a 460px tall tile
+      // and the crop landed in the middle of somebody's review. A thumbnail
+      // reads as a thumbnail at any width, and the top of the artwork is the
+      // part that says which look this is.
+      style={{
+        aspectRatio: "1 / 1",
+        maxHeight: "10rem",
+        objectFit: "cover",
+        objectPosition: "top center",
+        borderRadius: "0.25rem",
+      }}
     />
   );
 }
@@ -3371,8 +3391,15 @@ function DesignSheetBody({ widget, setWidget }) {
           survives wherever this screen renders. The widget's own "Widget max
           height" still bites first at anything under this, which is where
           that setting is worth watching anyway. */}
+      {/* shrink-0 IS LOAD BEARING. This is a flex item in the sheet's
+          scrolling column and it carries overflow-y itself, so its automatic
+          minimum size is zero: the controls below it won the space and the
+          preview collapsed to a 25px hairline, which is what every Design
+          frame in the capture run was showing (20 Sep). The preview is the
+          one thing in this sheet that has to be visible while you change a
+          setting, so it never shrinks. */}
       <div
-        className="bg-background sticky top-0 z-10 border-b px-4 py-3"
+        className="bg-background sticky top-0 z-10 shrink-0 border-b px-4 py-3"
         style={{ maxHeight: "45vh", overflowY: "auto" }}
         data-hook="design-live-preview"
       >
