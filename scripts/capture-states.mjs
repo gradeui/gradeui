@@ -1556,7 +1556,12 @@ const APP_OVERRIDES = {
     },
   },
   "widgets-25-no-reviews-match": { skip: "in the app's Minus 1 Studios data a Facebook-only carousel still matches reviews, so the No reviews match alert cannot be reached this way" },
-  "manager-12-fail-permission-seeded": { skip: "the app's Engaged data seeds no permission failure on page one (the demo is keyed to the Studio seed's row ids)" },
+  "manager-12-fail-permission-seeded": {
+    // Reachable again since the demo failures are picked from the rows the
+    // app renders rather than the Studio seed (20 Sep). The row is found by
+    // what its drawer says, because its position moves with the data.
+    drive: async (p) => { await openRowWith(p, "cannot reply to"); },
+  },
   "manager-05-order-facet": {
     opts: { width: 390 },
     note: "Phones only now: from sm up the column headers sort, so the Order menu shows only where the columns fold into one cell. The menu open: Newest first ticked, the other orders below it.",
@@ -1596,6 +1601,16 @@ const APP_OVERRIDES = {
   },
 };
 const APP_EXTRA = [
+  // ZERO STATES, ON A BRAND NEW ACCOUNT (Margarita: they "are the default view
+  // for every new customer"). ?persona=empty is the app's own switch, so the
+  // state drives it rather than the run's seeded persona.
+  ["templates-06-empty", "templates", async (p) => {
+    await p.goto(`${APP_BASE}/locations/${APP_LOCATION}/reviews/manager/templates?persona=empty`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await wait(3000);
+  },
+    `!!document.querySelector('[data-hook="templates-empty-state"]')
+     && !!document.querySelector('[data-hook="rules-empty-state"]')`,
+    "Reply templates on a new account: no templates and no auto-reply rules, each list saying what it is for, with New template and New rule still in their section headers."],
   ["settings-08-running", "settings", async (p) => { await press(p, '[data-hook="run-now"]'); await wait(900); },
     `document.querySelector('[data-hook="run-now"]')?.getAttribute('aria-busy') === 'true'`,
     "Run report now, pressed: the button spins and says Running until the run is done. Last run stays under it. The schedule sentence says manual runs come out of the plan's allowance, with a link to what the plan includes."],

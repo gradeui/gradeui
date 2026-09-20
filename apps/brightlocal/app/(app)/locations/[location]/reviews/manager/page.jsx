@@ -539,25 +539,27 @@ const STARTER_REVIEWS = SEED_REVIEWS.slice(0, 4).map((row) => {
 const seedRowsFor = (persona, location) =>
   inboxRowsFor(location, persona); // every persona from the rows: the old STARTER_REVIEWS seed showed TripAdvisor and Facebook with only Google connected (Ali, 10 Sep)
 
-const DEMO_FAILURE_IDS = SEED_REVIEWS.map((row, i) => ({
-  id: `r${i}`,
-  source: row[0],
-  status: row[5],
-}))
-  .filter((r) => SOURCES[r.source]?.canReply && r.status === "needs")
-  .slice(0, FAILURE_DEMO_SEQUENCE.length + 1)
-  .map((r) => r.id);
+// FROM THE ROWS ON SCREEN, not from SEED_REVIEWS. The app builds its inbox
+// with inboxRowsFor(location, persona), so a position picked out of the
+// Studio seed pointed at a different review here: the seeded permission
+// failure landed on a row that had already been answered, and the state was
+// unreachable in the app (capture sweep, 17 Sep, skipped it; Ali, 20 Sep).
+const demoFailureIdsFor = (rows) =>
+  rows
+    .map(([source, , , , , status], i) => ({ id: `r${i}`, source, status }))
+    .filter((r) => SOURCES[r.source]?.canReply && r.status === "needs")
+    .slice(0, FAILURE_DEMO_SEQUENCE.length + 1)
+    .map((r) => r.id);
 
-const SIMULATED_FAILURES = Object.fromEntries(
-  FAILURE_DEMO_SEQUENCE.map((spec, i) => [DEMO_FAILURE_IDS[i], spec]).filter(
-    ([id]) => Boolean(id),
-  ),
-);
+const simulatedFailuresFor = (ids) =>
+  Object.fromEntries(
+    FAILURE_DEMO_SEQUENCE.map((spec, i) => [ids[i], spec]).filter(([id]) => Boolean(id)),
+  );
 
 // SIMULATED_FAILURES entries are either a bare code (fails the FIRST send,
 // succeeds on retry) or { code, persistent } for one that never clears.
-const simulatedFailure = (id, attempt) => {
-  const entry = SIMULATED_FAILURES[id];
+const simulatedFailure = (failures, id, attempt) => {
+  const entry = failures[id];
   if (!entry) return undefined;
   if (typeof entry === "string") return attempt === 1 ? entry : undefined;
   return entry.persistent || attempt === 1 ? entry.code : undefined;
@@ -567,11 +569,11 @@ const simulatedFailure = (id, attempt) => {
 // screen at load and nobody has to send anything to find this state. It sits
 // at the end of the demo block, and has no SIMULATED_FAILURES entry, so
 // retrying it succeeds first time.
-const SEEDED_SEND_ERROR = {
-  id: DEMO_FAILURE_IDS[FAILURE_DEMO_SEQUENCE.length] ?? null,
+const seededSendErrorFor = (ids) => ({
+  id: ids[FAILURE_DEMO_SEQUENCE.length] ?? null,
   code: "permission",
   hoursBefore: 5,
-};
+});
 
 const DEFAULT_TEMPLATES = [
   {
@@ -1337,8 +1339,14 @@ function ReviewsInbox() {
 
   const persona = usePersona();
   const locationKey = useLocationKey();
+  // Worked out once from this persona's own rows, and read by the seeded
+  // failure below, by the send handler and by the draft that survives it.
+  const seedRows = seedRowsFor(persona, locationKey);
+  const demoFailureIds = demoFailureIdsFor(seedRows);
+  const simulatedFailures = simulatedFailuresFor(demoFailureIds);
+  const seededSendError = seededSendErrorFor(demoFailureIds);
   const [reviews, setReviews] = useState(() =>
-    seedRowsFor(persona, locationKey).map(([source, name, rating, text, date, status, aiDraft], i) => ({
+    seedRows.map(([source, name, rating, text, date, status, aiDraft], i) => ({
       id: `r${i}`,
       source,
       name,
@@ -1368,10 +1376,10 @@ function ReviewsInbox() {
       // that row too. See SEND_FAILURES for why a failure is a field and
       // not a status.
       sendError:
-        `r${i}` === SEEDED_SEND_ERROR.id
+        `r${i}` === seededSendError.id
           ? {
-              code: SEEDED_SEND_ERROR.code,
-              at: TODAY.getTime() - SEEDED_SEND_ERROR.hoursBefore * 3600000,
+              code: seededSendError.code,
+              at: TODAY.getTime() - seededSendError.hoursBefore * 3600000,
             }
           : null,
     })),
@@ -1422,11 +1430,11 @@ function ReviewsInbox() {
   // state exists to answer, so the seed has to demonstrate it surviving.
   // It reuses DEFAULT_TEMPLATES[0], same as the pre-replied rows above.
   const [drafts, setDrafts] = useState(() => {
-    if (!SEEDED_SEND_ERROR.id) return {};
-    const seed = SEED_REVIEWS[Number(SEEDED_SEND_ERROR.id.slice(1))];
+    if (!seededSendError.id) return {};
+    const seed = seedRows[Number(seededSendError.id.slice(1))];
     if (!seed) return {};
     return {
-      [SEEDED_SEND_ERROR.id]: resolveVars(DEFAULT_TEMPLATES[0].body, { name: seed[1] }, business),
+      [seededSendError.id]: resolveVars(DEFAULT_TEMPLATES[0].body, { name: seed[1] }, business),
     };
   });
   const [aiSeeded, setAiSeeded] = useState({});
@@ -1738,7 +1746,7 @@ function ReviewsInbox() {
     sendTimer.current = setTimeout(() => {
       sendTimer.current = null;
       setSending(false);
-      const code = simulatedFailure(id, attempt);
+      const code = simulatedFailure(simulatedFailures, id, attempt);
       if (code) {
         // FAILED. The drawer stays open and the draft is left exactly as it
         // was. Retyping a reply you already wrote is the complaint behind
