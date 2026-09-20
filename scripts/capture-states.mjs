@@ -281,6 +281,43 @@ async function scrollToHook(page, hook, offset = 24) {
   return moved;
 }
 
+// Park a card at the top of the frame with the sticky band above it, and
+// nothing else (20 Sep).
+//
+// Every card on a campaign page carries its OWN sticky CardHeader, pinned at
+// top: var(--gds-page-header-height). Scroll to a card with room to spare
+// above it and the card above is still in frame with its header pinned over
+// its own chart, which reads as a chart whose line runs off the top. That is
+// what "the NPS timeline runs off the top" was: the Timeline card's header
+// sitting on the Timeline card's chart, in a frame that was not about the
+// Timeline at all. Nothing is clipped and nothing is broken; the frame was
+// showing half of the wrong card.
+//
+// So put the target's top edge just under the sticky band and let the card
+// above leave the frame entirely. The band is MEASURED off the card itself,
+// because that is where the sticky rule reads it: the 300 this replaces was
+// written for the Studio screen's tall sticky page header, and the app shell
+// reports 0px, so on the app 300 was simply a 300px window onto the card
+// above.
+async function parkCard(page, hook, gap = 16) {
+  const moved = await inFrame(page, ({ sel, gap }) => {
+    let best = null, most = 0;
+    for (const el of document.querySelectorAll("*")) {
+      const over = el.scrollHeight - el.clientHeight;
+      if (over > most && el.clientHeight > 300) { best = el; most = over; }
+    }
+    const target = best || document.scrollingElement || document.documentElement;
+    const node = document.querySelector(sel);
+    if (!node) return { found: false };
+    const band = parseFloat(getComputedStyle(node).getPropertyValue("--gds-page-header-height")) || 0;
+    const top = node.getBoundingClientRect().top - target.getBoundingClientRect().top + target.scrollTop;
+    target.scrollTop = Math.max(0, top - band - gap);
+    return { found: true, scrollTop: target.scrollTop, band };
+  }, { sel: hook, gap });
+  await wait(1000);
+  return moved;
+}
+
 async function scrollTo(page, y) {
   const scrolled = await inFrame(page, (top) => {
     let best = null;
@@ -296,6 +333,32 @@ async function scrollTo(page, y) {
   }, y);
   await wait(1200);
   return scrolled;
+}
+
+// How much taller than the current viewport the frame would have to be to
+// hold everything the screen is currently hiding below its own fold.
+//
+// GROWING THE VIEWPORT IS THE ONLY THING THAT WORKS. The screen scrolls in
+// its own overflow container inside a fixed-height sandbox iframe, so
+// `page.screenshot({ fullPage: true })` shoots the HOST and hands back the
+// same 1280x900 under a different name. Resizing the viewport to swallow the
+// overflow collapses that internal scroll instead, and the whole thing
+// renders in one frame.
+//
+// Returns the OVERFLOW, not an absolute height: a wizard's middle band and a
+// sheet's body are inset scrollers, so their scrollHeight is the content
+// alone and using it as a viewport height loses the pinned header and footer
+// that sit outside them. viewport + overflow is right for both those and for
+// a plain page scroller.
+async function measureOverflow(page) {
+  return inFrame(page, () => {
+    let most = 0;
+    for (const el of document.querySelectorAll("*")) {
+      const over = el.scrollHeight - el.clientHeight;
+      if (over > most && el.clientHeight > 300) most = over;
+    }
+    return most;
+  });
 }
 
 // Spend ONE AI draft on a row and close the panel. The quota decrements on
@@ -1217,7 +1280,7 @@ const STATES = [
        if (document.querySelector('[data-hook="campaign-tabs"]')) return false;
        return document.querySelectorAll('tbody tr').length >= 9;
      })()`,
-    "The hub: the page title and count, the campaigns table with every status pill, and the three facet triggers reading All statuses / All types / All modes."],
+    "The hub: the campaigns table with every status pill, and the three facet triggers reading All statuses / All types / All modes. The pager under the table is the only count on the page, so it cannot disagree with the rows above it."],
   ["getreviews-02-hub-status-facet", "getreviews", async (p) => {
     await press(p, '[data-hook="campaign-status-filter"]');
     await wait(700);
@@ -1336,11 +1399,11 @@ const STATES = [
   ["getreviews-16-page-kiosk-stars", "getreviews", async (p) => {
     await campaignPage(p, "c2");
     await waitForHook(p, '[data-hook="insights-feedback-summary"]');
-    // 300, not the default 24: the campaign page header is sticky and about
-    // 200px tall, so a 24px offset put the card's title and its "Only visible
-    // to you" note under the header and the shot showed bars with no heading
-    // (8 Sep sweep).
-    await scrollToHook(p, '[data-hook="insights-feedback-summary"]', 300);
+    // parkCard, not a pixel offset: it measures the sticky band off the card
+    // and puts the card's top just under it, so the title and its "Only
+    // visible to you" note clear the header (8 Sep sweep) without leaving a
+    // strip of the Timeline card above, wearing its own pinned header.
+    await parkCard(p, '[data-hook="insights-feedback-summary"]');
   },
     `!!document.querySelector('[data-hook="insights-feedback-summary"]')
      && !!document.querySelector('[data-hook="dist-5"]')
@@ -1349,7 +1412,7 @@ const STATES = [
   ["getreviews-17-page-sms-thumbs", "getreviews", async (p) => {
     await campaignPage(p, "c3");
     await waitForHook(p, '[data-hook="insights-feedback-summary"]');
-    await scrollToHook(p, '[data-hook="insights-feedback-summary"]');
+    await parkCard(p, '[data-hook="insights-feedback-summary"]');
   },
     `!!document.querySelector('[data-hook="insights-feedback-summary"]')
      && !!document.querySelector('[data-hook="thumbs-up"]')
@@ -1601,7 +1664,10 @@ const STATES = [
   ["getreviews-54-template-message-email", "getreviews", async (p) => { await templateEditor(p, "invite"); },
     `!!document.querySelector('[data-hook="template-tab-invite"][aria-selected="true"]')
      && !!document.querySelector('[data-hook="preview-frame-invite"] [data-hook="email-preview-rule"]')`,
-    "Message: the card hint, the Email / Text message toggle, and the email previewed with its subject, body, scale and legal footer."],
+    // TALL: the previewed email runs past 900 and the legal footer, which is
+    // the last line of it, fell off the bottom of the frame.
+    "Message: the card hint, the Email / Text message toggle, and the email previewed with its subject, body, scale and legal footer.",
+    { tall: true }],
   ["getreviews-55-template-message-sms", "getreviews", async (p) => {
     await templateEditor(p, "invite");
     await press(p, '[data-hook="preview-channel-sms"]');
@@ -1619,7 +1685,10 @@ const STATES = [
        const t = document.querySelector('[data-hook="section-sheet-header-title"]');
        return !!t && t.textContent.trim() === "Message" && !!document.querySelector('[data-hook="field-subject"]');
      })()`,
-    "The Message sheet: The message and The reminder groups, each field with its helper sentence, and Done."],
+    // TALL: the sheet's two groups are taller than the sheet at 900, so The
+    // reminder's textarea and helper sat under the Done footer.
+    "The Message sheet: The message and The reminder groups, each field with its helper sentence, and Done.",
+    { tall: true }],
   ["getreviews-57-template-message-sheet-sms-override", "getreviews", async (p) => {
     await templateEditor(p, "invite");
     await press(p, '[data-hook="template-edit-invite"]');
@@ -1629,7 +1698,10 @@ const STATES = [
     await wait(600);
   },
     `!!document.querySelector('[data-hook="field-smsText"]')`,
-    "Word it differently in a text message switched on: the Text message wording field and its helper appear."],
+    // TALL: same sheet as 56 with one more field in it, so it overflows by
+    // more, not less.
+    "Word it differently in a text message switched on: the Text message wording field and its helper appear.",
+    { tall: true }],
   ["getreviews-58-template-rating", "getreviews", async (p) => { await templateEditor(p, "rate"); },
     `!!document.querySelector('[data-hook="template-tab-rate"][aria-selected="true"]')
      && !!document.querySelector('[data-hook="preview-frame-rate"]')`,
@@ -1754,9 +1826,15 @@ const APP_OVERRIDES = {
     // what its drawer says, because its position moves with the data.
     drive: async (p) => { await openRowWith(p, "cannot reply to"); },
   },
+  // DESKTOP ONLY FOR NOW (Ali, 20 Sep: "we don't really need to show any
+  // mobile screenshots right now, let's stick to desktop"). The three narrow
+  // states are the only ones that shoot at 390, and each exists because its
+  // control appears ONLY on a phone, so there is no desktop frame to take
+  // instead: the Order menu folds into the column headers from sm up, and the
+  // two wizard rails put Back and Next in a footer only while stacked. They
+  // are skipped rather than deleted, so a mobile pass is one line away.
   "manager-05-order-facet": {
-    opts: { width: 390 },
-    note: "Phones only now: from sm up the column headers sort, so the Order menu shows only where the columns fold into one cell. The menu open: Newest first ticked, the other orders below it.",
+    skip: "desktop only for now (Ali, 20 Sep); the Order menu exists on phones only, because from sm up the column headers sort",
   },
   "settings-02-directories": {
     expect: `!!document.querySelector('[data-hook="directories-card"]')
@@ -1764,6 +1842,8 @@ const APP_OVERRIDES = {
      && !document.querySelector('[data-hook="directory-google-matched"]')`,
     note: "Monitored directories for the location's own country (the card's line under the title), with no country dropdown and no Matched badges: the directory API sends a name and a URL, not a status. Read only on Yelp, and Connect or Add URL where a row needs one.",
   },
+  "widgets-37-settings-narrow": { skip: "desktop only for now (Ali, 20 Sep); this state is the 390 wide rail" },
+  "getreviews-64-template-narrow": { skip: "desktop only for now (Ali, 20 Sep); this state is the 390 wide rail" },
   "settings-03-directories-uk": { skip: "the country dropdown is gone; the list is the location's country" },
   "settings-06-sharing": {
     expect: `!!document.querySelector('[data-hook="sharing-card"]')
@@ -1809,25 +1889,25 @@ const APP_EXTRA = [
   ["settings-09-no-runs-left", "settings", async (p) => { await press(p, '[data-hook="run-now"]'); await wait(7000); await press(p, '[data-hook="run-now"]'); await wait(900); },
     `!!document.querySelector('[data-hook="run-rejected"]')`,
     "Run report now with no manual runs left: the run does not start, the warning says the schedule still stands, and See plans is the way to more runs. Last run moved to the manual run that finished."],
-  ["getreviews-80-review-performance", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-performance"]'); await scrollToHook(p, '[data-hook="insights-performance"]', 300); },
+  ["getreviews-80-review-performance", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-performance"]'); await parkCard(p, '[data-hook="insights-performance"]'); },
     `!!document.querySelector('[data-hook="insights-performance-donut"]')`,
     "Review performance for one campaign, the Tracker's display: ratings in neutral bars with DS stars and the average, Facebook as recommendations, and the sources donut with provider logos. All sources, All ratings and the chart/table switch in its sticky header."],
-  ["getreviews-81-review-performance-table", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-performance"]'); await scrollToHook(p, '[data-hook="insights-performance"]', 300); await press(p, '[data-hook="insights-performance-view-toggle"] [aria-label="Table view"]'); await wait(700); },
+  ["getreviews-81-review-performance-table", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-performance"]'); await parkCard(p, '[data-hook="insights-performance"]'); await press(p, '[data-hook="insights-performance-view-toggle"] [aria-label="Table view"]'); await wait(700); },
     `!!document.querySelector('[data-hook="insights-performance-ratings-table"]')`,
     "The same card in table view: Rating and Source tables with totals."],
-  ["getreviews-82-timeline-table", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-timeline"]'); await scrollToHook(p, '[data-hook="insights-timeline"]', 300); await press(p, '[data-hook="timeline-view-toggle"] [aria-label="Table view"]'); await wait(700); },
+  ["getreviews-82-timeline-table", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-timeline"]'); await parkCard(p, '[data-hook="insights-timeline"]'); await press(p, '[data-hook="timeline-view-toggle"] [aria-label="Table view"]'); await wait(700); },
     `!!document.querySelector('[data-hook="insights-timeline-table"]')`,
     "Timeline in table view: each period and its reviews."],
-  ["getreviews-83-nps", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-feedback-summary"]'); await scrollToHook(p, '[data-hook="insights-feedback-summary"]', 300); },
+  ["getreviews-83-nps", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-feedback-summary"]'); await parkCard(p, '[data-hook="insights-feedback-summary"]'); },
     `!!document.querySelector('[data-hook="insights-nps-gauge"]')`,
     "Net Promoter Score: the dial drawn like the donut, 36 with score under it, Good, from 14 responses, and Promoters 9 to 10 / Passives 7 to 8 / Detractors 0 to 6 as shares."],
-  ["getreviews-84-nps-table", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-feedback-summary"]'); await scrollToHook(p, '[data-hook="insights-feedback-summary"]', 300); await press(p, '[data-hook="feedback-view-toggle"] [aria-label="Table view"]'); await wait(700); },
+  ["getreviews-84-nps-table", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="insights-feedback-summary"]'); await parkCard(p, '[data-hook="insights-feedback-summary"]'); await press(p, '[data-hook="feedback-view-toggle"] [aria-label="Table view"]'); await wait(700); },
     `!!document.querySelector('[data-hook="insights-feedback-table"]')`,
     "Net Promoter Score in table view: each answer with responses and share, the total and the score."],
-  ["getreviews-85-internal-feedback", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="all-feedback-card"]'); await scrollToHook(p, '[data-hook="all-feedback-card"]', 300); },
+  ["getreviews-85-internal-feedback", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="all-feedback-card"]'); await parkCard(p, '[data-hook="all-feedback-card"]'); },
     `!!document.querySelector('[data-hook="feedback-table"]')`,
     "Internal feedback: the responses table on the campaign page, feedback first, the customer's email muted and truncated, the filters in the sticky header and pagination pinned under it."],
-  ["getreviews-86-feedback-drawer", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="all-feedback-card"]'); await scrollToHook(p, '[data-hook="all-feedback-card"]', 300); await press(p, '[data-hook="feedback-row-2"]'); await wait(900); },
+  ["getreviews-86-feedback-drawer", "getreviews", async (p) => { await campaignPage(p, "c1"); await waitForHook(p, '[data-hook="all-feedback-card"]'); await parkCard(p, '[data-hook="all-feedback-card"]'); await press(p, '[data-hook="feedback-row-2"]'); await wait(900); },
     `!!document.querySelector('[data-hook="feedback-drawer"]')`,
     "One response in the Review Manager's drawer: up / down and a count, Rating, Received, Review site and Testimonial, then the email and the feedback. No reply: internal feedback cannot be replied to."],
   // No insights-10 table state: insights-03-table-view already shoots the
@@ -1886,6 +1966,22 @@ for (const [name, screen, drive, expect, , opts] of wanted) {
   // the settings pages grow a Back / Next footer below lg, and that footer
   // is copy). 1280 otherwise, and the viewport is reset every state.
   const width = (opts && opts.width) || 1280;
+  // `{ tall: true }` shoots THIS ONE STATE at whatever height its content
+  // needs, instead of cropping it to 900 (20 Sep).
+  //
+  // WHY IT EXISTS. A 900px crop at scrollTop 0 is the right frame for almost
+  // every state, and the run must stay that shape. But a handful of states
+  // are a tall body inside a pinned shell (the template editor's email
+  // preview, the Message sheet's reminder field), and the crop lands
+  // mid-sentence. The screens are fine: the frame is what cuts them. Someone
+  // reading the drop cannot tell those two apart, and reads a good screen as
+  // a broken one, so those states say so here and come out whole.
+  //
+  // This is NOT --full. --full writes a SECOND file per state into full/,
+  // leaving the cut frame as the one anybody looks at, and it shoots every
+  // state tall whether or not it needs it. This replaces the frame, for the
+  // named states only.
+  const tall = !!(opts && opts.tall);
   try {
     await page.setViewportSize({ width, height: 900 });
     const url = APP
@@ -1933,50 +2029,52 @@ for (const [name, screen, drive, expect, , opts] of wanted) {
       if (!ok) throw new Error("EXPECT FAILED: " + expect.slice(0, 70));
     }
     await page.evaluate(() => document.querySelectorAll("nextjs-portal").forEach((n) => n.remove())).catch(() => {});
+    if (tall) {
+      // Measured AFTER driving, because the thing that overflows is usually
+      // the thing the drive opened. Nothing to grow is said out loud rather
+      // than silently shooting 900 again: a state that asked to be tall and
+      // came back cropped is a state whose content moved.
+      const over = await measureOverflow(page);
+      if (over < 40) {
+        console.log(`    (no tall frame: ${name} does not scroll)`);
+      } else {
+        const height = Math.min(MAX_FULL_HEIGHT, 900 + over + 24);
+        await page.setViewportSize({ width, height });
+        await wait(2200); // charts and sticky headers re-lay out
+        console.log(`    ↕ ${height}px`);
+      }
+    }
     const file = path.join(dirFor(name), `${name}.png`);
     await page.screenshot({ path: file, type: "png" });
     try { setPngRetinaDpi(file); } catch {}
-    if (FULL) {
-      // A TALL CAPTURE MEANS GROWING THE VIEWPORT, not fullPage.
-      //
-      // `page.screenshot({ fullPage: true })` shoots the HOST page, and the
-      // screen does not live there — it is inside a fixed-height sandbox
-      // iframe, scrolling in its own overflow container. fullPage therefore
-      // returned the same 1280x900 as the cropped frame, with a different
-      // filename. That is the exact shape of failure this suite keeps
-      // finding: an output that looks like it worked.
-      //
-      // Measuring the real scroller and resizing the viewport to its
-      // scrollHeight collapses the internal scroll (verified: overflow goes
-      // to 0) and the whole page renders in one frame.
-      const need = await inFrame(page, () => {
-        let best = null, most = 0;
-        for (const el of document.querySelectorAll("*")) {
-          const over = el.scrollHeight - el.clientHeight;
-          if (over > most && el.clientHeight > 300) { best = el; most = over; }
-        }
-        return { over: most, height: best ? best.scrollHeight : document.body.scrollHeight };
-      });
+    // `{ tall: true }` already shot the whole thing as the state's own frame,
+    // so a full/ copy of it would be the same picture under a second name.
+    if (FULL && !tall) {
+      // A TALL CAPTURE MEANS GROWING THE VIEWPORT, not fullPage. See
+      // measureOverflow for why fullPage hands back a 1280x900 that looks
+      // like it worked. That is the exact shape of failure this suite keeps
+      // finding.
+      const over = await measureOverflow(page);
 
       // NOTHING TO EXTEND IS NOT A FAILURE. The wizards are h-screen with
       // overflow-hidden — pinned header, pinned footer, a middle that
       // scrolls — so their natural height IS 900 and a "full" file would be
       // a byte-identical copy of the cropped one under a second name.
       // Skipped, and said out loud, rather than written.
-      if (need.over < 40) {
+      if (over < 40) {
         console.log(`    (no tall capture: ${name} does not scroll)`);
       } else {
-        const tall = Math.min(MAX_FULL_HEIGHT, need.height + 80);
-        await page.setViewportSize({ width: 1280, height: tall });
+        const height = Math.min(MAX_FULL_HEIGHT, 900 + over + 80);
+        await page.setViewportSize({ width, height });
         await wait(2200); // charts and sticky headers re-lay out
         const fullDir = path.join(dirFor(name), "full");
         fs.mkdirSync(fullDir, { recursive: true });
         const ffile = path.join(fullDir, `${name}.png`);
         await page.screenshot({ path: ffile, type: "png" });
         try { setPngRetinaDpi(ffile); } catch {}
-        await page.setViewportSize({ width: 1280, height: 900 });
+        await page.setViewportSize({ width, height: 900 });
         await wait(600);
-        console.log(`    + full ${tall}px`);
+        console.log(`    + full ${height}px`);
       }
     }
     results.push({ name, ok: true });
