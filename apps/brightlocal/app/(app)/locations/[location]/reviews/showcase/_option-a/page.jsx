@@ -1760,7 +1760,7 @@ function sectionSummary(id, widget, reviews) {
 // facts. Every section now lists its settings as key / value rows, in the
 // order the sheet edits them, so a card reads like the sheet behind it.
 // The one look for a group heading, on the card and in the sheet alike.
-const GROUP_HEADING_CLASS = "text-muted-foreground text-xs font-medium tracking-wide uppercase";
+const GROUP_HEADING_CLASS = "text-muted-foreground text-xs font-medium";
 // Rows come flat (Reviews) or grouped (Design); the card renders both as
 // groups, a flat list being one group with no heading.
 const asGroups = (rows) => (rows.length && rows[0].rows ? rows : [{ id: "all", heading: null, rows }]);

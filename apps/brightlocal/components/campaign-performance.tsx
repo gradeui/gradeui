@@ -149,7 +149,7 @@ export function CampaignPerformance({ reviews, sites, dataHook }: { reviews: num
         : `${picked.buckets.length} ratings`;
 
   return (
-    <Card dataHook={dataHook} density="condensed" className="max-w-none">
+    <Card dataHook={dataHook} density="condensed" className="max-w-none gap-0">
       <CardHeader className={STICKY_HEADER} style={STICKY_HEADER_STYLE}>
         <div className="flex flex-wrap items-center justify-between gap-5">
           <CardTitle size="small" dataHook={`${dataHook}-title`}>

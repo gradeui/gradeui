@@ -2134,7 +2134,7 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
 
   if (campaigns.length === 0) {
     return (
-      <Card dataHook="get-reviews-empty" className="max-w-none">
+      <Card dataHook="get-reviews-empty" className="max-w-none gap-0">
         <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
           <Send className="text-muted-foreground size-8" />
           <p className="text-heading-section">Ask your happy visitors for reviews</p>
@@ -5372,7 +5372,7 @@ function CampaignInsights({ campaign }) {
               "results" is only meaningful with a period attached, and a standing
               link campaign and a one-shot email campaign date theirs
               differently. */}
-          <Card dataHook="insights-summary-card" density="condensed" className="max-w-none">
+          <Card dataHook="insights-summary-card" density="condensed" className="max-w-none gap-0">
             {/* THE SAME CARD TITLE AS THE OTHERS (Ali, 17 Sep: the tiles sat "miles
                 away" from their title). The Tracker's header band, a rule under
                 the title and the content close beneath it, instead of the DS
@@ -5598,7 +5598,7 @@ function CampaignInsights({ campaign }) {
             dataHook="insights-performance"
           />
 
-          <Card dataHook="insights-timeline" density="condensed" className="max-w-none">
+          <Card dataHook="insights-timeline" density="condensed" className="max-w-none gap-0">
             {/* THE TRACKER'S STICKY HEADER (Ali, 17 Sep: "the table headers in
                 Review builder campaign view to be sticky, just like in
                 Tracker"). The band holding the title and the controls pins
@@ -5697,7 +5697,7 @@ function CampaignInsights({ campaign }) {
 
           {config.ask === "feedback" ? (
             <>
-              <Card dataHook="insights-feedback-summary" density="condensed" className="max-w-none">
+              <Card dataHook="insights-feedback-summary" density="condensed" className="max-w-none gap-0">
                 {/* MATCHES THE OTHER CHART CARDS (Ali, 17 Sep: "The internal
                     feedback card should match the others - we might also want a
                     table"). The Tracker's sticky header band and the chart/table
@@ -6118,7 +6118,7 @@ function AllFeedback({ campaign }) {
           the rows scroll. No card-level overflow-hidden, which would stop the
           header sticking, and no "Showing N of M": the pagination already
           counts the filtered rows. */}
-      <Card dataHook="all-feedback-card" className="max-w-none" density="condensed">
+      <Card dataHook="all-feedback-card" className="max-w-none gap-0" density="condensed">
         <CardHeader
           className="bg-card sticky top-[var(--gds-page-header-height,0px)] z-[5] -mt-3 rounded-t-[inherit] border-b px-6 pt-4 pb-4"
           style={{ gridTemplateRows: "auto", rowGap: 0 }}
