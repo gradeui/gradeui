@@ -2500,6 +2500,11 @@
       "why": "Settings: Last run sits on the schedule and before the prototype's today (9 Sep 2026): the Monday before, and a run by hand lands today (capture sweep, 17 Sep: a September 7 next run read as already past). By hand.",
       "find": "setLastRun(\"2026-09-03T10:12\")",
       "replace": "setLastRun(\"2026-09-09T10:12\")"
+    },
+    {
+      "why": "Settings, Sharing: the link line stops at what the reader sees (Ali, 20 Sep: drop \"They cannot reply, and they cannot change anything\"). The toggle above it already says anyone with the link can open the report.",
+      "find": "                    Anyone with this link sees the charts and the review list for {locationName}. They\n                    cannot reply, and they cannot change anything.\n",
+      "replace": "                    Anyone with this link sees the charts and the review list for {locationName}.\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/builder/gauge/page.jsx": [

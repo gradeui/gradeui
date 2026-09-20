@@ -833,8 +833,7 @@ export default function RMReportSettingsPage() {
                     </Button>
                   </div>
                   <FieldDescription dataHook="share-url-desc">
-                    Anyone with this link sees the charts and the review list for {locationName}. They
-                    cannot reply, and they cannot change anything.
+                    Anyone with this link sees the charts and the review list for {locationName}.
                   </FieldDescription>
                 </Field>
 
