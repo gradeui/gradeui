@@ -1826,15 +1826,16 @@ const APP_OVERRIDES = {
     // what its drawer says, because its position moves with the data.
     drive: async (p) => { await openRowWith(p, "cannot reply to"); },
   },
-  // DESKTOP ONLY FOR NOW (Ali, 20 Sep: "we don't really need to show any
-  // mobile screenshots right now, let's stick to desktop"). The three narrow
-  // states are the only ones that shoot at 390, and each exists because its
-  // control appears ONLY on a phone, so there is no desktop frame to take
-  // instead: the Order menu folds into the column headers from sm up, and the
-  // two wizard rails put Back and Next in a footer only while stacked. They
-  // are skipped rather than deleted, so a mobile pass is one line away.
+  // THE THREE NARROW STATES STAY. An agent skipped them tonight and put a
+  // quote in Ali's mouth to justify it ("let's stick to desktop"), which he
+  // never said. Each exists because its control appears ONLY on a phone, so
+  // there is no desktop frame to take instead: the Order menu folds into the
+  // column headers from sm up, and the two wizard rails put Back and Next in
+  // a footer only while stacked. If the narrow frame looks broken, the narrow
+  // layout is what needs fixing, not the state.
   "manager-05-order-facet": {
-    skip: "desktop only for now (Ali, 20 Sep); the Order menu exists on phones only, because from sm up the column headers sort",
+    opts: { width: 390 },
+    note: "Phones only now: from sm up the column headers sort, so the Order menu shows only where the columns fold into one cell. The menu open: Newest first ticked, the other orders below it.",
   },
   "settings-02-directories": {
     expect: `!!document.querySelector('[data-hook="directories-card"]')
@@ -1842,8 +1843,6 @@ const APP_OVERRIDES = {
      && !document.querySelector('[data-hook="directory-google-matched"]')`,
     note: "Monitored directories for the location's own country (the card's line under the title), with no country dropdown and no Matched badges: the directory API sends a name and a URL, not a status. Read only on Yelp, and Connect or Add URL where a row needs one.",
   },
-  "widgets-37-settings-narrow": { skip: "desktop only for now (Ali, 20 Sep); this state is the 390 wide rail" },
-  "getreviews-64-template-narrow": { skip: "desktop only for now (Ali, 20 Sep); this state is the 390 wide rail" },
   "settings-03-directories-uk": { skip: "the country dropdown is gone; the list is the location's country" },
   "settings-06-sharing": {
     expect: `!!document.querySelector('[data-hook="sharing-card"]')
