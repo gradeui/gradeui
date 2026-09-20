@@ -2132,6 +2132,10 @@ function ReviewsInbox() {
           {compactFilters ? null : (
           <SingleSelectMenu
             dataHook="facet-period"
+            // Last control on the right of the filter row, and the panel is
+            // wider than the trigger, so it hangs from the trigger's right
+            // edge like the sources and ratings menus beside it.
+            align="right"
             label={periodLabel}
             {...menuState("period")}
             options={PERIODS}
@@ -2556,7 +2560,15 @@ export default function RMReviewManagerDataTablePage() {
             )}
             // "auto" binds data.aiInsights.lastUpdated, so the line follows a
             // dataset switch instead of hardcoding a date into the screen.
-            lastUpdated="auto"
+            // ONLY ONCE THERE ARE REVIEWS. That timestamp is the AI Insights
+            // regeneration date, a flat value in the dataset, and every persona
+            // mounts the same dataset, so on an account that has never connected
+            // a site the header read "Last updated September 9, 2026" next to "0
+            // reviews" (Ali, 20 Sep). Nothing has synced, so we claim nothing.
+            // There is no review sync timestamp in the data to bind instead, and
+            // hiding the line costs no layout: the band stays 88px, the
+            // description already sets that height.
+            lastUpdated={seedRowsFor(persona, locationKey).length ? "auto" : undefined}
             // ONE link where there were two buttons. Templates and auto-reply
             // now share a page, so two triggers would land in the same place.
             // The "(1 rule)" count went with the rules — that state lives on
