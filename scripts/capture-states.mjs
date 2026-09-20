@@ -1640,6 +1640,19 @@ const APP_EXTRA = [
     "One response in the Review Manager's drawer: up / down and a count, Rating, Received, Review site and Testimonial, then the email and the feedback. No reply: internal feedback cannot be replied to."],
   // No insights-10 table state: insights-03-table-view already shoots the
   // Review performance table, and the sweep found the two frames identical.
+  // THE ZERO INBOX and THE MOMENT AFTER A REPLY (Ali, 20 Sep). Both are
+  // reached on the app's own switches: ?persona=empty for an account with
+  // nothing connected, and a send on a row past the five seeded demo
+  // failures, which go through first time.
+  ["manager-21-empty", "manager", async (p) => {
+    await p.goto(`${APP_BASE}/locations/${APP_LOCATION}/reviews/manager?persona=empty`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await wait(3000);
+  },
+    `!!document.querySelector('[data-hook="inbox-empty-state"]')`,
+    "The inbox with nothing in it: what lands here and the two ways to start, with the tabs, filters and pager standing down because there is nothing to count."],
+  ["manager-22-reply-sent", "manager", async (p) => { await sendOn(p, 12, 3200); },
+    `!!document.querySelector('[data-hook="reply-sent-title"]')`,
+    "The moment after a reply goes: what happened, how many are still waiting, the reply that was sent, and the way to the next one."],
   ["manager-20-sorted-by-rating", "manager", async (p) => { await press(p, '[data-hook="col-rating"] button, [data-hook="col-rating"]'); await wait(700); },
     `[...document.querySelectorAll('[data-hook="reviews-table"] thead th')].some((th) => th.getAttribute('aria-sort') === 'ascending')`,
     "The column headers are the DS sortable headers: Rating sorted, its arrow showing the direction."],

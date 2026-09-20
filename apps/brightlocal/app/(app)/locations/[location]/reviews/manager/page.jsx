@@ -64,10 +64,11 @@
 // See finding 12.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { usePersona } from "@/lib/demo";
+import { usePersona, useDemo } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
 import { profileFor } from "@/lib/location-profiles";
 import { inboxRowsFor, TODAY as DATA_TODAY } from "@/lib/reviews-data";
+import { pickIllustration } from "@/lib/illustrations";
 import { ReviewPlanStrip } from "@/components/review-insights";
 import { BeaconNugget } from "@/components/beacon-nugget";
 import {
@@ -124,6 +125,7 @@ import {
   Pencil,
   X,
   ExternalLink,
+  Star,
   Globe,
   GoogleOriginal,
   FacebookOriginal,
@@ -134,6 +136,7 @@ import {
   AppLayoutShell,
   ProposalSidebar,
   PageHeader,
+  EmptyState,
   useProposalData,
   formatDate,
   formatDateShort,
@@ -213,6 +216,19 @@ const UNCONNECTED_SOURCES = [
   { id: "bbb", name: "BBB.org", Icon: Globe, hasMark: false },
   { id: "bing", name: "Bing Places", Icon: Globe, hasMark: false },
 ];
+
+// WHERE A FIRST-RUN ACCOUNT GOES NEXT, when the inbox has nothing in it
+// yet. Both are screens this prototype actually has, and both ids are the
+// ones lib/first-run.ts already sends a first-run account to, so the empty
+// inbox and the "Why it matters" band above it cannot point at two
+// different places.
+// ASSUMPTION: lib/first-run.ts offers ONE action on this page, "Connect a
+// review site". The second button, asking customers for reviews, is mine: it
+// is the product's own step 2 and the Review Builder screen exists, but
+// nobody asked for it here. Drop it if the empty inbox should carry the
+// single action the band carries.
+const CONNECT_GOTO = "screen:dmtkj124xagqa"; // Report Settings: the review sites
+const ASK_GOTO = "screen:dmt094j963aye"; // Review Builder: ask customers for reviews
 
 const RECOMMENDATION_SOURCE = "facebook";
 const AI_DRAFT_QUOTA = 3;
@@ -371,6 +387,18 @@ const TABS = [
   { id: "auto", label: "Auto-replied" },
   { id: "skipped", label: "Skipped" },
 ];
+
+// WHAT A NARROWED LIST SAYS WHEN IT HOLDS NOTHING. A tab narrows the list the
+// same way a facet does, so "No reviews match these filters" is the wrong
+// sentence when the only thing narrowing it is the tab you are standing on.
+// One line per tab, in that tab's own terms. "All" cannot reach this state
+// with no filters set, so it has no line of its own.
+const TAB_EMPTY = {
+  needs: "Nothing here needs a reply.",
+  manual: "No replies have been written by hand.",
+  auto: "No replies have gone out automatically.",
+  skipped: "No reviews have been skipped.",
+};
 
 // Labels match the current product's own time filter, minus one. The product
 // also offers "Last Month", which we deliberately drop: sitting directly above
@@ -1029,6 +1057,66 @@ function ReplyActions({ review, draft, sending, onSend, onSkip, onEdit, onDelete
   );
 }
 
+// A REPLY THAT LANDS IS THE WHOLE POINT OF THIS SCREEN (Ali, 20 Sep: "do we
+// have a 'You have replied to a review' in the drawer state? This apparently
+// should be a moment for celebration"). A send used to close the drawer, so
+// the one thing the inbox exists for was the only action with no
+// acknowledgement at all: the overlay vanished and a badge changed behind it.
+// The drawer holds instead, says where the reply went, shows what was sent,
+// and points at the next review waiting.
+//
+// IT REPLACES THE SILENT SUCCESS AND NOTHING ELSE. Sending, and every failure
+// in SEND_FAILURES, behave exactly as they did.
+//
+// Type and spacing are the shared EmptyState's own roles, text-heading-
+// subsection over a muted text-body, centred, so the two moments in the
+// product that stop and say something read as one thing. It is not an
+// EmptyState itself: that takes an ICON in a circle, and a moment worth
+// marking wants the illustration.
+function ReplySent({ review, business, remaining }) {
+  if (!review) return null;
+  const source = SOURCES[review.source]?.name ?? "the review site";
+  const clear = remaining === 0;
+  // One illustration, chosen by MEANING rather than by name (lib/
+  // illustrations, which is what that file exists for): applause for a reply
+  // that went, and the confetti kept back for the bigger moment, a queue with
+  // nothing left in it.
+  const Art = pickIllustration(clear ? ["milestone", "celebrate"] : ["win", "congratulations"]);
+  return (
+    // my-auto, so the moment sits in the middle of the drawer rather than at
+    // the top of a mostly empty panel. The body is a flex column, so this
+    // takes the space above and below evenly (capture, 20 Sep).
+    <div className="my-auto flex flex-col items-center gap-2 text-center" data-hook={`reply-sent-${review.id}`}>
+      {/* aria-hidden on a WRAPPER, the way StripArt does it: the illustration
+          renders a light twin and a dark twin and neither svg carries one of
+          its own, so a reader would open on two unlabelled graphics instead of
+          on the line. */}
+      <span aria-hidden>
+        <Art className="size-20" />
+      </span>
+      <p className="text-heading-subsection" data-hook="reply-sent-title">
+        Your reply is on its way to {source}
+      </p>
+      <p
+        className="text-body text-muted-foreground max-w-[52ch] text-pretty"
+        data-hook="reply-sent-next"
+      >
+        {clear
+          ? "That was the last one. Nothing else is waiting for a reply."
+          : `${remaining} more ${remaining === 1 ? "review needs" : "reviews need"} a reply.`}
+      </p>
+      {/* The same muted box a sent reply gets everywhere else on this panel,
+          so it reads as the reply itself rather than as a receipt for it. */}
+      <div className="mt-2 flex w-full flex-col gap-2 text-left">
+        <span className="text-muted-foreground text-sm">What you sent</span>
+        <p className="bg-muted rounded-md p-3 text-sm" data-hook={`reply-sent-body-${review.id}`}>
+          {resolveVars(review.reply, review, business)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /* --------------------------------- inbox ---------------------------------- */
 
 // A bottom drawer's height has to be set INLINE. The DS sizes that variant
@@ -1339,6 +1427,12 @@ function ReviewsInbox() {
 
   const persona = usePersona();
   const locationKey = useLocationKey();
+  // The first-run band above this card (ReviewPlanStrip, which renders
+  // FirstRunBand for the empty persona) carries its own "Connect a review
+  // site" button, and only when contextual insights are on. The empty inbox
+  // has to know, or the page asks for the same thing twice (Ali, 17 Sep: "We
+  // dont need to have two empty states").
+  const { settings } = useDemo();
   // Worked out once from this persona's own rows, and read by the seeded
   // failure below, by the send handler and by the draft that survives it.
   const seedRows = seedRowsFor(persona, locationKey);
@@ -1446,6 +1540,10 @@ function ReviewsInbox() {
   // as sendError, which is what makes it survive the close. One flag rather
   // than a per-id map because only the open review can be sending.
   const [sending, setSending] = useState(false);
+  // THE REVIEW WHOSE REPLY JUST WENT. Held so the drawer can mark the moment
+  // instead of closing on a success. Cleared whenever the open review changes,
+  // which covers Close too, since closing sets activeId to null.
+  const [sentId, setSentId] = useState(null);
   // Attempts per review, so SIMULATED_FAILURES can fail the first send and
   // let the retry through. Demo wiring; a real send would not count.
   const [sendAttempts, setSendAttempts] = useState({});
@@ -1463,6 +1561,14 @@ function ReviewsInbox() {
     });
     return c;
   }, [reviews]);
+
+  // NOTHING HAS ARRIVED AT ALL, which is not the same thing as nothing
+  // matching (Ali, 20 Sep: "we will actually need an empty state for the
+  // Review Manager homepage as well, no reviews"). This is every new
+  // customer's landing view, so the card says what the page is for instead of
+  // drawing a header row, a pager and five tabs of zeroes over nothing.
+  const inboxEmpty = reviews.length === 0;
+  const firstRunBand = settings.insights !== false && persona.engagement === "empty";
 
   const periodOption = PERIODS.find((p) => p.id === period);
 
@@ -1667,6 +1773,11 @@ function ReviewsInbox() {
     (period !== "all" ? 1 : 0) +
     (table.getState().globalFilter ? 1 : 0);
 
+  // TWO DIFFERENT SENTENCES, and the filters win over the tab: clearing them
+  // is the way back, and the button under the table offers exactly that.
+  const noResultsMessage =
+    activeFilters > 0 ? "No reviews match these filters." : TAB_EMPTY[tab] ?? "No reviews match.";
+
   const clearFilters = () => {
     table.resetGlobalFilter();
     setSourceFilter([]);
@@ -1675,7 +1786,30 @@ function ReviewsInbox() {
   };
 
   const pagination = table.getState().pagination;
-  const total = data.length;
+  // ROWS THE TABLE IS ACTUALLY SHOWING, which is not data.length. The search
+  // is the table's own global filter, so `data` still counts the rows a search
+  // has just hidden, and a search is the commonest way to empty this list.
+  // getRowCount is the filtered, pre-pagination count: the same number the
+  // filter sheet reads for "Show n reviews".
+  const shownRows = table.getRowCount();
+  // The list is narrowed down to nothing, which the table's own no-results row
+  // covers. Kept separate from inboxEmpty because the answer is different: one
+  // is "undo that", the other is "here is what this page is for".
+  const noMatches = !inboxEmpty && shownRows === 0;
+
+  // WHAT IS LEFT TO REPLY TO ON THE ACCOUNT: still needing action, on a
+  // source this screen can post to. The review just answered counts itself
+  // out, because setStatus has already moved it to "manual".
+  // SCOPED TO THE INBOX, not to the rows on screen. A tab or a facet is a way
+  // of looking at the work, not a statement about how much of it is left:
+  // scoped to the view, a reply sent from the Skipped tab (where a queue is
+  // empty by construction) would throw the confetti for an empty queue with
+  // twenty reviews still waiting on Needs action. So "3 more reviews need a
+  // reply" means three anywhere in the inbox.
+  const replyQueue = useMemo(
+    () => reviews.filter((r) => r.status === "needs" && canReply(r)),
+    [reviews],
+  );
 
   const active = activeId ? reviews.find((r) => r.id === activeId) : null;
   const activeIndex = activeId ? data.findIndex((r) => r.id === activeId) : -1;
@@ -1685,6 +1819,27 @@ function ReviewsInbox() {
     setActiveId(data[i].id);
     const targetPage = Math.floor(i / pagination.pageSize);
     if (targetPage !== pagination.pageIndex) table.setPageIndex(targetPage);
+  };
+
+  // The open review, once its reply has gone. Null the rest of the time, and
+  // null again the moment the person moves to another review or closes.
+  const sent = active && sentId === active.id ? active : null;
+  // THE TOP OF THE QUEUE, not the row after this one: the review just
+  // answered may have left the list already (the Needs action tab drops it
+  // the moment it is replied to), so "the one below" is not a position that
+  // survives the send. An inbox is worked from the top, so the top is where
+  // Reply to the next one goes.
+  const nextNeeds = replyQueue[0] ?? null;
+  const openNext = () => {
+    if (!nextNeeds) return;
+    // NEXT LANDS ON A ROW THE TABLE IS SHOWING. The top of the queue can sit
+    // behind the tab you are standing on or a facet you set, so the view goes
+    // back to the top of Needs action before the review opens, rather than
+    // putting a row in the drawer that is not in the table behind it.
+    setTab("needs");
+    clearFilters();
+    table.setPageIndex(0);
+    setActiveId(nextNeeds.id);
   };
 
   const draft = activeId && drafts[activeId] !== undefined ? drafts[activeId] : "";
@@ -1755,7 +1910,10 @@ function ReviewsInbox() {
         return;
       }
       setStatus(id, "manual", text);
-      setActiveId(null);
+      // THE DRAWER STAYS OPEN ON A SUCCESS. It used to close here, which made
+      // a reply that landed the quietest event on the screen: the overlay
+      // went and a badge changed behind it.
+      setSentId(id);
     }, 900);
   };
 
@@ -1765,6 +1923,7 @@ function ReviewsInbox() {
   useEffect(() => {
     cancelSend();
     setSending(false);
+    setSentId(null);
   }, [activeId]);
 
   const orderLabel = ORDERS.find((o) => o.id === order)?.label ?? "Newest first";
@@ -1848,6 +2007,11 @@ function ReviewsInbox() {
           <CardTitle size="small" dataHook="review-inbox-title">
             Reviews
           </CardTitle>
+          {/* NO TABS WITH NOTHING TO SORT INTO. Five counts reading zero
+              describe the furniture, not the account, and every one of them
+              leads to the same nothing. The title stays, so the card is still
+              a card with a name. */}
+          {inboxEmpty ? null : (
           <Tabs
             dataHook="review-tabs"
             value={tab}
@@ -1871,8 +2035,14 @@ function ReviewsInbox() {
               ))}
             </TabsList>
           </Tabs>
+          )}
         </div>
 
+        {/* NEITHER ROW EARNS ITS PLACE WITH AN EMPTY INBOX. Both of them
+            narrow a list, and a search field over no reviews invites typing
+            into nothing. */}
+        {inboxEmpty ? null : (
+          <>
         {/* ROW 2 — FILTERS, own surface, always visible. Search leads, per
             the DS's own DataTablePage recipe (Toolbar > ToolbarLeft >
             DataTableSearch). */}
@@ -2009,13 +2179,60 @@ function ReviewsInbox() {
           />
 
         </div>
+          </>
+        )}
       </div>
 
+      {/* THE DEFAULT VIEW FOR EVERY NEW CUSTOMER (Ali, 20 Sep: "we will
+          actually need an empty state for the Review Manager homepage as
+          well, no reviews"). The shared EmptyState, the same one the Reply
+          templates page uses, in place of the table: a header row over
+          nothing, a pager reading 0 of 0 and five zero counts say what the
+          furniture is rather than what the account is.
+          The two actions are the product's own first two steps, connect then
+          ask, pointed at the screens lib/first-run.ts already sends a
+          first-run account to. They stand down when the "Why it matters"
+          band is above the card, because that band carries the same primary
+          action and the page should not ask twice. */}
+      {inboxEmpty ? (
+        <EmptyState
+          icon={Star}
+          dataHook="inbox-empty-state"
+          title="No reviews yet"
+          description={
+            // The band above says this at length and in nearly these words,
+            // so with it on screen the card only has to say the list is
+            // empty. With it off, this line is the only explanation there is.
+            firstRunBand
+              ? "Connected review sites fill this list on their own."
+              : "Every review from the sites you connect lands here, ready to answer. Connect one and anything already written about you appears within a day."
+          }
+          action={
+            firstRunBand ? null : (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {/* data-grade-goto sits on a WRAPPER, not on the Button: see
+                    the page header's actions for why. */}
+                <span className="inline-flex" data-grade-goto={CONNECT_GOTO}>
+                  <Button variant="primary" dataHook="inbox-empty-connect">
+                    Connect a review site
+                  </Button>
+                </span>
+                <span className="inline-flex" data-grade-goto={ASK_GOTO}>
+                  <Button variant="outline" dataHook="inbox-empty-ask">
+                    Ask customers for reviews
+                  </Button>
+                </span>
+              </div>
+            )
+          }
+        />
+      ) : (
+      <>
       <div style={{ "--th-top": `${stickyTop + bandHeight}px` }}>
       <DataTable
         table={table}
         dataHook="reviews-table"
-        noResultsMessage="No reviews match"
+        noResultsMessage={noResultsMessage}
         // The open-row highlight rides TableRow's own `transition-colors
         // duration-fast`, so it fades in and out for free as you page.
         // first-child pl-4 replaces the left inset the select column used
@@ -2035,13 +2252,37 @@ function ReviewsInbox() {
       />
       </div>
 
+      {/* THE WAY BACK, AND ONLY WHERE THERE IS NOT ONE ALREADY. From lg the
+          filter row carries "Clear all" with its count, in view above the
+          short empty table; below lg the facets fold into a sheet and that
+          button goes with them, so the message would be left with no control
+          anywhere on screen. One action, one place. */}
+      {compactFilters && noMatches && activeFilters > 0 ? (
+        <div className="flex justify-center px-4 pb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            dataHook="clear-filters-empty"
+            onClick={clearFilters}
+          >
+            Clear filters
+          </Button>
+        </div>
+      ) : null}
+      </>
+      )}
+
       {/* PAGINATION PINNED TO THE BOTTOM (Ali, 17 Sep: "I want the same on
           Review Manager", the Internal feedback table's bar). position:
           sticky at bottom 0: while the card's end is below the fold the bar
           holds the bottom of the screen, and once the end scrolls into view
           it rests there. White and bordered like the top band, above the
           rows. It moved out of the Order row, so the count and the pages
-          sit where you finish reading the page of reviews. */}
+          sit where you finish reading the page of reviews.
+          It stands down over no rows, whichever kind of nothing it is: "1 to 0
+          of 0" beside a disabled pair of arrows is counting for the sake of
+          it. */}
+      {shownRows === 0 ? null : (
       <div className="bg-[var(--ds-tailwind-colors-base-white)] sticky bottom-0 z-20 rounded-b-[inherit] border-t px-4 py-2">
         <DataTablePagination
           table={table}
@@ -2052,6 +2293,7 @@ function ReviewsInbox() {
           }
         />
       </div>
+      )}
     </Card>
   );
 
@@ -2119,12 +2361,21 @@ function ReviewsInbox() {
             <span className="sr-only">
               <DrawerTitle>Review</DrawerTitle>
             </span>
-            <PanelNav
-              index={activeIndex}
-              total={data.length}
-              onPrev={() => goTo(activeIndex - 1)}
-              onNext={() => goTo(activeIndex + 1)}
-            />
+            {/* The pager stands down for the success moment: the review just
+                answered can have left the list already (the Needs action tab
+                drops it as soon as it is replied to), which would leave the
+                counter reading 0 of N. The empty span holds the close button
+                on the right of the row. */}
+            {sent ? (
+              <span />
+            ) : (
+              <PanelNav
+                index={activeIndex}
+                total={data.length}
+                onPrev={() => goTo(activeIndex - 1)}
+                onNext={() => goTo(activeIndex + 1)}
+              />
+            )}
             <DrawerClose asChild>
               <Button
                 variant="ghost"
@@ -2146,7 +2397,10 @@ function ReviewsInbox() {
               resets to the top of the new review AND tw-animate replays the
               fade. Without the key you land halfway down the next one. */}
           <DrawerBody
-            key={active?.id}
+            // The sent state is a different thing in the same slot, so it
+            // takes its own key: the remount replays the entrance fade, and
+            // the moment arrives rather than appearing.
+            key={sent ? `${active.id}-sent` : active?.id}
             // py-4: the detail rows sat hard against the header's divider
             // (Ali, 19 Aug: "The key values are directly next to the
             // header"). mt-0 kills DrawerBody's own mt-4, which only exists
@@ -2161,8 +2415,11 @@ function ReviewsInbox() {
             // max-w-none: see the review panel's width note. The DS
             // drawer slots cap content at 384 and centre it, which left a
             // 127px gutter each side once the panel went to 640.
-            className="animate-entrance-fade mt-0 min-h-0 max-w-none flex-1 overflow-y-auto py-4"
+            className="animate-entrance-fade mt-0 flex min-h-0 max-w-none flex-1 flex-col overflow-y-auto py-4"
           >
+          {sent ? (
+            <ReplySent review={sent} business={business} remaining={replyQueue.length} />
+          ) : (
           <ReplyBody
             review={active}
             business={business}
@@ -2184,6 +2441,7 @@ function ReviewsInbox() {
               setActiveId(null);
             }}
           />
+          )}
           </DrawerBody>
           {/* The package ships NO safe-area handling, and a right-hand
               drawer is `inset-y-0 h-full`, so on iOS these buttons sit under
@@ -2194,6 +2452,30 @@ function ReviewsInbox() {
               (Ali, 17 Sep). */}
           {canReply(active) ? (
           <DrawerFooter className="max-w-none flex-row items-center justify-end border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            {sent ? (
+              <>
+                {/* THE OBVIOUS NEXT STEPS AND NOTHING ELSE: another review to
+                    answer, or done. Close takes the primary when the queue is
+                    clear, because finishing is the action then. */}
+                <DrawerClose asChild>
+                  <Button
+                    variant={nextNeeds ? "outline" : "primary"}
+                    dataHook={`sent-close-${sent.id}`}
+                  >
+                    Close
+                  </Button>
+                </DrawerClose>
+                {nextNeeds ? (
+                  <Button
+                    variant="primary"
+                    dataHook={`sent-next-${sent.id}`}
+                    onClick={openNext}
+                  >
+                    Reply to the next one
+                  </Button>
+                ) : null}
+              </>
+            ) : (
             <ReplyActions
               review={active}
               draft={draft}
@@ -2212,6 +2494,7 @@ function ReviewsInbox() {
               }}
               onDelete={() => setStatus(active.id, "needs", "")}
             />
+            )}
           </DrawerFooter>
           ) : null}
         </DrawerContent>

@@ -143,6 +143,7 @@ import {
   FieldContent,
   FieldLabel,
   FieldDescription,
+  FieldError,
 } from "@brightlocal/ui-components/field";
 import {
   Select,
@@ -202,6 +203,10 @@ import {
   CommandItem,
 } from "@brightlocal/ui-components/command";
 import { AlertInfo, AlertWarning } from "@brightlocal/ui-components/alert";
+// The DS link, for "Terms and Conditions" in the legal group. variant="inline"
+// is the one treatment this app already uses for a link inside body copy
+// (Review Tracker settings, "See what your plan includes").
+import { Link } from "@brightlocal/ui-components/link";
 import {
   ChartContainer,
   ChartTooltip,
@@ -394,6 +399,15 @@ function blankCampaignDraft() {
       "Hi {{firstname}},\n\nThank you for choosing {{businessname}}. We would love to hear how we did. It only takes a moment.\n\n{{feedbackform}}\n\nThank you,\nThe team at {{businessname}}",
     legalFooter:
       "You are receiving this email because you are a customer of {{businessname}}. To stop receiving these emails, use the unsubscribe link below.",
+    // THE POSTAL ADDRESS ANTI-SPAM LAW ASKS FOR (Ali, 20 Sep, against the
+    // live product). It sits beside the permission reminder because it is the
+    // same kind of thing: legal content the campaign carries into every email
+    // it sends, written once. Placeholders are LOWER CASE, as every other
+    // token in this file is ({{businessname}}, {{firstname}}, {{site}}). The
+    // product writes them {{BusinessName}}, but resolveVars below matches one
+    // casing, and a second convention in the same screen would just fail to
+    // resolve for whoever typed the other one.
+    physicalAddress: "{{businessname}}\n{{address}}\n{{city}}, {{postcode}}",
     reminder: false,
     reminderSubject: "",
     reminderBody: "",
@@ -626,7 +640,7 @@ function seedCampaigns() {
 //
 // A template carries:
 //   the ask      feedbackType, and the question wording that goes with it
-//   email        subject, body, legal footer, and the reminder pair
+//   email        subject, body, legal content, and the reminder pair
 //   text         smsText and its reminder
 //   review page  the invite line shown before the review links
 //
@@ -839,18 +853,46 @@ function smsBodyOf(config, isReminder) {
   return config.smsOverride ? config.smsText : config.body;
 }
 
-function resolveVars(text, business, site) {
+function resolveVars(text, business, site, place) {
   return (text ?? "")
     .replaceAll("{{firstname}}", "Sophie")
     .replaceAll("{{businessname}}", business)
     // {{site}} only means anything on the review buttons, where the same
     // sentence is rendered once per site. Elsewhere it simply never appears.
-    .replaceAll("{{site}}", site ?? "");
+    .replaceAll("{{site}}", site ?? "")
+    // The address tokens only appear in the email's physical-address block.
+    // `place` comes from useBusinessPlace, so they resolve off the location
+    // exactly as {{businessname}} does, and read as "" wherever nobody
+    // passed one.
+    .replaceAll("{{address}}", place?.address ?? "")
+    .replaceAll("{{city}}", place?.city ?? "")
+    .replaceAll("{{postcode}}", place?.postcode ?? "");
 }
 
 function useBusinessName() {
   const data = useProposalData();
   return data?.location?.name ?? "this location";
+}
+
+// THE LOCATION'S ADDRESS, SPLIT (Ali, 20 Sep). NAP discipline keeps the whole
+// address in one field, "Street, Town, POSTCODE" at its fullest, so the three
+// placeholders are read off it rather than stored three times: the last comma
+// part is the postcode, the one before it the town, and whatever leads is the
+// street. ASSUMPTION: the seeded location is "Lewes, BN8 6JD" and carries NO
+// street line, so {{address}} resolves to nothing there. That is missing data,
+// not a missing feature: the moment a location's address has a street in it,
+// this renders it. Nothing is invented to fill the gap.
+function useBusinessPlace() {
+  const data = useProposalData();
+  const parts = (data?.location?.address ?? "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return {
+    address: parts.slice(0, -2).join(", "),
+    city: parts.length > 1 ? parts[parts.length - 2] : (parts[0] ?? ""),
+    postcode: parts.length > 1 ? parts[parts.length - 1] : "",
+  };
 }
 
 // THE RAIL SHOWS PHASES, NOT STEPS. buildFlow can return twelve or more
@@ -1497,6 +1539,20 @@ function DeviceFrame({ device, children }) {
 
 function EmailPreview({ config, isReminder }) {
   const business = useBusinessName();
+  const place = useBusinessPlace();
+  // THE PHYSICAL ADDRESS AS THE CUSTOMER WOULD READ IT. Its line breaks are
+  // the author's, so they survive (whitespace-pre-wrap below), including a
+  // blank line they typed on purpose. What is dropped is narrower than that: a
+  // line that HAD something in it and resolved to nothing, which is a
+  // placeholder with no data behind it, and reads as a bug rather than as
+  // missing data. So each line is judged against what it said before the
+  // tokens were filled in. See useBusinessPlace on the street.
+  const postalAddress = (config.physicalAddress ?? "")
+    .split("\n")
+    .map((line) => ({ wrote: line.trim(), reads: resolveVars(line, business, undefined, place).trim() }))
+    .filter(({ wrote, reads }) => reads !== "" || wrote === "")
+    .map(({ reads }) => reads)
+    .join("\n");
   const subject = isReminder ? config.reminderSubject : config.subject;
   const body = isReminder ? config.reminderBody : config.body;
   const [before, after] = resolveVars(body, business).split("{{feedbackform}}");
@@ -1539,6 +1595,16 @@ function EmailPreview({ config, isReminder }) {
       <p className="text-muted-foreground text-xs whitespace-pre-wrap">
         {resolveVars(config.legalFooter, business)}
       </p>
+      {/* Under the permission reminder and above the unsubscribe line, which
+          is the order the law asks for and the order the product prints. */}
+      {/* .trim() on the test, not on the value: now that blank lines survive,
+          an address of nothing but blank lines is a truthy string with nothing
+          to show, and would print an empty line in the footer. */}
+      {postalAddress.trim() ? (
+        <p data-hook="email-preview-address" className="text-muted-foreground text-xs whitespace-pre-wrap">
+          {postalAddress}
+        </p>
+      ) : null}
       <span className="text-muted-foreground text-xs underline">Unsubscribe from these emails</span>
     </div>
   );
@@ -1999,6 +2065,21 @@ function CampaignsPage({ campaigns, setCampaigns, setTemplates, onOpen, onNew, o
         <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
           <Send className="text-muted-foreground size-8" />
           <p className="text-lg font-semibold">Ask your happy visitors for reviews</p>
+          {/* THE PRODUCT'S OWN INTRO, AND ONLY HERE (Ali, 20 Sep, from the
+              "Get Reviews / Take control of your reputation" panel; he chose
+              the empty state as its home, and no video for now). It says what
+              the tool is FOR, which is the one thing somebody who has never
+              run a campaign needs and nobody with nine campaigns wants on the
+              page, so it lives in the state that disappears the moment there
+              is a first campaign, rather than as a banner over the table.
+              Ahead of the line below because that one is the HOW, and how only
+              lands once you know what for. UK spelling, as the rest of the
+              screen writes it. */}
+          <p className="text-muted-foreground max-w-md text-sm" data-hook="get-reviews-empty-intro">
+            BrightLocal makes it easy to get more reviews and enhance your online reputation. Send
+            personalised campaigns that gather feedback and guide customers to the sites that matter
+            most to you.
+          </p>
           <p className="text-muted-foreground max-w-md text-sm">
             Send review requests by email or text, put a link on a receipt or behind a QR code, or
             run a kiosk on a tablet by the till. Feedback and new reviews land back here.
@@ -3587,15 +3668,48 @@ function CampaignWizard({
                 : "Your message must include the feedback form token exactly once."}
             </FieldDescription>
           </Field>
-          {/* The footer belongs to the CAMPAIGN, not to one message, so it is
-              edited once on the first email and only noted on the follow-up. */}
+          {/* The legal content belongs to the CAMPAIGN, not to one message, so
+              it is edited once on the first email and only noted on the
+              follow-up. "content" rather than "footer" since 20 Sep: there are
+              two fields carried across now, not one. */}
           {isReminder ? (
             <p className="text-muted-foreground text-sm">
-              The same legal footer is added to this email. Edit it on the first email step.
+              The same legal content is added to this email. Edit it on the first email step.
             </p>
           ) : (
-            <>
-              <LabelledField id="email-footer" hook="email-footer" label="Legal footer">
+            /* LEGAL CONTENT, THE GROUP THE PRODUCT ACTUALLY HAS (Ali, 20 Sep,
+               with a screenshot of the live product, asking whether this
+               content is in the prototype). It was not: one textarea called
+               "Legal footer", which is the product's PERMISSION REMINDER under
+               a name it does not use, and nothing at all for the postal
+               address. The wording is the product's, including its title case
+               and its trailing colons on the two labels, so a reader can match
+               the two screens line for line. Heading and spacing are the group
+               treatment the template editor already uses (text-sm font-medium
+               over a gap-4 column), so this reads as one more group rather
+               than a new idea. */
+            <div className="flex flex-col gap-4">
+              <p className="text-sm font-medium" data-hook="legal-group-label">
+                Legal Content
+              </p>
+              <p className="text-muted-foreground text-sm" data-hook="legal-group-intro">
+                The following information is required to be displayed in the email footer as part of our{" "}
+                {/* ASSUMPTION: the prototype has no terms page to point at, so
+                    the link is inert until there is a route for it. */}
+                <Link variant="inline" dataHook="legal-terms-link" href="#">
+                  Terms and Conditions
+                </Link>
+                , which are enforced by anti-spam law.
+              </p>
+              <LabelledField
+                id="email-footer"
+                hook="email-footer"
+                label="Permission reminder:"
+                description={
+                  "You can use {{businessname}} as a placeholder in your email text. " +
+                  "{{businessname}} will be taken from Reputation Manager report settings."
+                }
+              >
                 <Textarea
                   id="email-footer"
                   dataHook="email-footer-input"
@@ -3604,12 +3718,38 @@ function CampaignWizard({
                   onChange={(e) => patch({ legalFooter: e.target.value })}
                 />
               </LabelledField>
+              <p className="text-muted-foreground text-sm" data-hook="legal-contact-note">
+                You must include your contact information within every email that you send, including a
+                physical mailing address or PO Box where you can receive mail. (Not a website or email
+                address)
+              </p>
+              <LabelledField
+                id="email-address"
+                hook="email-address"
+                label="Physical address:"
+                description={
+                  "You can use {{businessname}}, {{address}}, {{city}} and {{postcode}} as placeholders " +
+                  "in your email text. These will be taken from Reputation Manager report settings."
+                }
+              >
+                <Textarea
+                  id="email-address"
+                  dataHook="email-address-input"
+                  rows={3}
+                  value={draft.physicalAddress}
+                  onChange={(e) => patch({ physicalAddress: e.target.value })}
+                />
+              </LabelledField>
+              {/* At the END of the group, not under the reminder where it used
+                  to sit: the dialog behind it covers the postal address and the
+                  opt-out line too, so it answers the whole group, and between
+                  the two sentences it split them apart. */}
               <div>
                 <Button variant="ghost" size="sm" dataHook="legal-more-info" onClick={() => setInfoModal("legal")}>
-                  <Info className="size-4" /> Why is a legal footer required?
+                  <Info className="size-4" /> Why is this required?
                 </Button>
               </div>
-            </>
+            </div>
           )}
         </div>
       );
@@ -4240,6 +4380,55 @@ function CampaignWizard({
       </>
     );
 
+  // ONE FLAG FOR THE HEADER AND FOR THE BODY'S GUTTER. The template editor
+  // wears the DS PageHeader; a campaign wears WizardShell's own title block.
+  // The two inset their contents differently, so whatever decides which header
+  // renders has to decide the body's inset too, or they drift apart again.
+  const usesPageHeader = setupKind === "template";
+
+  // THE BODY WEARS THE HEADER'S GUTTER (Ali, 20 Sep: "Alignment issue here on
+  // the left, sidebar nav isnt lining up with the header"). The shell hands the
+  // header and the body the same max-w-4xl column, but PageHeader insets its
+  // own contents by the DS content gutter, the px-4 md:px-6 lg:px-section-xs
+  // that GlobalLayoutContentHeader paints, and the body had none. Measured at
+  // 1440: the breadcrumb and title started at x=296 in an 848 wide block while
+  // the section rail and the settings card started at 272 in the full 896. The
+  // same three classes go on the wrapper EVERY step renders inside, rather than
+  // on the rail grid alone, so the rail's left edge and the card's right edge
+  // meet the header at each width the header changes at. The shell's width and
+  // the column's max width are untouched: this only insets what sits in the
+  // column.
+  // ONLY UNDER THE DS HEADER. A campaign's header on this screen is the shell's
+  // plain title block, which carries no gutter and is already flush with the
+  // card under it, so padding that body would invent the same misalignment the
+  // other way round.
+  // AND ONLY UNDER THE ENGINE THAT PAINTS IT, which is the same test PageHeader
+  // itself makes (ds/proposal-page.jsx): "native" and "native-fixed" render the
+  // DS GlobalLayoutContentHeader and carry the gutter, "modified" renders the
+  // proposal shell's own header and carries none. Static classes would have
+  // lined up the default engine and pushed the body a gutter INSIDE the header
+  // in the comparison mode the tweaker still offers, which is the same bug the
+  // other way round. Safe to read at render: the demo provider holds the whole
+  // tree back until it has set the seam, so there is no first pass with the
+  // flag unset.
+  let nativeHeader = false;
+  try {
+    nativeHeader = window.__gdsLayoutEngine === "native" || window.__gdsLayoutEngine === "native-fixed";
+  } catch {}
+  const bodyGutter = usesPageHeader && nativeHeader ? "px-4 md:px-6 lg:px-section-xs" : "";
+
+  // AND SO DOES THE FOOTER, or the fix just moves the misalignment. The shell
+  // lays the actions out in its own mx-auto max-w-4xl row, flush with the
+  // column, which is exactly where the card used to sit: inset the body and
+  // leave this alone and Cancel and Save template end up a gutter outside the
+  // card edge they were level with. The row is composed here, so it can wear
+  // the gutter without touching the shell. Same classes as the shell's own row
+  // so nothing about the layout changes but the inset, and an empty gutter (a
+  // campaign) leaves it exactly as it was.
+  const footerRow = (
+    <div className={`flex w-full flex-wrap items-center gap-2 ${bodyGutter}`}>{footer}</div>
+  );
+
   // NO RAIL (steps={null}). A rail counts steps, and there are no steps to
   // count now; the settings page shows every setting at once. Kept off the
   // single-choice pages too, where it would imply they sit inside a sequence.
@@ -4253,7 +4442,7 @@ function CampaignWizard({
           : "Set up a campaign to ask your customers for reviews"
       }
       header={
-        setupKind === "template" ? (
+        usesPageHeader ? (
           // NOTE: `status` stays at its default true. The description and the
           // lastUpdated stamp both render in the status row, so switching it
           // off hid the two things this header exists for.
@@ -4268,10 +4457,19 @@ function CampaignWizard({
         ) : undefined
       }
       steps={null}
-      footer={footer}
-      error={error}
+      footer={footerRow}
+      // AND THE ERROR COMES INSIDE TOO. The shell drops its message in beside
+      // the step, a sibling of these children in the same max-w-4xl column, so
+      // left in the slot it would sit a gutter outside the card it belongs to.
+      // Same component, same hook, same role="alert", at the foot of the
+      // wrapper below: only its left edge moves.
+      error={undefined}
       contentClassName={step === "setup" ? "pt-6!" : undefined}
     >
+      {/* flex-col gap-4 is the shell's own column repeated, so the error at
+          the foot of this wrapper keeps the spacing it had in the slot it came
+          from. */}
+      <div className={`flex flex-col gap-4 ${bodyGutter}`}>
       {step === "setup" ? (
         <div className="flex flex-col gap-4">
           {setupKind === "template" ? TemplateBody() : SetupBody()}
@@ -4320,6 +4518,15 @@ function CampaignWizard({
         </CardContent>
       </Card>
       )}
+      {/* Under the step, which is where a form error is looked for and where
+          the shell put it (Ali, 2 Sep: "is this a usual place to show an error
+          message?", about the footer bar it used to sit in). */}
+      {error ? (
+        <FieldError dataHook="campaign-wizard-error" role="alert">
+          {error}
+        </FieldError>
+      ) : null}
+      </div>
 
       {/* Cancel is a footer control now, one mis-click from the button people
           press a dozen times, so it asks first and says what happens to the
@@ -4383,9 +4590,16 @@ function CampaignWizard({
       <Dialog open={infoModal === "legal"} onOpenChange={(o) => !o && setInfoModal(null)}>
         <DialogContent dataHook="legal-info-content">
           <DialogHeader>
-            <DialogTitle dataHook="legal-info-title">About the legal footer</DialogTitle>
+            {/* NAMED FOR THE GROUP, NOT FOR THE OLD FIELD. This explainer sat
+                under a textarea called "Legal footer"; that field is the
+                permission reminder now, inside Legal Content, so a title and a
+                button promising "the legal footer" sent a reader looking for a
+                control that is not there. The description still says footer
+                because that is the place in the email the content prints, which
+                the group's own intro line names too. */}
+            <DialogTitle dataHook="legal-info-title">About legal content</DialogTitle>
             <DialogDescription dataHook="legal-info-desc">
-              A legal footer is part of the terms and conditions. Laws such as CAN-SPAM in the US and
+              Legal content is part of the terms and conditions. Laws such as CAN-SPAM in the US and
               the ePrivacy Directive and GDPR in the EU also require marketing email to say who sent
               it, give a real postal address, and offer a way to opt out.
             </DialogDescription>
