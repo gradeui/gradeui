@@ -322,6 +322,18 @@
   line-height: 1.5rem;
 }
 
+/* THE SAME TYPE ROLE AS A CARD TITLE, IN A PORTAL (Ali, 20 Sep: the drawer
+   title is "the wrong font"). A dialog, sheet or drawer renders at the end of
+   <body>, OUTSIDE the [data-gds-layout-engine] element, so the card-title rule
+   above never reaches it: the title kept the DS default, Poppins at 400, while
+   every card title on the page behind it was Inter at 600. These selectors are
+   unscoped for that reason. Size still comes from the call site's own class.
+   Ledger: /docs/changes, "CardTitle does not follow the type roles". */
+:is([data-slot="dialog-title"], [data-slot="sheet-title"], [data-slot="drawer-title"], [data-slot="alert-dialog-title"]) {
+  font-family: var(--font-sans);
+  font-weight: var(--ds-font-weight-semibold, 600);
+}
+
 /* Inline code inside a sentence: 0.9em of the surrounding text (Figma:
    "text-code-inline"). */
 @utility text-code-inline {

@@ -1638,7 +1638,7 @@ const TABLE_LOOK =
   "[&_table]:border-separate [&_table]:border-spacing-0 " +
   "[&_tbody_td]:border-b [&_thead_th]:border-b " +
   "sm:[&_thead_th]:sticky [&_thead_th]:top-[var(--th-top,0px)] " +
-  "[&_thead_th]:z-20 [&_thead_th]:bg-card " +
+  "[&_thead_th]:z-20 " +
   "[&_tbody_tr:last-child_td]:border-b-0 [&_thead_th:first-child]:pl-4 [&_tbody_td:first-child]:pl-4 " +
   "[&_thead_th:last-child]:pr-4 [&_tbody_td:last-child]:pr-4";
 
@@ -4430,8 +4430,7 @@ function CampaignInsights({ campaign }) {
                           type="monotone"
                           dataKey="reviews"
                           stroke="var(--chart-1, var(--chart-1-light))"
-                          fill="var(--chart-1, var(--chart-1-light))"
-                          fillOpacity={0.15}
+                          fill="none"
                           strokeWidth={2}
                           isAnimationActive={false}
                         />
@@ -5644,8 +5643,7 @@ export default function RMGetReviewsHubSpokePage() {
             <DialogTitle dataHook="download-title">Download</DialogTitle>
             <DialogDescription dataHook="download-desc">
               CSV gives you the raw numbers for a spreadsheet. PDF gives you a formatted report ready
-              to share. Testimonials include only the feedback where the customer gave permission
-              ({FEEDBACK_ITEMS.filter((f) => f.consent).length} of {FEEDBACK_ITEMS.length}).
+              to share.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

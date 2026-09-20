@@ -432,12 +432,9 @@ function blankCampaignDraft() {
   // was the only way in, which made the most common small case, asking the
   // customer standing in front of you, the hardest one: build a spreadsheet
   // for a single address.
-  // WHERE THE LOGO COMES FROM (Ali, 7 Sep: "for logo we have something that has
-  // a checkbox to say get from my Google Profile"). Pulling it from the Google
-  // Business Profile is the right default: the location already has a verified
-  // logo there, and asking someone to find and upload a PNG to send one email
-  // is the kind of small friction that stops a campaign going out at all.
-  logoSource: "google", // "google" | "upload"
+  // THE LOGO IS AN UPLOAD (Ali, 20 Sep: "lets drop the GBP logo"). It used
+  // to default to the location's Google Business Profile image, which is
+  // not something the product does.
   audience: "list", // "one" | "list"
   oneContact: "",
   country: "UK",
@@ -1636,7 +1633,7 @@ const TABLE_LOOK =
   "[&_table]:border-separate [&_table]:border-spacing-0 " +
   "[&_tbody_td]:border-b [&_thead_th]:border-b " +
   "[&_thead_th]:sticky [&_thead_th]:top-[var(--th-top,0px)] " +
-  "[&_thead_th]:z-20 [&_thead_th]:bg-card " +
+  "[&_thead_th]:z-20 " +
   // THE TD, NOT THE TR (Ali, 7 Sep: "weird border issue"). border-b is set on
   // the cells, so zeroing it on the last ROW zeroed nothing: the final row kept
   // its 1px line and the sticky pagination bar drew its own border-t directly
@@ -2936,75 +2933,22 @@ function CampaignWizard({
                 />
               </SetupRow>
               <AskRows draft={draft} patch={patch} />
-              {/* THE LOGO ROW, THIRD ATTEMPT (Ali, 7 Sep: "that whole logo
-                  area is frustrating me"). It has been an on/off switch, then a
-                  checkbox plus a text link, and both were asking a question
-                  nobody has: everyone wants their logo, the only variable is
-                  where it comes from.
-                  So: the Google Business Profile image IS the default and shows
-                  itself. One checkbox opts into uploading instead, and ticking
-                  it reveals the dropzone. No link dressed as a control.
-                  NO DS DROPZONE EXISTS — its component meta lists seven
-                  components and none handle files. shadcn ships one now
-                  (`npx shadcn add file-upload`) but a new npm import needs a
-                  registry entry and the panel renderer blocks network, so this
-                  follows the same shape the CSV step already uses on this
-                  screen: dashed border, icon, one line of guidance. Worth
-                  promoting to the registry once it has earned it. */}
-              {/* NOTHING APPEARS OR DISAPPEARS (Ali, 7 Sep: "when we tap
-                  upload a logo we still want to show the GBP logo, just faded
-                  out. I dont really want things appearing and dissapearing").
-                  Both options are always on the page; the checkbox decides
-                  which is LIVE and the other fades. The row is therefore the
-                  same height whatever you pick, so ticking the box changes an
-                  emphasis rather than reflowing the card.
-                  The faded one is also aria-hidden and the dropzone is
-                  genuinely `disabled`, so "faded" is not just a look: it is out
-                  of the tab order too, and nobody can drop a file onto an
-                  option they have not chosen. */}
+              {/* ONE SOURCE, THE UPLOAD (Ali, 20 Sep: "lets drop the GBP
+                  logo"). It used to offer the Google Business Profile image as
+                  the default with a checkbox to upload instead; the product
+                  does not pull a logo from GBP, so the choice went and the
+                  dropzone is the row.
+                  NO DS DROPZONE EXISTS. Its component meta lists seven
+                  components and none handle files, so this follows the shape
+                  the CSV step already uses on this screen: dashed border,
+                  icon, one line of guidance. Worth promoting to the registry
+                  once it has earned it. */}
               <SetupRow id="logo" label="Logo">
-                <div className="flex flex-col gap-3">
-                  <div
-                    className={`flex items-center gap-3 transition-opacity ${
-                      draft.logoSource === "google" ? "" : "opacity-40"
-                    }`}
-                    aria-hidden={draft.logoSource !== "google"}
-                  >
-                    <div
-                      className="bg-primary/10 flex size-10 shrink-0 items-center justify-center rounded-md"
-                      data-hook="setup-logo-thumb"
-                    >
-                      <svg viewBox="0 0 32 32" className="size-6" aria-hidden>
-                        <circle cx="16" cy="16" r="15" className="fill-primary" />
-                      </svg>
-                    </div>
-                    <span className="flex items-center gap-1.5 text-sm">
-                      <GoogleOriginal className="size-4" />
-                      From your Google Business Profile
-                    </span>
-                  </div>
-
-                  <Field orientation="horizontal" dataHook="field-logo-upload">
-                    <Checkbox
-                      id="setup-logo-upload-toggle"
-                      dataHook="setup-logo-upload-toggle"
-                      checked={draft.logoSource === "upload"}
-                      onCheckedChange={(v) => patch({ logoSource: v ? "upload" : "google" })}
-                    />
-                    <FieldContent>
-                      <FieldLabel htmlFor="setup-logo-upload-toggle">Upload a logo</FieldLabel>
-                    </FieldContent>
-                  </Field>
-
-                  <div className={draft.logoSource === "upload" ? "" : "opacity-40"}>
-                    <Dropzone
-                      dataHook="setup-logo-dropzone"
-                      disabled={draft.logoSource !== "upload"}
-                      label="Drop your logo here, or choose a file"
-                      hint="Square. 720 by 720 recommended, 250 minimum. JPG or PNG."
-                    />
-                  </div>
-                </div>
+                <Dropzone
+                  dataHook="setup-logo-dropzone"
+                  label="Drop your logo here, or choose a file"
+                  hint="Square. 720 by 720 recommended, 250 minimum. JPG or PNG."
+                />
               </SetupRow>
               <SetupRow id="brand" label="Accent colour">
                 <BrandPicker value={draft.brandColor} onChange={(v) => patch({ brandColor: v })} />
@@ -5226,8 +5170,7 @@ function CampaignInsights({ campaign }) {
                           type="monotone"
                           dataKey="reviews"
                           stroke="var(--chart-1, var(--chart-1-light))"
-                          fill="var(--chart-1, var(--chart-1-light))"
-                          fillOpacity={0.15}
+                          fill="none"
                           strokeWidth={2}
                           isAnimationActive={false}
                         />
@@ -6525,8 +6468,7 @@ export default function RMReviewBuilderSimplifiedPage() {
             <DialogTitle dataHook="download-title">Download</DialogTitle>
             <DialogDescription dataHook="download-desc">
               CSV gives you the raw numbers for a spreadsheet. PDF gives you a formatted report ready
-              to share. Testimonials include only the feedback where the customer gave permission
-              ({FEEDBACK_ITEMS.filter((f) => f.consent).length} of {FEEDBACK_ITEMS.length}).
+              to share.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -14,6 +14,15 @@ export interface DsChange {
 
 export const DS_CHANGES: DsChange[] = [
   {
+    id: "portal-title-type-role",
+    title: "Overlay titles cannot reach the app's type rules",
+    finding:
+      "A DialogTitle, SheetTitle, DrawerTitle or AlertDialogTitle renders at the end of <body>, outside the element carrying data-gds-layout-engine, so the rule that puts CardTitle on the type roles cannot reach it. Measured on the Builder's customer preview: the drawer title rendered Poppins 16/24 at 400 while every card title behind it rendered Inter at 600, which reads as two products in one screen.",
+    workaround:
+      "app/custom.css repeats the card-title family and weight for the four title slots with unscoped selectors, so the portal gets them too. Size still comes from the call site's own class.",
+    ask: "Give the overlay titles the same type role as CardTitle, or scope the DS typography to a token the portal inherits (a class on the portal container, or CSS variables set on :root rather than the shell).",
+  },
+  {
     id: "togglegroupitem-selected-state",
     title: "ToggleGroupItem's selected state does not show",
     finding:
