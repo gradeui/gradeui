@@ -942,7 +942,8 @@ const STATES = [
     `(() => {
        const desc = document.querySelector('[data-hook="widget-page-header-description"]');
        if (!desc || !/List: Select reviews/.test(desc.textContent)) return false;
-       for (const h of ["reviews-yelp-notice", "reviews-preview-card", "select-reviews-card",
+       if (document.querySelector('[data-hook="reviews-preview-card"]')) return false;
+       for (const h of ["reviews-yelp-notice", "select-reviews-card",
                         "picker-heading", "picker-bar", "filter-ratings", "filter-date",
                         "filter-sources", "filter-nps", "picker-auto-select-switch",
                         "select-reviews-table", "select-reviews-pagination"]) {
@@ -954,21 +955,21 @@ const STATES = [
        const sc = document.querySelector('[data-hook="select-reviews-table"]');
        return sc.scrollWidth <= sc.clientWidth + 1;
      })()`,
-    // TALL: the page is a preview card over a twenty row table, so a 900
-    // crop stops three rows in and the pager never appears.
-    "Edit reviews on the List card opens Select reviews, full bleed on its own page. The Yelp notice, then the showcase itself in a card capped at 16rem that scrolls inside itself, so the last review card in it is cut on purpose. Then the table: its title and its four filters in a band that sticks, Auto select reviews at the far end of that band, a row per review carrying a Position and a Blacklist, and the pager counting them at the foot.",
+    // TALL: twenty rows and a pager do not fit a 900 crop, which stops
+    // about half way down the table.
+    "Edit reviews on the List card opens Select reviews, full bleed on its own page and nothing but the choosing: the Yelp notice, then the table, its title and its four filters in a band that sticks, Auto select reviews at the far end of that band, a row per review carrying a Position and a Blacklist, and the pager counting them at the foot. No preview here (Ali, 21 Sep): the widget is one press away on the card, and the design page is where you watch it change.",
     { tall: true }],
   ["widgets-09-select-reviews-json", "widgets", async (p) => { await showcaseReviews(p, "json"); },
     `(() => {
        const desc = document.querySelector('[data-hook="widget-page-header-description"]');
        return !!desc && /JSON feed: Select reviews/.test(desc.textContent)
-         && !!document.querySelector('[data-hook="widget-feed-url"]')
+         && !document.querySelector('[data-hook="widget-feed-url"]')
          && !!document.querySelector('[data-hook="select-reviews-table"]')
          && !document.querySelector('[data-hook="design-page"]');
      })()`,
     // THE ONE DOOR. Edit reviews is the whole of a feed's editor, which is
     // why this state exists beside 08 rather than being read as a repeat.
-    "The JSON feed's editor is Select reviews and nothing else. Same page, same filters, same table, and the preview above them is the feed URL rather than a widget. This is the one showcase with auto select off.",
+    "The JSON feed's editor is Select reviews and nothing else, so this page IS the feed's editor. Same filters, same table, and the URL itself lives in the card's overflow rather than on this page. This is the one showcase with auto select off.",
     { tall: true }],
   ["widgets-10-notice-dismissed", "widgets", async (p) => {
     await showcaseReviews(p, "list");
@@ -1111,7 +1112,7 @@ const STATES = [
      && /No reviews match/.test(document.querySelector('[data-hook="reviews-issue"]').textContent)`,
     // Save is the only thing that runs the check, and it lands you here
     // whichever of the two editor pages you pressed it on.
-    "Save with a filter that matches nothing: the alert sits at the top of Select reviews, above the filters it names, and says to widen the ratings, sources or dates. The preview says the same thing in its own words, and the pager counts nought of nought."],
+    "Save with a filter that matches nothing: the alert sits at the top of Select reviews, above the filters it names, and says to widen the ratings, sources or dates. The table says the same thing in its own words, and the pager counts nought of nought."],
 
   // WIDGET DESIGN, the page and the six part sheets.
   ["widgets-23-design-page-list", "widgets", async (p) => { await showcaseDesign(p, "list"); },

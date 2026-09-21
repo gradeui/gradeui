@@ -2230,39 +2230,14 @@ function SelectReviews({ widget, setWidget, issue = null }) {
           />
         ) : null}
 
-        {/* THE WIDGET ITSELF, OVER THE ROWS THAT CHOOSE WHAT GOES IN IT. The
-            step lost its preview when the sheet became a page, and choosing
-            reviews with nothing to choose FOR is the one thing this card was
-            doing: it shows the resolved set, so a filter, a Position or a
-            Blacklist switch is answered in the widget a beat later.
-            NOT STICKY, and neither is the design page's preview any more.
-            The work here is a long table that already spends the top of the
-            fold on its own sticky band and the bottom on its pager, and a
-            third pinned block would leave a strip of rows between them. This
-            one scrolls away once you are reading the table.
-            CAPPED AND SCROLLING, because the widget is not bounded: a list of
-            ten reviews is taller than the page. The cap is what keeps the
-            table's header and its first rows above the fold at 1280x900,
-            which is the whole reason the preview sits here and not in the
-            middle of the step. */}
-        <Card
-          dataHook="reviews-preview-card"
-          className="max-w-none gap-0 p-0"
-          density="condensed"
-        >
-          <div className="px-4 py-3" style={{ maxHeight: "16rem", overflowY: "auto" }}>
-            {/* THE REGISTRY'S PreviewFrame, the same wrapper the card, the
-                Design preview and the preview sheet all put round a showcase,
-                so one widget is not drawn four subtly different ways. A list,
-                a carousel and a JSON feed each render whatever WidgetPreview
-                renders for them, which is how the feed URL turns up here too
-                rather than a widget the JSON step does not have. */}
-            <PreviewFrame surface="none" dataHook="preview-frame-reviews">
-              <WidgetPreview widget={widget} reviews={resolveReviews(widget)} />
-            </PreviewFrame>
-          </div>
-        </Card>
-
+        {/* NO PREVIEW ON THIS PAGE (Ali, 21 Sep: "selecting the reviews,
+            let's drop the preview"). It was here for one shift, on the
+            argument that choosing reviews wants something to choose FOR, and
+            he is right that it costs more than it pays: the widget is not
+            bounded, so it had to be capped and scrolled, and a capped preview
+            that always ends mid review card reads as a broken render. The
+            widget is one press away on the card behind this page, and the
+            design page is where you watch it change. This page is a table. */}
         <Card
           dataHook="select-reviews-card"
           className="max-w-none gap-0 overflow-clip p-0"
