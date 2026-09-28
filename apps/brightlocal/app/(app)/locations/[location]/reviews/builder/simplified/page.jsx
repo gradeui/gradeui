@@ -2680,6 +2680,8 @@ function CampaignWizard({
   templateEditId = null,
   onSaveTemplate,
   onCancel,
+  // Leave without saving (the Leave setup? dialog). backToHub on the hub.
+  onLeave,
   onLaunch,
   onOpenCustomerPreview,
   editingExisting,
@@ -4534,23 +4536,42 @@ function CampaignWizard({
           press a dozen times, so it asks first and says what happens to the
           work. The old inline strip lived above the card and could not be seen
           from a footer at the bottom of a scrolling step. */}
-      <AlertDialog dataHook="leave-wizard" open={cancelConfirm} onOpenChange={setCancelConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle dataHook="leave-title">Leave setup?</AlertDialogTitle>
-            <AlertDialogDescription dataHook="leave-desc">
-              Your progress is saved as a draft, so you can pick this campaign up from the Get
-              Reviews page and carry on where you left off.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+      {/* LEAVE, SAVE AND LEAVE, OR CLOSE (Ali, 28 Sep: "we will need a close
+          modal button here", and "Keep editing" should be "Leave"). A DS
+          Dialog rather than an AlertDialog: the DS AlertDialog has no close
+          button by design and Dialog ships one, so the X now does what Keep
+          editing did. Leave goes back to the hub WITHOUT saving (backToHub:
+          a new campaign is dropped, an existing draft keeps its last save);
+          Save and leave writes the draft as before, which is why the
+          sentence no longer promises the draft is saved either way.
+          ASSUMPTION: Leave means leave without saving, since the other
+          button is the one that saves. */}
+      <Dialog open={cancelConfirm} onOpenChange={setCancelConfirm}>
+        <DialogContent dataHook="leave-wizard">
+          <DialogHeader>
+            <DialogTitle dataHook="leave-title">Leave setup?</DialogTitle>
+            <DialogDescription dataHook="leave-desc">
+              Save a draft to pick this campaign up from the Get Reviews page and carry on
+              where you left off, or leave without saving.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              dataHook="leave-without-saving"
+              onClick={() => {
+                setCancelConfirm(false);
+                onLeave?.();
+              }}
+            >
+              Leave
+            </Button>
             <Button variant="primary" dataHook="cancel-yes" onClick={onCancel}>
               Save and leave
             </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ------------------------------ modals ------------------------------ */}
 
@@ -6543,6 +6564,7 @@ export default function RMReviewBuilderSimplifiedPage() {
         onSaveTemplate={saveTemplate}
         editingExisting={!!draft.id}
         onCancel={saveDraftAndLeave}
+        onLeave={backToHub}
         onLaunch={launch}
         onOpenCustomerPreview={(cfg) => setPreviewConfig({ config: cfg, expired: false })}
       />
