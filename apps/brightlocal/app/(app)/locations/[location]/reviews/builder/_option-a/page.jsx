@@ -1383,6 +1383,30 @@ function BrandPicker({ value, onChange }) {
 
 /* ============================ customer-facing =============================== */
 
+// ONE STAND-IN LOGO FOR EVERY CUSTOMER PAGE (Ali, 28 Sep: "For some reason we
+// have different logos here"). The contact page drew its own, a plain dot in a
+// pale square above the name, and it sat outside brandSurface, so it came out
+// in BrightLocal green while Public review and the rest wore the campaign's
+// accent. Everything renders this now: the mark CustomerPage has always drawn
+// (see "A LOGO, NOT AN AVATAR" there for why it is a drawn stand-in at all).
+// It must sit inside a brandSurface for fill-primary to be the accent.
+function CustomerLogo({ business, dataHook = "customer-logo" }) {
+  return (
+    <div className="flex items-center gap-2" data-hook={dataHook}>
+      <svg viewBox="0 0 32 32" className="size-8 shrink-0" aria-hidden>
+        <circle cx="16" cy="16" r="15" className="fill-primary" />
+        <path
+          d="M16 7c5 3 7 6 7 10a7 7 0 1 1-14 0c0-4 2-7 7-10Z"
+          className="fill-primary-foreground"
+          opacity="0.9"
+        />
+        <circle cx="16" cy="18" r="3" className="fill-primary" />
+      </svg>
+      <span className="text-base font-semibold tracking-tight">{business}</span>
+    </div>
+  );
+}
+
 // One component renders all four customer pages. The drawer and the wizard's
 // preview pane both mount it, so a change to the customer experience shows up
 // in both places by construction.
@@ -1417,20 +1441,7 @@ function CustomerPage({ page, config, interactive, rating, setRating, comment, s
   // business logo and it is what the real upload will replace. It takes the
   // campaign's accent colour, so changing the accent changes the logo with
   // it rather than leaving one element in a different palette.
-  const logo = config.logo ? (
-    <div className="flex items-center gap-2" data-hook="customer-logo">
-      <svg viewBox="0 0 32 32" className="size-8 shrink-0" aria-hidden>
-        <circle cx="16" cy="16" r="15" className="fill-primary" />
-        <path
-          d="M16 7c5 3 7 6 7 10a7 7 0 1 1-14 0c0-4 2-7 7-10Z"
-          className="fill-primary-foreground"
-          opacity="0.9"
-        />
-        <circle cx="16" cy="18" r="3" className="fill-primary" />
-      </svg>
-      <span className="text-base font-semibold tracking-tight">{business}</span>
-    </div>
-  ) : null;
+  const logo = config.logo ? <CustomerLogo business={business} /> : null;
 
   if (page === "expired") {
     return (
@@ -3112,22 +3123,18 @@ function CampaignWizard({
   // legacy but had no preview here, so its wording could be edited blind.
   function ContactPreview({ config, business }) {
     return (
-      <div className="flex flex-col items-center gap-4 px-6 py-8 text-center">
+      // brandSurface like every other customer page, so the logo and anything
+      // else in the accent colour is the campaign's, not BrightLocal green.
+      <div className="flex flex-col items-center gap-4 px-6 py-8 text-center" style={brandSurface(config.brandColor)}>
         {/* SQUARE, LIKE THE REAL THING. A Google Business Profile logo is 1:1
             (720x720 recommended, 250x250 minimum), so a preview that renders
             the business NAME as text is not previewing a logo at all, and the
             layout it produces is not the layout people will get. Same mark the
             other customer pages draw. */}
-        {config.logo ? (
-          <div className="flex flex-col items-center gap-2" data-hook="contact-logo">
-            <div className="bg-primary/10 flex size-12 items-center justify-center rounded-md">
-              <svg viewBox="0 0 32 32" className="size-7" aria-hidden>
-                <circle cx="16" cy="16" r="15" className="fill-primary" />
-              </svg>
-            </div>
-            <p className="text-base font-semibold">{business}</p>
-          </div>
-        ) : null}
+        {/* The same logo as every other customer page (28 Sep). It used to be
+            its own square tile with a plain dot, which read as a different
+            business. */}
+        {config.logo ? <CustomerLogo business={business} dataHook="contact-logo" /> : null}
         <p className="text-muted-foreground max-w-sm text-sm">
           {resolveVars(config.contactIntro, business)}
         </p>
