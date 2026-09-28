@@ -1,6 +1,6 @@
 // WelcomeInsightsCard — The live summary page's full-width hero: welcome copy + insights counts + CTA, Location Score donut on the right.
 // keywords: welcome card, welcome back, insights card, summary hero, overview card, hero card, insights summary
-// components: card, button, typography
+// components: card, button, typography-heading
 // Hand-authored from the live "Welcome back" card (14 Jul screenshot).
 // FULL WIDTH — spans the content column; the score donut sits right on
 // lg+ (see the location-score-donut recipe for the ring on its own).
@@ -8,16 +8,19 @@
 
 import { Card, CardContent } from "@brightlocal/ui-components/card";
 import { Button } from "@brightlocal/ui-components/button";
-import { TypographyH2 } from "@brightlocal/ui-components/typography";
+import { TypographyHeading } from "@brightlocal/ui-components/typography-heading";
 import { Sparkles } from "@brightlocal/icons";
 
 <Card variant="filled" className="w-full max-w-none" dataHook="welcome-card">
   <CardContent>
     <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
       <div className="flex flex-col gap-3">
-        <TypographyH2 dataHook="welcome-title">
+        {/* A card title, so the section role (3.0.0, DS-714). The old H2
+            component rendered 30/36 on the display face; the page title
+            above owns the page role. */}
+        <TypographyHeading level={2} variant="section" dataHook="welcome-title">
           Welcome back, Andy Smith
-        </TypographyH2>
+        </TypographyHeading>
         <p className="text-muted-foreground max-w-prose text-sm">
           Brighton Bierhaus has a strong Google presence with an excellent
           rating and plenty of photos. The fastest gains now are to fix

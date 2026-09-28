@@ -1,6 +1,6 @@
 // LocationPageHeader — The live platform's location page header: responsive photo, business name, meta row (location, rating, status badge), last-updated.
 // keywords: page header, location header, business header, header card, location title, page title, business name header, last updated, location photo
-// components: global-layout, aspect-ratio, typography, badge
+// components: global-layout, aspect-ratio, typography-heading, typography-text, badge
 // Hand-authored from the LIVE platform DOM (location summary, 14 Jul 2026)
 // — the canonical example. Photo swapped for a stock placeholder. Note the
 // status badge: the DS ships no "success" variant (their MCP lists this as
@@ -12,10 +12,8 @@
 import { GlobalLayoutContentHeader } from "@brightlocal/ui-components/global-layout";
 import { AspectRatio } from "@brightlocal/ui-components/aspect-ratio";
 import { Badge } from "@brightlocal/ui-components/badge";
-import {
-  TypographyH2,
-  TypographySmall,
-} from "@brightlocal/ui-components/typography";
+import { TypographyHeading } from "@brightlocal/ui-components/typography-heading";
+import { TypographyText } from "@brightlocal/ui-components/typography-text";
 import { MapPin, Star } from "@brightlocal/icons";
 
 <GlobalLayoutContentHeader dataHook="page-header">
@@ -45,9 +43,16 @@ import { MapPin, Star } from "@brightlocal/icons";
         </AspectRatio>
       </div>
       <div className="flex flex-col gap-1.5">
-        <TypographyH2 dataHook="location-business-name">
+        {/* The business name IS the page title here, so the page role at
+            level 1 (3.0.0, DS-714: exactly one per screen). The old H2
+            component rendered 30/36; the role is Poppins 24/32. */}
+        <TypographyHeading
+          level={1}
+          variant="page"
+          dataHook="location-business-name"
+        >
           Brighton Bierhaus
-        </TypographyH2>
+        </TypographyHeading>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <MapPin className="size-3.5 shrink-0" />
@@ -69,9 +74,9 @@ import { MapPin, Star } from "@brightlocal/icons";
       </div>
     </div>
     <div className="md:shrink-0">
-      <TypographySmall dataHook="location-last-updated">
+      <TypographyText variant="body-sm" dataHook="location-last-updated">
         Last updated: 14/07/26
-      </TypographySmall>
+      </TypographyText>
     </div>
   </div>
 </GlobalLayoutContentHeader>

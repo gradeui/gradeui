@@ -11,19 +11,22 @@ props:
   - loadingLabel?: string — Accessible label for the loading animation. (default "Loading")
   - trackingEl?: string — Tracking element identifier for analytics.
   - trackingLabel?: string — Tracking label for analytics context.
-  - children — Each child is one item in the reveal cycle. Pass any Typography component as a child. @example ```tsx <TypographyP dataHook="w1">Analyzing</TypographyP> <TypographyP dataHook="w2">Processing</TypographyP> ```
+  - children — Each child is one item in the reveal cycle. Pass a TypographyText or TypographyHeading as a child. @example ```tsx <TypographyText dataHook="w1">Analyzing</TypographyText> <TypographyText dataHook="w2">Processing</TypographyText> ```
+when_to_use: DEPRECATED in @brightlocal/ui-components 3.0.0 (DS-907), removal planned once product usage is gone. Do NOT emit it in new screens. Cycling phrases on a timer breaks the Loading pattern's honesty principle, because the phrases are not stages the backend reported. Use a section Skeleton, or a named-stages running screen driven by real stage data (Patterns / Loading). The examples below are kept only to read existing screens.
 ---
+
+Deprecated (DS-907). The examples use the 3.0.0 type scale (TypographyText, TypographyHeading) for the children, since the old typography family is deprecated too (DS-714).
 
 ```jsx
 <TextRevealMotion dataHook="my-reveal">
-  <TypographyP dataHook="w1">Analyzing</TypographyP>
-  <TypographyP dataHook="w2">Processing</TypographyP>
-  <TypographyP dataHook="w3">Loading</TypographyP>
+  <TypographyText dataHook="w1">Analyzing</TypographyText>
+  <TypographyText dataHook="w2">Processing</TypographyText>
+  <TypographyText dataHook="w3">Loading</TypographyText>
 </TextRevealMotion>
 ```
 ```jsx
 <TextRevealMotion dataHook="my-reveal" loadingLabel={t("loading")}>
-  <TypographyP dataHook="w1">Analyzing</TypographyP>
+  <TypographyText dataHook="w1">Analyzing</TypographyText>
 </TextRevealMotion>
 ```
 ```jsx
@@ -34,15 +37,15 @@ props:
   shimmer
   storyDescription="Mixed typography sizes"
 >
-  <TypographyH2 dataHook="heading-1">
+  <TypographyHeading level={2} variant="section" dataHook="heading-1">
     Welcome
-  </TypographyH2>
-  <TypographyH2 dataHook="heading-2">
+  </TypographyHeading>
+  <TypographyHeading level={2} variant="section" dataHook="heading-2">
     Bienvenue
-  </TypographyH2>
-  <TypographyH2 dataHook="heading-3">
+  </TypographyHeading>
+  <TypographyHeading level={2} variant="section" dataHook="heading-3">
     Willkommen
-  </TypographyH2>
+  </TypographyHeading>
 </TextRevealMotion>
 ```
 

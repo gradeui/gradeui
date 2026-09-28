@@ -37,8 +37,8 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-  TypographyH2,
-  TypographySmall,
+  TypographyHeading,
+  TypographyText,
 } from "@brightlocal/ui-components";
 import {
   Building,
@@ -208,9 +208,13 @@ export default function LocationSummary() {
                   </AspectRatio>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <TypographyH2 dataHook="location-business-name">
+                  <TypographyHeading
+                    level={1}
+                    variant="page"
+                    dataHook="location-business-name"
+                  >
                     Brighton Bierhaus
-                  </TypographyH2>
+                  </TypographyHeading>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1.5">
                       <MapPin className="size-3.5 shrink-0" />
@@ -234,9 +238,9 @@ export default function LocationSummary() {
                 </div>
               </div>
               <div className="md:shrink-0">
-                <TypographySmall dataHook="location-last-updated">
+                <TypographyText variant="body-sm" dataHook="location-last-updated">
                   Last updated: 14/07/26
-                </TypographySmall>
+                </TypographyText>
               </div>
             </div>
           </GlobalLayoutContentHeader>
@@ -251,9 +255,9 @@ export default function LocationSummary() {
                 <CardContent>
                   <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
                     <div className="flex flex-col gap-3">
-                      <TypographyH2 dataHook="welcome-title">
+                      <TypographyHeading level={2} variant="section" dataHook="welcome-title">
                         Welcome back, Andy Smith
-                      </TypographyH2>
+                      </TypographyHeading>
                       <p className="text-muted-foreground max-w-prose text-sm">
                         Brighton Bierhaus has a strong Google presence with an
                         excellent rating and plenty of photos. The fastest
@@ -319,9 +323,9 @@ export default function LocationSummary() {
 
               {/* Build your foundation */}
               <div>
-                <TypographyH2 dataHook="foundation-title">
+                <TypographyHeading level={2} variant="section" dataHook="foundation-title">
                   Build your foundation
-                </TypographyH2>
+                </TypographyHeading>
                 <p className="text-muted-foreground text-sm">
                   Your foundations are what impact how easily you get found
                   online.

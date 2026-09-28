@@ -33,7 +33,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-  TypographyH2,
+  TypographyHeading,
 } from "@brightlocal/ui-components";
 import {
   Building,
@@ -166,9 +166,9 @@ export default function PageSkeleton() {
                 <AvatarFallback>BF</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <TypographyH2 dataHook="page-title">
+                <TypographyHeading level={1} variant="page" dataHook="page-title">
                   Blackberry Farm Park
-                </TypographyH2>
+                </TypographyHeading>
                 <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
                   <span>Lewes, BN8 6JD</span>
                   <span>★ 4.3 (878 reviews)</span>
@@ -192,9 +192,9 @@ export default function PageSkeleton() {
                 </CardContent>
               </Card>
               <div>
-                <TypographyH2 dataHook="section-title">
+                <TypographyHeading level={2} variant="section" dataHook="section-title">
                   Section title
-                </TypographyH2>
+                </TypographyHeading>
                 <p className="text-muted-foreground text-sm">
                   One-line section description.
                 </p>

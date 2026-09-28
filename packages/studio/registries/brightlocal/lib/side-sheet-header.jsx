@@ -53,14 +53,16 @@ export function SideSheetHeader({
     >
       <div className="flex min-w-0 flex-col gap-0.5">
         {/* SAME TYPE AS A CARD TITLE (Ali, 7 Sep: "match the drawer title size to
-            our card title size"). CardTitle size="small" is `font-display
-            font-medium text-base`; the DS DrawerTitle default is text-lg
-            semibold in the body face, which read as a different object. */}
-        <DrawerTitle className="text-foreground font-display text-base leading-6 font-medium" data-hook={`${dataHook}-title`}>
+            our card title size"). Since 3.0.0 that is a role, not a copy of
+            classes: CardTitle size="small" is text-heading-subsection (Inter
+            16/24, semibold), and so is this. The DS DrawerTitle default is
+            the section role, one size up. The description is the DS default
+            as shipped (text-body-sm, muted), so it carries no classes. */}
+        <DrawerTitle className="text-heading-subsection" data-hook={`${dataHook}-title`}>
           {title}
         </DrawerTitle>
         {description ? (
-          <DrawerDescription className="text-muted-foreground text-sm leading-5" data-hook={`${dataHook}-description`}>
+          <DrawerDescription data-hook={`${dataHook}-description`}>
             {description}
           </DrawerDescription>
         ) : null}

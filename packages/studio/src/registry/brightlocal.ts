@@ -61,6 +61,20 @@ const BRIGHTLOCAL_V4_BASE_COMPAT = `
 // re-points the ramp to the standard scale, so weight utilities mean
 // what they say. Remove this block to preview against the shipped ramp.
 // Companion finding: rules/90-audit.md "Font-weight ramp is shifted".
+//
+// ASSUMPTION, kept on purpose at the 3.0.0 / tokens 1.0.0 upgrade (28 Sep),
+// pending Ali's call. tokens 1.0.0 builds the shifted ramp into its own type
+// roles (text-heading-page binds the semibold variable and notes "Figma 600
+// to 500"; text-body binds medium, "Figma 500 to 400"), so with this block
+// every role paints one step heavier than the DS intends: headings 600, body
+// 500. That matches apps/brightlocal's MODIFIED engine, which scopes this
+// same ramp under its modified layout-engine attribute in app/custom.css
+// "so it looks as it did in Studio". It does NOT match the app's default
+// native-fixed engine, which keeps the DS ramp (headings 500, body 400).
+// Studio's @brightlocal/proposal lib is the modified engine, so the two stay
+// paired. To preview the DS as shipped instead, drop this block from
+// previewThemeCss below (and decide whether the app's modified engine
+// follows).
 const BRIGHTLOCAL_WEIGHT_RAMP_FIX = `
 :root {
   --ds-font-weight-extralight: 200;
@@ -86,7 +100,7 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
     // than save_screen validated against: the screen passes the contract
     // check and then dies at runtime with "has no export X".
     // scripts/check-registry-contracts.mjs enforces the match.
-    version: "2.25.0",
+    version: "3.0.0",
     // Empty ON PURPOSE. The tokens CSS is inlined via runtime.previewCss
     // instead of npm-imported: tailwind-preset.css is a Tailwind v4
     // SOURCE file (@import "tailwindcss" / "tw-animate-css", @theme) —
@@ -184,11 +198,11 @@ export const BRIGHTLOCAL_REGISTRY: DesignSystemRegistry = {
       // package is NOT installed — its CSS rides inlined in previewCss.
       // ui-components' own heavy deps (radix, framer-motion, recharts,
       // …) arrive transitively.
-      "@brightlocal/icons": "2.3.1",
+      "@brightlocal/icons": "2.4.0",
       // Illustrations: 73 spot illustrations + the Globey mascot set,
       // named PascalCase exports ({ RobotAiA } etc.), size default 250,
       // variant "dark"|"light"|"bright"|"white". (Ali, 22 Jul.)
-      "@brightlocal/illustrations": "0.5.0",
+      "@brightlocal/illustrations": "0.6.0",
     },
     previewCss: BRIGHTLOCAL_PREVIEW_CSS,
     // Shared user-land component modules (STUDIO-FLOWS M0 — "the

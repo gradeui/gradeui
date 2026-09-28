@@ -39,9 +39,6 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-  TypographyH2,
-  TypographyH3,
-  TypographyMuted,
 } from "@brightlocal/ui-components";
 import {
   BotMessageSquare,

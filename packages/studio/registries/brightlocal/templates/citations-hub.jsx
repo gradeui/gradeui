@@ -39,7 +39,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TypographyH2,
+  TypographyHeading,
 } from "@brightlocal/ui-components";
 import {
   Building,
@@ -167,7 +167,9 @@ export default function CitationsHub() {
                 <AvatarFallback>BF</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <TypographyH2 dataHook="page-title">Citations</TypographyH2>
+                <TypographyHeading level={1} variant="page" dataHook="page-title">
+                  Citations
+                </TypographyHeading>
                 <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
                   <span>Blackberry Farm Park · Lewes, BN8 6JD</span>
                   <Badge dataHook="location-status">Active</Badge>
@@ -218,9 +220,9 @@ export default function CitationsHub() {
 
               {/* Directory table */}
               <div>
-                <TypographyH2 dataHook="directories-title">
+                <TypographyHeading level={2} variant="section" dataHook="directories-title">
                   Directories
-                </TypographyH2>
+                </TypographyHeading>
                 <p className="text-muted-foreground text-sm">
                   Where your business listing appears and how accurate it is.
                 </p>

@@ -2,7 +2,7 @@
 name: HubHeroCard
 import: "@brightlocal/proposal"
 props:
-  - title — Hero heading (TypographyH3).
+  - title — Hero heading (TypographyHeading level 3, variant section: a card title on the 3.0.0 type scale).
   - description — Supporting copy (muted, max-w-prose).
   - primaryCta?: string — Primary Button label. (default "Get started")
   - primaryHook?: string — dataHook for the primary Button.

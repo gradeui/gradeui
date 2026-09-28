@@ -49,7 +49,7 @@ import {
   SidebarSeparator,
   SidebarSwitcher,
   SidebarTrigger,
-  TypographyH2,
+  TypographyHeading,
 } from "@brightlocal/ui-components";
 import {
   BarChart3,
@@ -762,9 +762,11 @@ export default function App() {
   // component in the DS — the page header IS this composition.)
   const header = (
     <div className="flex min-w-0 flex-col gap-1">
-      {/* Trail RULE: ANCESTORS ONLY, max four — the current page never
-          appears in the breadcrumb (the H2 below IS the current page).
-          BreadcrumbPage is deliberately unused. */}
+      {/* Trail RULES are the DS's (Breadcrumb docs, NP spec, 28 Sep):
+          ancestors only, since the title below IS the current page, so
+          BreadcrumbPage is deliberately unused. At most three crumbs, with
+          the middle of a deeper trail behind a BreadcrumbEllipsis menu,
+          and the root never drops. */}
       <Breadcrumb dataHook="page-breadcrumb">
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -776,7 +778,9 @@ export default function App() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <TypographyH2 dataHook="page-title">Monitor Reviews</TypographyH2>
+      <TypographyHeading level={1} variant="page" dataHook="page-title">
+        Monitor Reviews
+      </TypographyHeading>
       <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
         <span>Blackberry Farm Park — Lewes, BN8 6JD</span>
         <Badge dataHook="location-status">Active</Badge>

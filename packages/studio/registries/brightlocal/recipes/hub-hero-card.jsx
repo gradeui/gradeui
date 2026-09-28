@@ -1,6 +1,6 @@
 // HubHeroCard — Full-width hero card: title, description, and CTA row on the left, media slot on the right — the lead-in banner for hub and dashboard pages.
 // keywords: hero card, hero banner, feature card, promo card, media card, hub hero, dashboard hero, split card, cta card, onboarding card
-// components: card, button, typography
+// components: card, button, typography-heading
 // Hand-authored (July 2026, sidebar/layout explorations) — NOT
 // harvested; the recipe harvester does not touch custom-named files.
 //
@@ -19,7 +19,7 @@ import {
   Card,
   CardContent,
 } from "@brightlocal/ui-components";
-import { TypographyH3 } from "@brightlocal/ui-components/typography";
+import { TypographyHeading } from "@brightlocal/ui-components/typography-heading";
 import { Sparkles } from "@brightlocal/icons";
 
 function HubHeroCard({
@@ -61,7 +61,15 @@ function HubHeroCard({
         <div className="flex items-center gap-8">
           {/* Copy column */}
           <div className="flex min-w-0 flex-1 flex-col items-start gap-3 py-4">
-            <TypographyH3>{title}</TypographyH3>
+            {/* A card title, so the section role (3.0.0, DS-714), at h3
+                under the page's own heading. */}
+            <TypographyHeading
+              level={3}
+              variant="section"
+              dataHook={dataHook ? `${dataHook}-title` : undefined}
+            >
+              {title}
+            </TypographyHeading>
             <p className="text-muted-foreground max-w-prose text-sm">
               {description}
             </p>

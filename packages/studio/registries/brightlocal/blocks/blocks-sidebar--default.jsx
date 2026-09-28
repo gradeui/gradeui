@@ -88,9 +88,9 @@
             </GlobalLayoutContentActions>
             <GlobalLayoutContentHeader dataHook="page-header">
               <div>
-                <TypographyH2 className="pb-2" dataHook="page-title">
+                <TypographyHeading level={1} variant="page" className="pb-2" dataHook="page-title">
                   Bailiffscourt Hotel &amp; Spa
-                </TypographyH2>
+                </TypographyHeading>
                 <p className="text-muted-foreground text-sm">
                   Littlehampton, BN17 5RW
                 </p>

@@ -444,7 +444,7 @@ function AppLayoutShell({
 //     pinnedSidebar
 //     sidebarTone="dark"
 //     sidebar={<Sidebar dataHook="app-sidebar">…</Sidebar>}
-//     header={<TypographyH2>Page title</TypographyH2>}
+//     header={<TypographyHeading level={1} variant="page" dataHook="page-title">Page title</TypographyHeading>}
 //   >
 //     <GlobalLayoutContentBody dataHook="page-body">…</GlobalLayoutContentBody>
 //   </AppLayoutShell>
