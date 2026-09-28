@@ -3592,8 +3592,14 @@ function WidgetDesign({ widget, setWidget }) {
   const sample = resolveReviews(widget);
   return (
     <div className="flex min-w-0 flex-col gap-4" data-hook="design-page">
-      <Card dataHook="design-preview-card" className="max-w-none gap-0 p-0" density="condensed">
-        <CardHeader className="px-4 pt-4 pb-3">
+      {/* ONE DENSITY FOR EVERY CARD ON THE PAGE (Ali, 28 Sep: "Padding on the
+          Review Showcase edit are quite large (and the Widget design card
+          padding is different as well!"). This card stripped the DS padding and
+          put 16px back by hand while the part cards below took the default
+          32px. All six are density="condensed" as shipped now, nothing
+          overridden, so the header, preview and part cards share one inset. */}
+      <Card dataHook="design-preview-card" className="max-w-none" density="condensed">
+        <CardHeader>
           {/* SENTENCE CASE. "Widget Design" is the product's name for the
               step; a card title is a heading, so it reads "Widget design". */}
           <CardTitle dataHook="design-card-title">Widget design</CardTitle>
@@ -3611,11 +3617,13 @@ function WidgetDesign({ widget, setWidget }) {
             worth watching anyway. 60vh, up from the 45 it had as a sticky
             strip: it is the subject of the page now, not a band above a
             form. */}
-        <div className="px-4 pb-4" style={{ maxHeight: "60vh", overflowY: "auto" }} data-hook="design-live-preview">
+        <CardContent>
+        <div style={{ maxHeight: "60vh", overflowY: "auto" }} data-hook="design-live-preview">
           <PreviewFrame surface="none" dataHook="preview-frame-design">
             <WidgetPreview widget={widget} reviews={sample} />
           </PreviewFrame>
         </div>
+        </CardContent>
       </Card>
 
       {/* ONE BLOCK PER PART. The heading is a CardTitle at the card's own
@@ -3627,7 +3635,7 @@ function WidgetDesign({ widget, setWidget }) {
           data-hook="design-group-<id>" is the hook the accordion trigger used
           to carry, kept on the block that replaced it. */}
       {groups.map((group) => (
-        <Card key={group.id} className="max-w-none" dataHook={`design-group-${group.id}`}>
+        <Card key={group.id} className="max-w-none" density="condensed" dataHook={`design-group-${group.id}`}>
           <CardHeader>
             <CardTitle dataHook={`design-group-${group.id}-title`}>{group.label}</CardTitle>
             <CardDescription dataHook={`design-group-${group.id}-summary`}>
