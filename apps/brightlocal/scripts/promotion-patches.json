@@ -2064,6 +2064,11 @@
       "why": "Showcase design page cards on one DS density (Ali, 28 Sep: \"Padding on the Review Showcase edit are quite large (and the Widget design card padding is different as well!\"). The group cards were the default density, 32px, and the Widget design card was condensed with its padding stripped and 16px put back by hand. All six are density condensed as shipped now, with no padding overrides.",
       "find": "        <Card key={group.id} className=\"max-w-none\" dataHook={`design-group-${group.id}`}>\n",
       "replace": "        <Card key={group.id} className=\"max-w-none\" density=\"condensed\" dataHook={`design-group-${group.id}`}>\n"
+    },
+    {
+      "why": "Select reviews loses its card description (Ali, 28 Sep: \"In any select reviews page (in showcase) we dont need this extra description it is self explanatory\").",
+      "find": "              <CardDescription>\n                Select the reviews you would like to showcase in your {TYPE_WORD[widget.format]}{\" \"}\n                widget.\n              </CardDescription>\n",
+      "replace": "              {/* NO DESCRIPTION (Ali, 28 Sep: \"we dont need this extra\n                  description it is self explanatory\"). The title and the\n                  filters under it say what the card is for. */}\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/builder/simplified/page.jsx": [

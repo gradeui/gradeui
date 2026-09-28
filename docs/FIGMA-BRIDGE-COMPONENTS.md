@@ -51,7 +51,7 @@ Done this pass (3 Sep):
 - **Create Widget** wizard headers stack name / line / stepper and align
   to the card; the done step is self-consistent about being a list.
 - **The three overlay rebuilds** (`templates-02`, `templates-03`,
-  `widgets-05`) now have their own screen behind the scrim.
+  `showcase-05`) now have their own screen behind the scrim.
 
 Still open: Review Insights and Reply Templates *detail* content; the
 `Local - Inbox` states 02-13 still show the list rather than each state's

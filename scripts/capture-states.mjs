@@ -67,7 +67,7 @@ const APP_ROUTES = {
   manager: "/reviews/manager",
   insights: "/reviews/tracker",
   templates: "/reviews/manager/templates",
-  widgets: "/reviews/showcase",
+  showcase: "/reviews/showcase",
   getreviews: "/reviews/builder",
   settings: "/reviews/tracker/settings",
 };
@@ -86,7 +86,7 @@ const APP_SETTINGS = {
 // state. A single name is the common case ("--only=inbox-04"); a list is
 // what you want after a run to re-shoot just the frames that failed.
 const ONLY = (arg("only", null) || "").split(",").map((x) => x.trim()).filter(Boolean);
-// --section=reviewshub|manager|insights|templates|widgets|getreviews|settings (repeatable, comma
+// --section=reviewshub|manager|insights|templates|showcase|getreviews|settings (repeatable, comma
 // separated). Sections are the unit Ali thinks in, and the unit a demo video
 // is cut in, so the suite runs one section at a time by default rather than
 // one giant pass.
@@ -117,11 +117,16 @@ const BY_PAGE = process.argv.includes("--by-page");
 // every state file, so they survived the 6 Sep rename untouched. Only the
 // Figma page names moved. Do not "tidy" inbox → manager here without
 // renaming 79 files, every StateCard and every flow JSON with it.
+// The one rename since: widgets became showcase on 28 Sep 2026 (Ali: "rename
+// the names of those screens to be called showcase and not widget"), with
+// every state, the Figma StateCards and their shots renamed alongside. The
+// flow JSON in scripts/flows/ keeps its own ids (rm-widgets.json), which
+// never named a state.
 const FIGMA_PAGE = {
   reviewshub: "Brightlocal - Review Hub",
   manager: "Brightlocal - Review Manager",
   insights: "Brightlocal - Review Tracker",
-  widgets: "Brightlocal - Review Showcase",
+  showcase: "Brightlocal - Review Showcase",
   getreviews: "Brightlocal - Review Builder",
   templates: "Brightlocal - Review Manager - Reply Templates",
   settings: "Brightlocal - Report Settings",
@@ -140,7 +145,7 @@ const stamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14).replac
 const DIR = path.join(OUT, `${APP ? "app-states" : "states"}-${stamp}`);
 fs.mkdirSync(DIR, { recursive: true });
 
-// Share tokens for the RM screens plus Reply Templates. widgets and
+// Share tokens for the RM screens plus Reply Templates. showcase and
 // getreviews resolve to the RAIL designs (dmt094lhmpwbs and dmt094j963aye),
 // checked against share_links on 7 Sep 2026. The createwidget token went
 // with its section: that screen is archived.
@@ -149,7 +154,7 @@ const SCREENS = {
   manager: "a616bfc5-1806-4af8-9a9a-74b6a9173fbf",
   insights: "38f64dc2-383c-42d1-83b6-456bf254a4b1",
   templates: "55dd020f-d660-48bd-9d2c-1d2542a8b19f",
-  widgets: "0609abbe-f208-4d91-858e-e5335f8cecbe",
+  showcase: "0609abbe-f208-4d91-858e-e5335f8cecbe",
   getreviews: "782021bd-1332-48b8-a22b-5316b520fc20",
   // RM — Report Settings (dmtkj124xagqa), new 2 Sep. The configuration
   // surface behind Review Tracker' Settings button, which was a dead
@@ -823,7 +828,7 @@ const STATES = [
   //   carousel only), each with its heading, a one line summary of what it is
   //   set to, and an Edit that opens that part alone in a right-hand sheet.
   //   EMBED left the editor altogether. It is the card's overflow now, which
-  //   widgets-02, 03, 06 and 07 already shoot.
+  //   showcase-02, 03, 06 and 07 already shoot.
   //
   // WHAT WENT, AND WHY. Every state below 08 that drove the rail is gone with
   // it, because its subject does not exist on any screen any more:
@@ -842,9 +847,9 @@ const STATES = [
   //   35-36 kept, as 32 and 33: the transition pair and the leave dialog are
   //         both still there, reached through a part sheet instead of a
   //         group.
-  // Numbers 34 to 36 are deliberately unused, so widgets-37 keeps the id its
+  // Numbers 34 to 36 are deliberately unused, so showcase-37 keeps the id its
   // skip entry in APP_OVERRIDES is keyed on.
-  ["widgets-01-list", "widgets", async () => {},
+  ["showcase-01-list", "showcase", async () => {},
     `(() => {
        for (const id of ["list", "carousel", "json"]) {
          for (const h of ["", "-view", "-edit", "-menu-button"]) {
@@ -860,12 +865,12 @@ const STATES = [
     // THE NOTE SAYS WHERE THE THIRD FOOTER WENT. Two-up plus a page header
     // puts the JSON feed card's own footer just under 900px, so a caption
     // promising the whole footer on all three was describing two of them.
-    // widgets-03 scrolls down and shoots that third footer.
+    // showcase-03 scrolls down and shoots that third footer.
     // NOTE CORRECTED 21 Sep: it used to promise "Preview, Edit and the
     // overflow". One Edit became two named ones when the editor became two
     // pages, so the caption was naming a button that is no longer drawn.
     "The three showcases as cards, two up: each carries the same title, caption and seven summary rows, over a footer with Preview, Edit reviews, Edit design and the overflow. The JSON feed has no Edit design, because a feed carries no design, and it wraps onto a second row, so its footer sits below the fold of this frame."],
-  ["widgets-02-overflow-embed-code", "widgets", async (p) => {
+  ["showcase-02-overflow-embed-code", "showcase", async (p) => {
     await press(p, '[data-hook="widget-carousel-menu-button"]');
     await wait(700);
     await blur(p);
@@ -875,7 +880,7 @@ const STATES = [
     // section inside the editor as well; the editor has no rail, so this
     // menu is the whole of it.
     "A List or Carousel card's overflow holds one item, Embed code. It is the only way to the code: embed is not part of the editor."],
-  ["widgets-03-overflow-feed-url", "widgets", async (p) => {
+  ["showcase-03-overflow-feed-url", "showcase", async (p) => {
     // The JSON card is the third of three and sits at the fold; its menu
     // opens downward, off the frame, unless the card is scrolled up first.
     await scrollToHook(p, '[data-hook="widget-json"]', 120);
@@ -886,7 +891,7 @@ const STATES = [
     `[...document.querySelectorAll('[role="menuitem"]')].some((m) => m.textContent.trim() === "Feed URL")
      && !document.querySelector('[data-hook="widget-json-edit-design"]')`,
     "The JSON feed card's overflow says Feed URL instead. Its footer is the short one: Preview and Edit reviews, with no Edit design."],
-  ["widgets-04-preview-sheet-list", "widgets", async (p) => {
+  ["showcase-04-preview-sheet-list", "showcase", async (p) => {
     await press(p, '[data-hook="widget-list-view"]');
     await waitForHook(p, '[data-hook="widget-preview-drawer"]');
     await wait(900);
@@ -899,7 +904,7 @@ const STATES = [
     `!!document.querySelector('[data-hook="widget-preview-drawer"][data-state="open"]')
      && (document.querySelector('[data-hook="preview-frame-sheet"]')?.innerText.trim().length ?? 0) > 40`,
     "The Preview sheet for the List: the showcase as the site shows it, with Edit showcase in the footer."],
-  ["widgets-05-preview-sheet-carousel", "widgets", async (p) => {
+  ["showcase-05-preview-sheet-carousel", "showcase", async (p) => {
     await press(p, '[data-hook="widget-carousel-view"]');
     await waitForHook(p, '[data-hook="widget-preview-drawer"]');
     await wait(900);
@@ -914,7 +919,7 @@ const STATES = [
     // still asserted, because they ARE rendered; they are just not readable
     // in this frame. Flagged rather than fixed, the screen is not ours.
     "The Preview sheet for the Carousel: one slide at a time, with a dot per review under it, and Edit showcase in the footer."],
-  ["widgets-06-embed-sheet-list", "widgets", async (p) => {
+  ["showcase-06-embed-sheet-list", "showcase", async (p) => {
     await press(p, '[data-hook="widget-list-menu-button"]');
     await wait(700);
     await pressText(p, "Embed code", '[role="menuitem"]');
@@ -925,7 +930,7 @@ const STATES = [
     `!!document.querySelector('[data-hook="widget-embed-drawer"][data-state="open"]')
      && !!document.querySelector('[data-hook="detail-embed-code-steps"]')`,
     "The Embed sheet: the script line, Copy code, and the three numbered steps for a page editor."],
-  ["widgets-07-feed-url-sheet-json", "widgets", async (p) => {
+  ["showcase-07-feed-url-sheet-json", "showcase", async (p) => {
     await press(p, '[data-hook="widget-json-menu-button"]');
     await wait(700);
     await pressText(p, "Feed URL", '[role="menuitem"]');
@@ -940,7 +945,7 @@ const STATES = [
     "The Feed URL sheet: the URL, Copy URL, and the three steps written for a developer."],
 
   // SELECT REVIEWS, the page and everything on it.
-  ["widgets-08-select-reviews-page", "widgets", async (p) => { await showcaseReviews(p, "list"); },
+  ["showcase-08-select-reviews-page", "showcase", async (p) => { await showcaseReviews(p, "list"); },
     // THE PROOF THAT THE RAIL WENT, AND WHAT IT BOUGHT. The table's own
     // scroll region is measured, not eyeballed: at 1280 it lays out at 846
     // inside 846, so nothing scrolls sideways. That number was 568 against
@@ -966,7 +971,7 @@ const STATES = [
     // about half way down the table.
     "Edit reviews on the List card opens Select reviews, full bleed on its own page and nothing but the choosing: the Yelp notice, then the table, its title and its four filters in a band that sticks, Auto select reviews at the far end of that band, a row per review carrying a Position and a Blacklist, and the pager counting them at the foot. No preview here (Ali, 21 Sep): the widget is one press away on the card, and the design page is where you watch it change.",
     { tall: true }],
-  ["widgets-09-select-reviews-json", "widgets", async (p) => { await showcaseReviews(p, "json"); },
+  ["showcase-09-select-reviews-json", "showcase", async (p) => { await showcaseReviews(p, "json"); },
     `(() => {
        const desc = document.querySelector('[data-hook="widget-page-header-description"]');
        return !!desc && /(JSON feed: )?Select reviews/.test(desc.textContent)
@@ -978,7 +983,7 @@ const STATES = [
     // why this state exists beside 08 rather than being read as a repeat.
     "The JSON feed's editor is Select reviews and nothing else, so this page IS the feed's editor. Same filters, same table, and the URL itself lives in the card's overflow rather than on this page. This is the one showcase with auto select off.",
     { tall: true }],
-  ["widgets-10-notice-dismissed", "widgets", async (p) => {
+  ["showcase-10-notice-dismissed", "showcase", async (p) => {
     await showcaseReviews(p, "list");
     await press(p, '[data-hook="reviews-yelp-notice-dismiss"]');
     await wait(700);
@@ -988,7 +993,7 @@ const STATES = [
      && !!document.querySelector('[data-hook="picker-heading"]')
      && !!document.querySelector('[data-hook="select-reviews-table"]')`,
     "The Yelp notice dismissed. It is a standing rule rather than an error, so it closes and the page reads from the showcase down."],
-  ["widgets-11-filter-ratings", "widgets", async (p) => {
+  ["showcase-11-filter-ratings", "showcase", async (p) => {
     await showcaseFacet(p, "list", "filter-ratings");
     await blur(p);
   },
@@ -1005,7 +1010,7 @@ const STATES = [
     // own menu now and applies on press, so the four states below are the
     // four columns that panel had.
     "The Star Rating menu open: All ratings over the five the product offers, the star rows carrying their own glyphs and No rating carrying none, which is the point of it. The list stops at three stars, so a two or one star review can never be filtered into a showcase."],
-  ["widgets-12-filter-date", "widgets", async (p) => {
+  ["showcase-12-filter-date", "showcase", async (p) => {
     await showcaseFacet(p, "list", "filter-date");
     await blur(p);
   },
@@ -1016,7 +1021,7 @@ const STATES = [
        return true;
      })()`,
     "The Date menu open: a single-select list from All time down to Custom date range, with a tick on the one in use."],
-  ["widgets-13-filter-custom-dates", "widgets", async (p) => {
+  ["showcase-13-filter-custom-dates", "showcase", async (p) => {
     await showcaseFacet(p, "list", "filter-date", ["filter-date-custom"]);
     await blur(p);
   },
@@ -1024,7 +1029,7 @@ const STATES = [
      && !!document.querySelector('[data-hook="filter-date-start"]')
      && !!document.querySelector('[data-hook="filter-date-end"]')`,
     "Custom date range chosen: two date fields with to between them appear in the filter band beside the menu, because two date fields are not menu options. They carry their names to a screen reader rather than on the page, so the band stays one row of controls."],
-  ["widgets-14-filter-sources", "widgets", async (p) => {
+  ["showcase-14-filter-sources", "showcase", async (p) => {
     await showcaseFacet(p, "list", "filter-sources");
     await blur(p);
   },
@@ -1037,7 +1042,7 @@ const STATES = [
        return true;
      })()`,
     "The Review Sources menu open: All sources, then the seven this location has data for. Each carries its own mark where the source has one, and the globe where it does not."],
-  ["widgets-15-filter-feedback-score", "widgets", async (p) => {
+  ["showcase-15-filter-feedback-score", "showcase", async (p) => {
     await showcaseFacet(p, "list", "filter-nps");
     await blur(p);
   },
@@ -1048,13 +1053,13 @@ const STATES = [
        return true;
      })()`,
     "The Feedback Score menu open. A facet trigger carries no label above it, so each value says the noun itself: All feedback scores, No feedback score, Positive feedback."],
-  ["widgets-16-auto-select-tooltip", "widgets", async (p) => {
+  ["showcase-16-auto-select-tooltip", "showcase", async (p) => {
     await showcaseReviews(p, "list");
     await hover(p, '[data-hook="picker-auto-select-info"]');
   },
     `[...document.querySelectorAll('[role="tooltip"]')].some((t) => /joins this showcase on its own/.test(t.textContent))`,
     "The info beside Auto select reviews, hovered: leave it on and any new review matching the filters joins this showcase on its own."],
-  ["widgets-17-auto-select-off", "widgets", async (p) => {
+  ["showcase-17-auto-select-off", "showcase", async (p) => {
     await showcaseReviews(p, "list");
     await press(p, '[data-hook="picker-auto-select-switch"]');
     await wait(700);
@@ -1062,7 +1067,7 @@ const STATES = [
   },
     `document.querySelector('[data-hook="picker-auto-select-switch"]')?.getAttribute("data-state") === "unchecked"`,
     "Auto select reviews turned off: the showcase stays as it is today and stops taking new reviews on its own."],
-  ["widgets-18-position-select", "widgets", async (p) => {
+  ["showcase-18-position-select", "showcase", async (p) => {
     await showcaseReviews(p, "list");
     await press(p, '[data-hook^="select-position-"]');
     await wait(900);
@@ -1072,7 +1077,7 @@ const STATES = [
        return opts.length > 3 && opts.some((o) => o.textContent.trim() === "-1");
      })()`,
     "The Position select on one review, open: minus one for no position, then one place per review this showcase can publish, so a review can be pinned to the top of the widget. Twenty two options is a column the height of the page, which is what the product's own control does with a list this long."],
-  ["widgets-19-blacklist-on", "widgets", async (p) => {
+  ["showcase-19-blacklist-on", "showcase", async (p) => {
     await showcaseReviews(p, "list");
     await press(p, '[data-hook^="select-blacklist-"]');
     await wait(700);
@@ -1080,7 +1085,7 @@ const STATES = [
   },
     `!!document.querySelector('[data-hook^="select-blacklist-"][data-state="checked"]')`,
     "Blacklist turned on for one review: it stays in the table, and it is kept off the site."],
-  ["widgets-20-yelp-unavailable", "widgets", async (p) => {
+  ["showcase-20-yelp-unavailable", "showcase", async (p) => {
     // FILTERED TO YELP ALONE, rather than hunting a Yelp row in a table
     // sorted by date. Yelp is 61 of the 1,116 reviews in this pool, so which
     // page one of them lands on is luck; the source filter makes every row
@@ -1098,7 +1103,7 @@ const STATES = [
      && !document.querySelector('[data-hook^="select-blacklist-"]')
      && [...document.querySelectorAll('[role="tooltip"]')].some((t) => /cannot go in a showcase/.test(t.textContent))`,
     "Filtered to Yelp alone: every row reads Unavailable where its Position would be, with no Blacklist beside it, and the tooltip repeats the notice's reason. Yelp does not allow its reviews to be republished, so the widget above this has nothing to show."],
-  ["widgets-21-no-reviews-in-filter", "widgets", async (p) => {
+  ["showcase-21-no-reviews-in-filter", "showcase", async (p) => {
     // FEEDBACK SCORE: POSITIVE is the one filter in this data that is
     // guaranteed to match nothing. A score comes from a Get Reviews campaign
     // and this pool models none, which the table's own empty line says.
@@ -1110,7 +1115,7 @@ const STATES = [
        return !!list && /A feedback score comes from a Get Reviews campaign/.test(list.textContent);
      })()`,
     "A filter that matches nothing: Feedback Score set to Positive feedback. The table says why in its own words, because a feedback score comes from a Get Reviews campaign and this location has none."],
-  ["widgets-22-no-reviews-match", "widgets", async (p) => {
+  ["showcase-22-no-reviews-match", "showcase", async (p) => {
     await showcaseFacet(p, "list", "filter-nps", ["filter-nps-positive"]);
     await press(p, '[data-hook="widget-save"]');
     await wait(1200);
@@ -1122,7 +1127,7 @@ const STATES = [
     "Save with a filter that matches nothing: the alert sits at the top of Select reviews, above the filters it names, and says to widen the ratings, sources or dates. The table says the same thing in its own words, and the pager counts nought of nought."],
 
   // WIDGET DESIGN, the page and the six part sheets.
-  ["widgets-23-design-page-list", "widgets", async (p) => { await showcaseDesign(p, "list"); },
+  ["showcase-23-design-page-list", "showcase", async (p) => { await showcaseDesign(p, "list"); },
     `${expectDesignBlocks(["preset", "layout", "container", "text", "reviews"])}
      && !document.querySelector('[data-hook="design-group-animation"]')`,
     // THE PREVIEW IS THE PAGE NOW, and it is readable. It used to be a 25px
@@ -1133,19 +1138,19 @@ const STATES = [
     // TALL: the preview plus five blocks runs past 900.
     "Edit design on the List card opens Widget design, preview led: the widget itself over one block per part, each with its heading, a line saying what that part is set to right now, and its own Edit. No Animation block on a list.",
     { tall: true }],
-  ["widgets-24-design-page-carousel", "widgets", async (p) => { await showcaseDesign(p, "carousel"); },
+  ["showcase-24-design-page-carousel", "showcase", async (p) => { await showcaseDesign(p, "carousel"); },
     expectDesignBlocks(["preset", "layout", "container", "text", "reviews", "animation"]),
     // TALL: six blocks under the preview.
     "The same page for the Carousel, with the sixth block a list does not get: Animation, reading back auto rotate, the transition and its speed. The summary lines are live, so each one is what that part is set to at the moment the page is read.",
     { tall: true }],
-  ["widgets-25-design-sheet-preset", "widgets", async (p) => { await designSheet(p, "carousel", "preset"); },
+  ["showcase-25-design-sheet-preset", "showcase", async (p) => { await designSheet(p, "carousel", "preset"); },
     `${expectDesignSheet("Preset", "design-preset-field")}
      && !!document.querySelector('[data-hook="design-preset-modern-tile"]')
      && !!document.querySelector('[data-hook="design-preset-classic-tile"]')
      && !!document.querySelector('[data-hook="design-preset-bootstrap-tile"]')
      && !document.querySelector('[data-hook="design-preset-custom-tile"]')`,
     "The Preset block's Edit: Modern, Classic and Bootstrap as tiles, each showing what it does rather than naming it. Picking one sets every control in the other blocks."],
-  ["widgets-26-design-preset-custom", "widgets", async (p) => {
+  ["showcase-26-design-preset-custom", "showcase", async (p) => {
     // The one control that turns a preset into Custom in a single press
     // lives in Container, so this opens that part, presses it, comes back and
     // opens Preset: the tile is what the frame is about.
@@ -1162,26 +1167,26 @@ const STATES = [
     `${expectDesignSheet("Preset", "design-preset-custom-tile")}
      && document.querySelector('#design-preset-custom')?.getAttribute("data-state") === "checked"`,
     "One setting changed, and a Custom tile joins the three presets, already chosen. The Preset block behind the sheet says Custom on its summary line at the same moment, because the summaries are live. It is a readout rather than something to pick, and it goes again the moment a preset is chosen back."],
-  ["widgets-27-design-sheet-layout", "widgets", async (p) => { await designSheet(p, "list", "layout"); },
+  ["showcase-27-design-sheet-layout", "showcase", async (p) => { await designSheet(p, "list", "layout"); },
     expectDesignSheet("Layout", "design-columns-field"),
     "The Layout block's Edit: widget max height, the three desktop layouts as glyphs, and how many reviews to show."],
-  ["widgets-28-design-sheet-container", "widgets", async (p) => { await designSheet(p, "list", "container"); },
+  ["showcase-28-design-sheet-container", "showcase", async (p) => { await designSheet(p, "list", "container"); },
     expectDesignSheet("Container", "design-bg-field"),
     "The Container block's Edit: the widget's own background, corner radius, border and shadow, its title, and which review summary it carries."],
-  ["widgets-29-design-sheet-text", "widgets", async (p) => { await designSheet(p, "list", "text"); },
+  ["showcase-29-design-sheet-text", "showcase", async (p) => { await designSheet(p, "list", "text"); },
     expectDesignSheet("Text", "design-font-field"),
     "The Text block's Edit: the font, shown in its own face, then the text and link colours, the size, and the alignment."],
-  ["widgets-30-design-sheet-reviews", "widgets", async (p) => { await designSheet(p, "list", "reviews"); },
+  ["showcase-30-design-sheet-reviews", "showcase", async (p) => { await designSheet(p, "list", "reviews"); },
     expectDesignSheet("Reviews", "design-date-format-field"),
     "The Reviews block's Edit: what each review shows, including whether the business details go into the page's Schema, then the date format and the character count, then the review card's own background, radius, border and shadow."],
-  ["widgets-31-design-sheet-animation", "widgets", async (p) => { await designSheet(p, "carousel", "animation"); },
+  ["showcase-31-design-sheet-animation", "showcase", async (p) => { await designSheet(p, "carousel", "animation"); },
     expectDesignSheet("Animation", "design-auto-rotate-field"),
     // THE GROUP THAT COULD NOT BE SHOT WHOLE, SHOT WHOLE. As an accordion
     // item under a sticky preview its last row was always cut, and no scroll
     // position fixed it. In a sheet of its own it is 778px of fields in a
     // 778px body, so all five rows are in one frame.
     "The Animation block's Edit, on the Carousel only: auto rotate slides, transition style, transition animation speed, show slide arrows and show slide dots, every one of them a Yes and No pair."],
-  ["widgets-32-design-transition-slide", "widgets", async (p) => {
+  ["showcase-32-design-transition-slide", "showcase", async (p) => {
     await designSheet(p, "carousel", "animation");
     await press(p, '[data-hook="design-auto-rotate-yes-label"]');
     await wait(500);
@@ -1195,7 +1200,7 @@ const STATES = [
     // the screen refuses to start auto rotate under it, so nothing is caught
     // mid-slide.
     "Auto rotate slides answered Yes and the transition set to Slide. Edits are live, so Done only dismisses, and the Preset block behind stays on Modern: the carousel settings are not a preset's business, so changing them does not make the look Custom."],
-  ["widgets-33-leave-dialog", "widgets", async (p) => {
+  ["showcase-33-leave-dialog", "showcase", async (p) => {
     await designSheet(p, "carousel", "preset");
     await press(p, '[data-hook="design-preset-bootstrap-label"]');
     await wait(700);
@@ -1214,7 +1219,7 @@ const STATES = [
   // the numbering above stops at 33. The rail it was named for is gone, so if
   // a mobile pass ever comes back this drives the Select reviews page at 390
   // instead, where the table becomes a labelled scroll region as it should.
-  ["widgets-37-settings-narrow", "widgets", async (p) => { await showcaseReviews(p, "carousel"); },
+  ["showcase-37-settings-narrow", "showcase", async (p) => { await showcaseReviews(p, "carousel"); },
     `!!document.querySelector('[data-hook="select-reviews-table"]')`,
     "Select reviews at 390 wide: the filters wrap and the table becomes a scroll region of its own, the page itself never scrolling sideways.",
     { width: 390 }],
@@ -1864,7 +1869,7 @@ const APP_OVERRIDES = {
      && !document.querySelector('[data-hook="directory-google-matched"]')`,
     note: "Monitored directories for the location's own country (the card's line under the title), with no country dropdown and no Matched badges: the directory API sends a name and a URL, not a status. Read only on Yelp, and Connect or Add URL where a row needs one.",
   },
-  "widgets-37-settings-narrow": { skip: "desktop only for now (Ali, 20 Sep, in session); this state is the 390 wide rail" },
+  "showcase-37-settings-narrow": { skip: "desktop only for now (Ali, 20 Sep, in session); this state is the 390 wide rail" },
   "getreviews-64-template-narrow": { skip: "desktop only for now (Ali, 20 Sep, in session); this state is the 390 wide rail" },
   "settings-03-directories-uk": { skip: "the country dropdown is gone; the list is the location's country" },
   "settings-06-sharing": {
@@ -2061,7 +2066,7 @@ for (const [name, screen, drive, expect, , opts] of wanted) {
       let ok = false;
       // 24 rather than 12 (28 Aug): the FIRST state of a run pays for the
       // dev server compiling the /e/ route, and 7s settle + 6s of polling
-      // was not always enough for it. widgets-01-list failed on a cold
+      // was not always enough for it. showcase-01-list failed on a cold
       // browser and passed on a warm one, which is a flaky suite, not a
       // broken screen. 12 seconds of polling costs nothing on the states
       // that were already fine, because the loop exits on first success.

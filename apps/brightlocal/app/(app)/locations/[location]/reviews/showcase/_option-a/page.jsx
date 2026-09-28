@@ -2263,10 +2263,9 @@ function SelectReviews({ widget, setWidget, issue = null }) {
               <CardTitle size="small" dataHook="select-reviews-title">
                 Select reviews
               </CardTitle>
-              <CardDescription>
-                Select the reviews you would like to showcase in your {TYPE_WORD[widget.format]}{" "}
-                widget.
-              </CardDescription>
+              {/* NO DESCRIPTION (Ali, 28 Sep: "we dont need this extra
+                  description it is self explanatory"). The title and the
+                  filters under it say what the card is for. */}
             </CardHeader>
 
             {/* RATING, DATE, SOURCES, in Ali's own order, with Feedback Score
