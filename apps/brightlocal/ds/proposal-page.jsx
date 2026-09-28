@@ -50,9 +50,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-  TypographyH2,
-  TypographyH3,
-  TypographyMuted,
+  TypographyHeading,
+  TypographyText,
 } from "@brightlocal/ui-components";
 import {
   ArrowLeft,
@@ -267,23 +266,20 @@ export function DrillArrow({ variant = "solid", dataHook = "drill-arrow", classN
 export function CardTitleLink({ children, dataHook, className = "", ...rest }) {
   return (
     <CardTitle
-      size="small"
       dataHook={dataHook}
       data-bl-link=""
       {...rest}
-      // text-xl MEDIUM since 3 Sep (Ali: "drop the weight of these to match
-      // the standard card headers"). It was semibold (Ali, 23 Jul), which
-      // put these titles a full weight above every other card title in the
-      // tool: the widget cards, the campaign cards and the Insights cards
-      // are all `CardTitle size="small"` at font-medium, and the DS itself
-      // ships font-medium at BOTH its sizes. Semibold was ours alone.
-      //
-      // The SIZE stays text-xl. That distinction is doing real work — these
-      // are module cards on a landing page, one step under the page heading
-      // and one over body — and it is the weight, not the scale, that was
-      // making them shout. Overrides ride tailwind-merge past the size
-      // variant; pass className to override per-instance.
-      className={["text-xl font-medium", className].filter(Boolean).join(" ")}
+      // THE SECTION HEADING, WHICH IS NOW THE DS DEFAULT (3.0.0, DS-714).
+      // These are module cards on a landing page, one step under the page
+      // heading and one over body, so they take CardTitle's default size:
+      // text-heading-section, Inter 20/28 at the semibold step. That is what
+      // they already rendered under the fixed engine, where app/custom.css
+      // used to map "text-xl font-medium" onto the type roles (Ali, 17 Sep:
+      // card titles are Inter, semibold). The raw size and weight came off
+      // with the upgrade: tailwind-merge now knows the scale, so text-xl would
+      // REPLACE the role rather than sit beside it. Pass className to
+      // override per instance, and prefer a role to a raw size.
+      className={className || undefined}
     >
       {children}
     </CardTitle>
@@ -532,10 +528,12 @@ function ModifiedPageHeader({
     // than leaving a variable that reads as tunable and silently does
     // nothing.
     //
-    // The title default is text-3xl, NOT the DS's TypographyH2 (which is
-    // text-3xl mobile / text-4xl from md up). 36px was oversized for a
-    // dense working page, so the header holds one size below the DS
-    // heading at every width; the element stays an h2.
+    // The title default is text-3xl, NOT the DS's old TypographyH2 (which
+    // was text-3xl mobile, text-4xl from md up). 36px was oversized for a
+    // dense working page, so the header held one size below it at every
+    // width. It is TypographyHeading now (3.0.0 deprecates TypographyH2,
+    // DS-714), on the page role for the Poppins face, with the size still
+    // coming from the variables below; the element stays an h2.
     <div
       {...rest}
       // Persistent region across goto swaps — see the sidebar's
@@ -675,14 +673,14 @@ function ModifiedPageHeader({
           .filter(Boolean)
           .join(" ")}
       >
-        <TypographyH2
+        <TypographyHeading
+          level={2}
+          variant="page"
           dataHook={`${dataHook}-title`}
-          // pb-0: the DS heading carries pb-2, which would stack on top
-          // of the row gap and put the seam out of one place's control.
-          className="min-w-0 pb-0"
+          className="min-w-0"
           // Two-level var, and the reason is the interaction between them:
-          // an inline style cannot carry a media query, and a CLASS cannot
-          // beat the DS's own text-3xl md:text-4xl on TypographyH2 (equal
+          // an inline style cannot carry a media query, and a CLASS could not
+          // beat the old TypographyH2's own text-3xl md:text-4xl (equal
           // specificity, so stylesheet order decides and md: lands last).
           // So the inline style stays, and its DEFAULT is a variable the
           // root sets per breakpoint. A screen setting
@@ -697,7 +695,7 @@ function ModifiedPageHeader({
           }}
         >
           {title}
-        </TypographyH2>
+        </TypographyHeading>
         {actions || (!hasTrail && hasUtility) ? (
           <div className={`${clusterClass} sm:ml-auto`}>
             {/* Collapsed utility LEADS the actions on title-only pages. */}
@@ -1064,9 +1062,13 @@ export function StatCard({
             putting an (i) on every tile: an info icon on all five would make
             them align by making the icon meaningless. */}
         <div className="flex min-h-7 items-center justify-between gap-2">
-          <TypographyMuted className="text-xs font-medium">
+          <TypographyText
+            variant="body-xs"
+            color="muted"
+            dataHook={dataHook ? `${dataHook}-label` : undefined}
+          >
             {label}
-          </TypographyMuted>
+          </TypographyText>
           {info ? (
             <TooltipProvider>
               <Tooltip>
@@ -1151,7 +1153,13 @@ export function HubHeroCard({
         <div className="flex items-center gap-8">
           {/* Copy column */}
           <div className="flex min-w-0 flex-1 flex-col items-start gap-3 py-4">
-            <TypographyH3>{title}</TypographyH3>
+            <TypographyHeading
+              level={3}
+              variant="section"
+              dataHook={dataHook ? `${dataHook}-title` : undefined}
+            >
+              {title}
+            </TypographyHeading>
             <p className="text-muted-foreground max-w-prose text-sm">
               {description}
             </p>
@@ -1306,12 +1314,23 @@ export function LocationCard({
             24 Jul): the photo sits at the card padding, the words sit
             a step further in. */}
         <div className="flex flex-col gap-3 px-2 pb-2">
-          <TypographyH3
+          {/* A CARD TITLE, SO THE SECTION ROLE (28 Sep, the 3.0.0 upgrade).
+              This was TypographyH3 with text-xl, which its own md:text-3xl
+              outranked from 768px up: Poppins at 30px, the one card title
+              in the tool still on the display face after the 17 Sep type
+              rules moved card titles to Inter. 3.0.0 deprecates
+              TypographyH3 (DS-714), and the scale's card title is
+              text-heading-section, Inter 20/28. ASSUMPTION: that the
+              location cards follow the other card titles; for the old look
+              the nearest role is variant="page" (Poppins 24/32), which the
+              DS keeps to one per screen. */}
+          <TypographyHeading
+            level={3}
+            variant="section"
             dataHook={`${dataHook}-name`}
-            className="text-xl leading-snug"
           >
             {vName}
-          </TypographyH3>
+          </TypographyHeading>
           <div className="flex flex-col gap-2 text-sm text-[var(--ds-tailwind-colors-neutral-600)]">
             {vCity ? (
               <span className="flex items-center gap-2.5">
@@ -1726,13 +1745,13 @@ function NativePageHeader({
         </Breadcrumb>
       ) : null}
       {/* The DS header slots its children but styles none of them: a bare
-          string renders at body size. The Figma page header's title style
-          is typography/text-heading-page (Poppins 24/32 semibold, "exactly
-          one per screen"), whose note says code ships it as the utility
-          text-heading-page. The tokens package (0.12.0) does not have it
-          yet, so app/custom.css defines it to that spec; delete the local
-          copy when the tokens ship theirs. */}
-      <h1 className="text-heading-page text-foreground" data-hook={`${dataHook}-title`}>{title}</h1>
+          string renders at body size. Its docs (3.0.0) name the title:
+          TypographyHeading level 1 on the page role, text-heading-page,
+          Poppins 24/32 semibold and exactly one per screen, which tokens
+          1.0.0 now ships (DS-714). */}
+      <TypographyHeading level={1} variant="page" dataHook={`${dataHook}-title`}>
+        {title}
+      </TypographyHeading>
       {description ? (
         <GlobalLayoutSubtitle dataHook={`${dataHook}-description`}>{description}</GlobalLayoutSubtitle>
       ) : null}

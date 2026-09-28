@@ -53,7 +53,7 @@ export default function SettingsPage() {
         <h2 className="text-heading-section">Layout engine</h2>
         <p className="text-muted-foreground text-sm">
           De facto is the design system's GlobalLayout, sidebar and page header exactly as shipped
-          in 2.27.0, nothing overridden. De facto plus proposed fixes is the same layout with the
+          in 3.0.0, nothing overridden. De facto plus proposed fixes is the same layout with the
           token changes on the proposed-changes page applied (white bordered cards, the content
           width cap, the sidebar width). Modified is the proposal shell built on top of the DS:
           padding cancelled, sidebar tones, the sticky band and the tweaker. Every screen renders

@@ -1949,7 +1949,7 @@ function UnavailableChip({ id }) {
 // A YELP ROW IS KNOCKED BACK CELL BY CELL, NOT ROW BY ROW. DataTable's own
 // getRowClassName says it in one line and DOES NOTHING IN STUDIO: the sandbox
 // loads @brightlocal/ui-components@2.25.0 from esm.sh (the pin in the
-// registry, `version: "2.25.0"`) while the app runs 2.27.0, and 2.25.0's
+// registry, `version: "2.25.0"`) while the app runs 3.0.0, and 2.25.0's
 // DataTable has no such prop, so not one row carried the class there. Worth
 // knowing well past this one line: ANY prop the DS shipped after 2.25.0 works
 // in the app and is silently dropped in Studio, which is where this screen is

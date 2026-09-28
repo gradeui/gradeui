@@ -2,7 +2,8 @@
  * Proposed changes to @brightlocal/ui-components and @brightlocal/tokens,
  * lifted from the Studio registry's DS-AUDIT.md ledger (the findings log
  * for the upstream report). Each entry: what is wrong, how we work
- * around it here, and what BrightLocal should change.
+ * around it here, and what BrightLocal should change. `resolved` says
+ * which release fixed it upstream; the entry stays so the history does.
  */
 export interface DsChange {
   id: string;
@@ -10,6 +11,8 @@ export interface DsChange {
   finding: string;
   workaround: string;
   ask: string;
+  /** Set when a published release fixed it: what shipped, and what the app dropped. */
+  resolved?: string;
 }
 
 export const DS_CHANGES: DsChange[] = [
@@ -30,6 +33,8 @@ export const DS_CHANGES: DsChange[] = [
     workaround:
       "app/custom.css repeats the card-title family and weight for the four title slots with unscoped selectors, so the portal gets them too. Size still comes from the call site's own class.",
     ask: "Give the overlay titles the same type role as CardTitle, or scope the DS typography to a token the portal inherits (a class on the portal container, or CSS variables set on :root rather than the shell).",
+    resolved:
+      "ui-components 3.0.0 puts DialogTitle, SheetTitle, DrawerTitle and AlertDialogTitle on text-heading-section (Inter 20/28, semibold) in the component itself, so a title no longer depends on anything it would inherit from the shell. The unscoped rules in app/custom.css are gone.",
   },
   {
     id: "togglegroupitem-selected-state",
@@ -48,6 +53,8 @@ export const DS_CHANGES: DsChange[] = [
     workaround:
       "app/custom.css gives a title carrying text-heading-section or text-heading-subsection that role's size and line height, keyed on the title's data-slot. A title with no role keeps the DS size.",
     ask: "Register the text-heading-* utilities with the tailwind-merge config the components use, so a role class replaces the default size, or give the titles a size prop mapped to the roles.",
+    resolved:
+      "ui-components 3.0.0 registers the whole type scale with the tailwind-merge config in lib/utils (DS-714), and the titles now ship on text-heading-section, so a role class passed to a title replaces the default instead of losing to it on source order. The size rules in app/custom.css are gone.",
   },
   {
     id: "cardtitle-type-roles",
@@ -57,6 +64,8 @@ export const DS_CHANGES: DsChange[] = [
     workaround:
       "app/custom.css maps [data-slot=card-title] to Inter at the semibold ramp step, and keys the size off the variant's own class, text-2xl to 20/28 and text-base to 16/24, so a call site that sets its own size on purpose keeps it. The de facto engine is left as shipped.",
     ask: "Give CardTitle font-sans and font-semibold, with default at the section heading (20/28) and small at the subsection heading (16/24), or expose the text-heading-* utilities so it can use them.",
+    resolved:
+      "ui-components 3.0.0 ships this as asked: CardTitle defaults to text-heading-section and size small to text-heading-subsection, and a new level prop puts it in the document outline. The app/custom.css mapping is gone.",
   },
   {
     id: "togglegroupitem-datahook",
@@ -70,7 +79,7 @@ export const DS_CHANGES: DsChange[] = [
   {
     id: "sidebar-width",
     title: "Sidebar width is not overridable",
-    finding: "SidebarProvider sets --sidebar-width inline (224px when this was logged against 2.20.0; 2.27.0 ships 288px) and the live platform hardcodes the container width, so neither :root variables nor classes reach it. The proposal settled on 280px.",
+    finding: "SidebarProvider sets --sidebar-width inline (224px when this was logged against 2.20.0; 2.27.0 and 3.0.0 ship 288px) and the live platform hardcodes the container width, so neither :root variables nor classes reach it. The proposal settled on 280px.",
     workaround: "A stylesheet rule at [data-slot=sidebar-provider] re-declares the variable with !important (app/custom.css), under the fixed and modified engines only.",
     ask: "Accept a width prop or read a :root token.",
   },
@@ -154,7 +163,7 @@ export const DS_CHANGES: DsChange[] = [
   {
     id: "font-weight-ramp",
     title: "The font-weight ramp is shifted one step down",
-    finding: "The theme sets normal to 300, medium to 400, semibold to 500 and bold to 600, so DS defaults like CardDescription's font-normal paint at 300, visibly thin in Inter at small sizes.",
+    finding: "The theme sets normal to 300, medium to 400, semibold to 500 and bold to 600, so a DS font-normal paints at 300, visibly thin in Inter at small sizes (CardDescription carried one until 3.0.0 moved it to text-body-sm, which renders 400). Tokens 1.0.0 documents the offset as deliberate (DS-305: browsers render Inter and Poppins heavier than Figma, so a Figma weight is authored one CSS step lighter), which makes this a decision to argue with rather than a bug.",
     workaround: "Studio re-pointed the ramp to the standard scale for every proposal screen. This app runs the package's own ramp, so weights here are the DS's, and the difference is worth looking at side by side.",
     ask: "Ship the standard ramp: normal 400 through bold 700.",
   },
@@ -192,6 +201,8 @@ export const DS_CHANGES: DsChange[] = [
     finding: "The DS Figma file defines fourteen typography/* text styles (text-display, text-heading-page, text-heading-section, text-heading-subsection, text-body and its sm, xs and tabular forms, text-label, text-label-sm, text-metric, text-code), each annotated with the code utility it ships as. @brightlocal/tokens 0.12.0 ships none of them, and GlobalLayoutContentHeader styles none of its children, so a page title has no DS-sanctioned class.",
     workaround: "app/custom.css defines all fourteen to the Figma spec, weights bound to the DS ramp variables; the de facto page header uses text-heading-page on an h1.",
     ask: "Ship the fourteen utilities in the tokens preset, and have GlobalLayoutContentHeader apply text-heading-page to a title slot.",
+    resolved:
+      "@brightlocal/tokens 1.0.0 ships the scale as @utility rules composed from the --ds-* primitives (DS-714): display, the four heading roles, body, body-sm, body-xs, label, label-sm, metric and code, plus text-code-inline and text-emphasis, and ui-components 3.0.0 adds TypographyHeading and TypographyText on top. The three tabular forms are left out on purpose: figures are an opt-in tabular-nums (DS-926), which also makes text-metric proportional. GlobalLayoutContentHeader still styles none of its children, but its docs now name TypographyHeading level 1, variant page, as the title, which is what the de facto header renders. The local copies in app/custom.css are gone.",
   },
   {
     id: "section-heading-face",

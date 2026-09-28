@@ -11,7 +11,7 @@ export default function DocsIndex() {
         </h1>
         <p className="text-muted-foreground max-w-prose">
           Everything on these screens is built from the published BrightLocal design system
-          (@brightlocal/ui-components 2.27.0, tokens 0.12.0). Where the package did not have what
+          (@brightlocal/ui-components 3.0.0, tokens 1.0.0). Where the package did not have what
           a screen needed, the prototype adds a component or works around a limitation. Both are
           logged here so they can be reviewed and, where agreed, moved upstream.
         </p>
@@ -23,7 +23,10 @@ export default function DocsIndex() {
         </Link>
         <Link href="/docs/changes" className="bg-card hover:bg-accent flex flex-col gap-1 rounded-lg border p-5 transition-colors">
           <span className="font-medium">Proposed changes to the DS</span>
-          <span className="text-muted-foreground text-sm">{DS_CHANGES.length} findings with the upstream ask</span>
+          <span className="text-muted-foreground text-sm">
+            {DS_CHANGES.filter((c) => !c.resolved).length} open findings with the upstream ask,{" "}
+            {DS_CHANGES.filter((c) => c.resolved).length} resolved upstream
+          </span>
         </Link>
       </div>
       <p className="text-muted-foreground text-sm">

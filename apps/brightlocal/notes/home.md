@@ -1,8 +1,8 @@
 # The prototype
 
 The Reviews area of the replatformed BrightLocal, built on the published
-design system package (`@brightlocal/ui-components` 2.27.0, tokens
-0.12.0). Everything renders from the real components; nothing is a
+design system package (`@brightlocal/ui-components` 3.0.0, tokens
+1.0.0). Everything renders from the real components; nothing is a
 picture.
 
 ## How to drive it

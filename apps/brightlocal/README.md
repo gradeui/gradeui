@@ -31,7 +31,7 @@ option.
 Two ways to render every screen, from the same source:
 
 - **De facto GlobalLayout**: the DS's `GlobalLayout`, `Sidebar` parts
-  and `GlobalLayoutContentHeader` exactly as shipped in 2.27.0. Nothing
+  and `GlobalLayoutContentHeader` exactly as shipped in 3.0.0. Nothing
   overridden, no className on anything. The page header takes
   breadcrumbs, title, description, date and actions; it has no help
   slot yet.

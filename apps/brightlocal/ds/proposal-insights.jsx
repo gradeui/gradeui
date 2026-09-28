@@ -34,8 +34,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-  TypographyH3,
-  TypographyMuted,
+  TypographyHeading,
+  TypographyText,
 } from "@brightlocal/ui-components";
 import {
   ArrowRight,
@@ -622,8 +622,12 @@ export function AreaInsights({
     // (Ali, 23 Jul). "Last updated" lives ONLY in the PageHeader (Ali,
     // 20 Jul).
     <div className="space-y-1" data-hook={dataHook}>
-      <TypographyH3>{title}</TypographyH3>
-      <TypographyMuted>{intro}</TypographyMuted>
+      <TypographyHeading level={3} variant="section" dataHook={dataHook ? `${dataHook}-title` : undefined}>
+        {title}
+      </TypographyHeading>
+      <TypographyText variant="body-sm" color="muted" dataHook={dataHook ? `${dataHook}-intro` : undefined}>
+        {intro}
+      </TypographyText>
       <Card className="mt-4 w-full max-w-none" density="default">
         <CardContent>
           {areaItems.length > 0 ? (

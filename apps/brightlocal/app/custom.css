@@ -130,158 +130,19 @@
   --ds-font-weight-black: 900;
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   TYPOGRAPHY UTILITIES, from Figma (Ali, 8 Sep: "add all those tokens").
-   The DS Figma file carries fourteen typography/* text styles, each with
-   a note naming the code utility it should ship as. @brightlocal/tokens
-   0.12.0 ships none of them, so they are defined here to the Figma spec
-   and used from here on. Weights bind to the DS ramp variables, so a
-   "semibold" style renders 500 on the DS ramp (their note: "renders 500
-   on web") and 600 under the modified engine's standard ramp.
-   Delete each one when the tokens ship it. Ledger: /docs/changes.
-   ════════════════════════════════════════════════════════════════════ */
-/* Brand moments only. Figma typography/text-display: 36/40, semibold. */
-@utility text-display {
-  font-family: var(--font-display);
-  font-size: 2.25rem;
-  line-height: 2.5rem;
-  font-weight: var(--ds-font-weight-semibold, 600);
-}
-/* Page title, exactly one per screen. Figma typography/text-heading-page: 24/32, semibold. */
-@utility text-heading-page {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  line-height: 2rem;
-  font-weight: var(--ds-font-weight-semibold, 600);
-}
-/* Card, dialog and sheet titles. Figma typography/text-heading-section: 20/28, semibold. */
-@utility text-heading-section {
-  font-family: var(--font-sans);
-  font-size: 1.25rem;
-  line-height: 1.75rem;
-  font-weight: var(--ds-font-weight-semibold, 600);
-}
-/* Sections inside a card, alert titles; the smallest heading. Figma typography/text-heading-subsection: 16/24, semibold. */
-@utility text-heading-subsection {
-  font-family: var(--font-sans);
-  font-size: 1rem;
-  line-height: 1.5rem;
-  font-weight: var(--ds-font-weight-semibold, 600);
-}
-/* A heading INSIDE a card, where a subsection heading would be too loud.
-   Figma typography/text-heading-compact: Inter 14/20, semibold, which renders
-   500 on web (Ali, 17 Sep, the Figma type rules: "use inside cards where
-   needed"). It was the one heading role the app never defined. */
-@utility text-heading-compact {
-  font-family: var(--font-sans);
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  font-weight: var(--ds-font-weight-semibold, 600);
-}
-/* The default text. Figma typography/text-body: 16/24, medium. */
-@utility text-body {
-  font-family: var(--font-sans);
-  font-size: 1rem;
-  line-height: 1.5rem;
-  font-weight: var(--ds-font-weight-medium, 500);
-}
-/* Body text with tabular figures. Figma typography/text-body-tabular: 16/24, medium. */
-@utility text-body-tabular {
-  font-family: var(--font-sans);
-  font-size: 1rem;
-  line-height: 1.5rem;
-  font-weight: var(--ds-font-weight-medium, 500);
-  font-variant-numeric: tabular-nums;
-}
-/* Table cells, dense lists, chrome. Figma typography/text-body-sm: 14/20, medium. */
-@utility text-body-sm {
-  font-family: var(--font-sans);
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  font-weight: var(--ds-font-weight-medium, 500);
-}
-/* Small body text with tabular figures. Figma typography/text-body-sm-tabular: 14/20, medium. */
-@utility text-body-sm-tabular {
-  font-family: var(--font-sans);
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  font-weight: var(--ds-font-weight-medium, 500);
-  font-variant-numeric: tabular-nums;
-}
-/* Helper text, captions; the floor. Figma typography/text-body-xs: 12/16, medium. */
-@utility text-body-xs {
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
-  line-height: 1rem;
-  font-weight: var(--ds-font-weight-medium, 500);
-}
-/* Extra-small body text with tabular figures. Figma typography/text-body-xs-tabular: 12/16, medium. */
-@utility text-body-xs-tabular {
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
-  line-height: 1rem;
-  font-weight: var(--ds-font-weight-medium, 500);
-  font-variant-numeric: tabular-nums;
-}
-/* Form labels, tabs, buttons, nav. Figma typography/text-label: 14/20, medium. */
-@utility text-label {
-  font-family: var(--font-sans);
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  font-weight: var(--ds-font-weight-medium, 500);
-}
-/* Badges, chips, group labels. Figma typography/text-label-sm: 12/16, medium. */
-@utility text-label-sm {
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
-  line-height: 1rem;
-  font-weight: var(--ds-font-weight-medium, 500);
-}
-/* Large numbers only: KPIs, card scores. Figma typography/text-metric: 24/28, semibold. */
-@utility text-metric {
-  font-family: var(--font-sans);
-  font-size: 1.5rem;
-  line-height: 1.75rem;
-  font-weight: var(--ds-font-weight-semibold, 600);
-  font-variant-numeric: tabular-nums;
-}
-/* IDs, keys. Figma typography/text-code: 16/24, normal. */
-@utility text-code {
-  font-family: var(--font-mono);
-  font-size: 1rem;
-  line-height: 1.5rem;
-  font-weight: var(--ds-font-weight-normal, 400);
-}
-
-/* THE FIGMA TYPE RULES, APPLIED (Ali, 17 Sep). Only display and page
-   headings take Poppins. Section, subsection and compact headings are
-   Inter. This replaces the 9 Sep proposal that put section headings and
-   card titles in Poppins, which the Figma rules do not do.
-
-   CARD TITLES FOLLOW THE HEADING ROLES. The DS CardTitle ships
-   `font-display font-medium`, with `text-2xl` by default and `text-base` at
-   size small: Poppins at the PAGE heading's size, one weight step light. The
-   rules say a large card takes the section heading and a data card the
-   subsection heading, both Inter and both semibold (500 on web). The size
-   selectors key off the class CardTitle's own variant adds, so a call site
-   that sets its own text size on purpose keeps it. The de facto engine keeps
-   the DS as shipped, so the difference stays visible.
-   Ledger: /docs/changes, "CardTitle does not follow the type roles". */
-[data-gds-layout-engine="native-fixed"] [data-slot="card-title"],
-[data-gds-layout-engine="modified"] [data-slot="card-title"] {
-  font-family: var(--font-sans);
-  font-weight: var(--ds-font-weight-semibold, 600);
-}
-[data-gds-layout-engine="native-fixed"] [data-slot="card-title"].text-2xl,
-[data-gds-layout-engine="modified"] [data-slot="card-title"].text-2xl {
-  font-size: 1.25rem;
-  line-height: 1.75rem;
-}
-[data-gds-layout-engine="native-fixed"] [data-slot="card-title"].text-base,
-[data-gds-layout-engine="modified"] [data-slot="card-title"].text-base {
-  font-size: 1rem;
-  line-height: 1.5rem;
-}
+/* TYPE SCALE: FROM THE PACKAGE SINCE 3.0.0 (28 Sep). This is where the
+   fourteen Figma typography utilities used to be defined, because tokens
+   0.12.0 shipped none of them, followed by the rules that put CardTitle on
+   the heading roles. @brightlocal/tokens 1.0.0 ships the scale itself
+   (DS-714: display, the four heading roles, body, body-sm, body-xs, label,
+   label-sm, metric, code, text-code-inline and text-emphasis), and
+   ui-components 3.0.0 puts CardTitle, the overlay titles and the controls
+   on it, with tailwind-merge taught the names. So the local copies and the
+   card title rules are gone, along with the two overlay title rules further
+   down. The three tabular forms were never used here and the DS leaves them
+   out on purpose: figures are an opt-in tabular-nums (DS-926), which also
+   makes text-metric proportional now. Ledger: /docs/changes, the entries
+   marked resolved in 3.0.0. */
 
 /* LIGHT-DARK() NEEDS A DECLARED COLOR-SCHEME. The build (lightningcss) rewrites
    every light-dark(a, b) into var(--lightningcss-light, a) var(--lightningcss-dark, b)
@@ -318,34 +179,6 @@
   color: var(--muted-foreground);
 }
 
-/* A HEADING ROLE ON A DS TITLE WINS. DialogTitle, SheetTitle, DrawerTitle
-   and AlertDialogTitle ship `text-lg leading-none`, and cn() cannot tell the
-   text-heading-* utilities are font sizes, so both classes land and the DS
-   size wins on source order: an insight dialog asked for the section heading
-   and measured 18/18. Opt-in only, so a title with no role keeps the DS size.
-   Not engine-scoped, because a dialog portals out of the engine element.
-   Ledger: /docs/changes, "Title components drop the heading roles". */
-:is([data-slot="dialog-title"], [data-slot="sheet-title"], [data-slot="drawer-title"], [data-slot="alert-dialog-title"]).text-heading-section {
-  font-size: 1.25rem;
-  line-height: 1.75rem;
-}
-:is([data-slot="dialog-title"], [data-slot="sheet-title"], [data-slot="drawer-title"], [data-slot="alert-dialog-title"]).text-heading-subsection {
-  font-size: 1rem;
-  line-height: 1.5rem;
-}
-
-/* THE SAME TYPE ROLE AS A CARD TITLE, IN A PORTAL (Ali, 20 Sep: the drawer
-   title is "the wrong font"). A dialog, sheet or drawer renders at the end of
-   <body>, OUTSIDE the [data-gds-layout-engine] element, so the card-title rule
-   above never reaches it: the title kept the DS default, Poppins at 400, while
-   every card title on the page behind it was Inter at 600. These selectors are
-   unscoped for that reason. Size still comes from the call site's own class.
-   Ledger: /docs/changes, "CardTitle does not follow the type roles". */
-:is([data-slot="dialog-title"], [data-slot="sheet-title"], [data-slot="drawer-title"], [data-slot="alert-dialog-title"]) {
-  font-family: var(--font-sans);
-  font-weight: var(--ds-font-weight-semibold, 600);
-}
-
 /* An unfilled star has to show the scale (20 Sep screenshot sweep). Rating
    paints its base star fill-muted stroke-muted, and --muted is neutral-100,
    which measures 1.08:1 on white. The remainder is not there: the two-star
@@ -370,14 +203,6 @@
 .dark:has([data-gds-layout-engine="modified"]) [data-slot="rating-star-base"] {
   fill: var(--ds-tailwind-colors-neutral-800);
   stroke: var(--ds-tailwind-colors-neutral-600);
-}
-
-/* Inline code inside a sentence: 0.9em of the surrounding text (Figma:
-   "text-code-inline"). */
-@utility text-code-inline {
-  font-family: var(--font-mono);
-  font-size: 0.9em;
-  font-weight: var(--ds-font-weight-normal, 400);
 }
 
 /* Beacon modal: the DS DialogContent paints its own corner X; the modal

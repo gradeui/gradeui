@@ -105,7 +105,7 @@ import {
 import { Card, CardTitle } from "@brightlocal/ui-components/card";
 import { Tabs, TabsList, TabsTrigger } from "@brightlocal/ui-components/tabs";
 import { Separator } from "@brightlocal/ui-components/separator";
-import { TypographySmall } from "@brightlocal/ui-components/typography";
+import { TypographyText } from "@brightlocal/ui-components/typography-text";
 import { Badge } from "@brightlocal/ui-components/badge";
 import { Button } from "@brightlocal/ui-components/button";
 import { Rating } from "@brightlocal/ui-components/rating";
@@ -1302,18 +1302,19 @@ function FilterDrawer({
   // (Ali, 19 Aug: "the Command group title is maybe a bit small and also
   // clashes with… essentially Children of Rating and Source").
   //
-  // TypographySmall is text-sm font-medium in FOREGROUND against the group
-  // heading's text-xs font-medium in MUTED: one step in size and one in
-  // colour, which is enough to read as a parent without shouting.
-  // TypographyH4 was the other candidate and is 18px rising to 24px — a page
-  // heading, not a section label in a sheet. asChild so the DS supplies the
-  // type and the markup is still an h3.
+  // TypographyText at body-sm is 14/20 in FOREGROUND against the group
+  // heading's 12/16 in MUTED: one step in size and one in colour, which is
+  // enough to read as a parent without shouting. It was TypographySmall, the
+  // same 14/20, until 3.0.0 deprecated it for this (DS-714). TypographyH4 was
+  // the other candidate and is 18px rising to 24px, a page heading, not a
+  // section label in a sheet. asChild so the DS supplies the type and the
+  // markup is still an h3.
   const SectionTitle = ({ children }) => (
-    <TypographySmall asChild>
+    <TypographyText asChild variant="body-sm" dataHook="filter-section-title">
       {/* px-3 lines the title up with the item labels: CommandGroup's p-1
           plus CommandItem's px-2. */}
       <h3 className="px-3 pt-1 pb-0.5">{children}</h3>
-    </TypographySmall>
+    </TypographyText>
   );
 
   return (

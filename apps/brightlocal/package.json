@@ -13,8 +13,8 @@
   "dependencies": {
     "@brightlocal/icons": "2.4.0",
     "@brightlocal/illustrations": "0.6.0",
-    "@brightlocal/tokens": "0.12.0",
-    "@brightlocal/ui-components": "2.27.0",
+    "@brightlocal/tokens": "1.0.0",
+    "@brightlocal/ui-components": "3.0.0",
     "@vercel/toolbar": "^0.1.38",
     "@vis.gl/react-google-maps": "^1.5.2",
     "next": "^16.1.1",

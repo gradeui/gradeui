@@ -40,9 +40,6 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-  TypographyH2,
-  TypographyH3,
-  TypographyMuted,
 } from "@brightlocal/ui-components";
 import {
   BarChart3,
@@ -1103,7 +1100,7 @@ function ModifiedAppLayoutShell({
     compact: {},
     // "native" (8 Sep, Ali: "use their exact navigation sidebar"): the DS's
     // own SidebarMenuButton sizing, icons and padding. The nav rhythm rules
-    // below are skipped entirely, so what renders is 2.27.0 as shipped.
+    // below are skipped entirely, so what renders is 3.0.0 as shipped.
     native: {},
     comfortable: {
       "--gds-nav-row-py": "8px",
@@ -1577,7 +1574,7 @@ function ModifiedAppLayoutShell({
 //   "native"    the DS's GlobalLayout as shipped, nothing overridden:
 //               sidebar in GlobalLayoutSidebar, the page header and body
 //               straight into GlobalLayoutContent. Screens pass the same
-//               props; look knobs are ignored. What you see is 2.27.0.
+//               props; look knobs are ignored. What you see is 3.0.0.
 // A screen never chooses: it renders <AppLayoutShell> and the setting
 // decides, so the two can be compared on any page from the same source.
 // Three values: "native" (the DS as shipped, nothing overridden),

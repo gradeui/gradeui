@@ -1,6 +1,7 @@
 import { DS_CHANGES } from "@/lib/ds-changes";
 
 export default function ChangesPage() {
+  const resolved = DS_CHANGES.filter((c) => c.resolved).length;
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
@@ -8,9 +9,10 @@ export default function ChangesPage() {
           Proposed changes to the design system
         </h1>
         <p className="text-muted-foreground max-w-prose">
-          Findings from building on @brightlocal/ui-components 2.27.0 and @brightlocal/tokens
-          0.12.0. Each one says what we hit, what the prototype does about it, and what we would
-          ask the package to change.
+          Findings from building on @brightlocal/ui-components and @brightlocal/tokens, logged
+          against 2.27.0 and 0.12.0 and rechecked on 3.0.0 and 1.0.0. Each one says what we hit,
+          what the prototype does about it, and what we would ask the package to change.
+          {resolved ? ` ${resolved} of them are fixed in the current release and marked resolved.` : null}
         </p>
       </header>
       <ol className="flex flex-col gap-4">
@@ -19,6 +21,9 @@ export default function ChangesPage() {
             <h2 className="text-lg font-medium">
               <span className="text-muted-foreground mr-2 tabular-nums">{i + 1}.</span>
               {c.title}
+              {c.resolved ? (
+                <span className="text-muted-foreground ml-2 text-sm font-normal">Resolved upstream</span>
+              ) : null}
             </h2>
             <dl className="grid gap-3 text-sm sm:grid-cols-[8rem_1fr]">
               <dt className="text-muted-foreground">Finding</dt>
@@ -27,6 +32,12 @@ export default function ChangesPage() {
               <dd>{c.workaround}</dd>
               <dt className="text-muted-foreground">Upstream ask</dt>
               <dd className="font-medium">{c.ask}</dd>
+              {c.resolved ? (
+                <>
+                  <dt className="text-muted-foreground">Resolved</dt>
+                  <dd>{c.resolved}</dd>
+                </>
+              ) : null}
             </dl>
           </li>
         ))}
