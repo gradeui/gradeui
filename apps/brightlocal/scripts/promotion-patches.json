@@ -939,6 +939,11 @@
       "why": "One stand-in logo on every customer page (Ali, 28 Sep: \"For some reason we have different logos here\"). ContactPreview drew its own, a plain dot in a pale square, outside brandSurface, so it came out BrightLocal green while Public review and the other pages wore the campaign's accent. Both render CustomerLogo now.",
       "find": "        {config.logo ? (\n          <div className=\"flex flex-col items-center gap-2\" data-hook=\"contact-logo\">\n            <div className=\"bg-primary/10 flex size-12 items-center justify-center rounded-md\">\n              <svg viewBox=\"0 0 32 32\" className=\"size-7\" aria-hidden>\n                <circle cx=\"16\" cy=\"16\" r=\"15\" className=\"fill-primary\" />\n              </svg>\n            </div>\n            <p className=\"text-base font-semibold\">{business}</p>\n          </div>\n        ) : null}\n",
       "replace": "        {/* The same logo as every other customer page (28 Sep). It used to be\n            its own square tile with a plain dot, which read as a different\n            business. */}\n        {config.logo ? <CustomerLogo business={business} dataHook=\"contact-logo\" /> : null}\n"
+    },
+    {
+      "why": "No description on the campaign setup card (Ali, 28 Sep: \"This description text is just fluff and not needed\"). The title says what the card is.",
+      "find": "          <CardTitle dataHook=\"setup-card-title\">Campaign details</CardTitle>\n          <CardDescription dataHook=\"setup-card-desc\">What it is called, what it asks, how it is sent and where reviews go</CardDescription>\n",
+      "replace": "          <CardTitle dataHook=\"setup-card-title\">Campaign details</CardTitle>\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [
@@ -2786,6 +2791,11 @@
       "why": "One stand-in logo on every customer page (Ali, 28 Sep: \"For some reason we have different logos here\"). ContactPreview drew its own, a plain dot in a pale square, outside brandSurface, so it came out BrightLocal green while Public review and the other pages wore the campaign's accent. Both render CustomerLogo now.",
       "find": "        {config.logo ? (\n          <div className=\"flex flex-col items-center gap-2\" data-hook=\"contact-logo\">\n            <div className=\"bg-primary/10 flex size-12 items-center justify-center rounded-md\">\n              <svg viewBox=\"0 0 32 32\" className=\"size-7\" aria-hidden>\n                <circle cx=\"16\" cy=\"16\" r=\"15\" className=\"fill-primary\" />\n              </svg>\n            </div>\n            <p className=\"text-base font-semibold\">{business}</p>\n          </div>\n        ) : null}\n",
       "replace": "        {/* The same logo as every other customer page (28 Sep). It used to be\n            its own square tile with a plain dot, which read as a different\n            business. */}\n        {config.logo ? <CustomerLogo business={business} dataHook=\"contact-logo\" /> : null}\n"
+    },
+    {
+      "why": "No description on the campaign setup card (Ali, 28 Sep: \"This description text is just fluff and not needed\"). The title says what the card is.",
+      "find": "          <CardTitle dataHook=\"setup-card-title\">Campaign details</CardTitle>\n          <CardDescription dataHook=\"setup-card-desc\">What it is called, what it asks, how it is sent and where reviews go</CardDescription>\n",
+      "replace": "          <CardTitle dataHook=\"setup-card-title\">Campaign details</CardTitle>\n"
     }
   ],
   "app/(app)/locations/[location]/page.jsx": [

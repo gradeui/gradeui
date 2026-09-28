@@ -3513,7 +3513,6 @@ function CampaignWizard({
       <Card dataHook="setup-card" className="max-w-none">
         <CardHeader>
           <CardTitle dataHook="setup-card-title">Campaign details</CardTitle>
-          <CardDescription dataHook="setup-card-desc">What it is called, what it asks, how it is sent and where reviews go</CardDescription>
         </CardHeader>
         <CardContent>
           <FieldGroup>
