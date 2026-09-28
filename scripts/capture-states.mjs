@@ -1782,18 +1782,6 @@ const STATES = [
     { width: 390 }],
 ];
 
-// --dump-states prints name/section/note as JSON and exits. Anything that
-// needs the catalogue (the Figma board builder, a caption track) reads it
-// from here rather than re-parsing this file, which is how the notes got
-// confused with selector fragments the first time.
-if (process.argv.includes("--dump-states")) {
-  console.log(JSON.stringify(
-    STATES.map(([name, screen, , , note]) => ({ name, section: name.split("-")[0], screen, note: note ?? null })),
-    null, 1,
-  ));
-  process.exit(0);
-}
-
 // ── APP-MODE STATE CHANGES (17 Sep 2026) ─────────────────────────────────
 // The app has moved on from the Studio screens these states were written for.
 // In --app mode a state named here is REPLACED (drive / expect / note / opts),
@@ -1972,15 +1960,13 @@ const APP_EXTRA = [
     "The column headers are the DS sortable headers: Rating sorted, its arrow showing the direction."],
 ];
 
-const browser = await chromium.launch({ headless: true });
-const results = [];
-
+const DUMP = process.argv.includes("--dump-states");
 const ALL_STATES = APP
   ? [
       ...STATES.flatMap((st) => {
           const o = APP_OVERRIDES[st[0]];
           if (!o) return [st];
-          if (o.skip) { console.log(`  - ${st[0]} skipped in --app: ${o.skip}`); return []; }
+          if (o.skip) { (DUMP ? console.error : console.log)(`  - ${st[0]} skipped in --app: ${o.skip}`); return []; }
           return [[st[0], st[1], o.drive ?? st[2], o.expect ?? st[3], o.note ?? st[4], o.opts ?? st[5]]];
         }),
       ...APP_EXTRA,
@@ -1991,6 +1977,24 @@ const wanted = ALL_STATES.filter(([name]) => {
   if (SECTIONS.length && !SECTIONS.some((sec) => name.startsWith(sec))) return false;
   return true;
 });
+
+// --dump-states prints name/section/note as JSON and exits. Anything that
+// needs the catalogue (the Figma board builder, a caption track) reads it
+// from here rather than re-parsing this file, which is how the notes got
+// confused with selector fragments the first time. It dumps what a real run
+// would shoot, so it honours --app, --only and --section: on 28 Sep it ran
+// ahead of the app overrides, and a capture run planned from it missed all
+// thirteen app-only states and checked six frames against Studio notes.
+if (DUMP) {
+  console.log(JSON.stringify(
+    wanted.map(([name, screen, , , note]) => ({ name, section: name.split("-")[0], screen, note: note ?? null })),
+    null, 1,
+  ));
+  process.exit(0);
+}
+
+const browser = await chromium.launch({ headless: true });
+const results = [];
 
 // --app has no motion=off param to lean on, so ask for reduced motion instead:
 // the DS honours it, and entrance animations are not caught mid-flight.
