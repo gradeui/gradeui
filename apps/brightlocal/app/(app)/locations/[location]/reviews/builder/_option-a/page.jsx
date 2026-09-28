@@ -152,6 +152,7 @@ import {
   FieldLabel,
   FieldDescription,
   FieldError,
+  FieldGroup,
 } from "@brightlocal/ui-components/field";
 import {
   Select,
@@ -2748,28 +2749,24 @@ function PreviewPane({ pages, index, setIndex, device, setDevice, children }) {
 // items-start, with the label column padded so its first line centres on a
 // 40px control's first line; a tall control (the logo picker, the swatches)
 // then grows downwards away from a label that stays put.
-function SetupRow({ id, label, hint, children }) {
+// A FIELD, NOT A ROW (Ali, 28 Sep: "this has dividers for each form item -
+// pretty sure we have made this up. Let's use standard label, input, and hint
+// text please"). This was a two-column row, label left and control right, with
+// a rule under each: a layout of ours, not the DS's. It is the DS Field now,
+// the label above the control and the hint under it, the way LabelledField
+// composes it, and the card's FieldGroup spaces the fields. The name stays so
+// the call sites do not move. `labelFor` points the label at the control when
+// the row is one input; a group (the logo, the colours, the sites) has no one
+// control to point at.
+function SetupRow({ id, label, hint, children, labelFor }) {
   return (
-    <div
-      className="flex flex-wrap items-start gap-x-4 gap-y-3 border-b px-5 py-4 last:border-b-0"
-      data-hook={`setup-row-${id}`}
-    >
-      <div className="w-44 shrink-0 pt-2.5">
-        <p className="text-sm leading-5 font-medium">{label}</p>
-        {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
-      </div>
-      {/* THE CONTROL COLUMN NEEDS A REAL BASE WIDTH, or the row's flex-wrap
-          never fires. flex-1 is flex: 1 1 0%, so the control's base size is
-          zero and it always "fits" beside the 176px label however little room
-          is left: at 390 the label took 176 of the row's 252 and the control
-          got 60, which truncated the name to "Ho..." and pushed the rating
-          helper text out through the card's overflow-hidden as a column of
-          half words. With a 224px base the row wraps as soon as the control
-          cannot honestly sit beside the label, and the control then takes the
-          whole width on its own line. grow/shrink/basis rather than flex-1
-          plus basis-56 so no shorthand can reset the base back to zero. */}
-      <div className="min-w-0 grow shrink basis-56">{children}</div>
-    </div>
+    <Field dataHook={`setup-row-${id}`}>
+      <FieldLabel htmlFor={labelFor} dataHook={`setup-row-${id}-label`}>
+        {label}
+      </FieldLabel>
+      {children}
+      {hint ? <FieldDescription dataHook={`setup-row-${id}-hint`}>{hint}</FieldDescription> : null}
+    </Field>
   );
 }
 
@@ -2794,40 +2791,35 @@ function AskRows({ draft, patch }) {
   const rating = draft.ask === "feedback";
   return (
     <>
-      <SetupRow
-        id="rate-first"
-        label="Ask for a rating first"
-      >
-        {/* THE EXPLANATION SITS WITH THE CONTROL (Ali, 7 Sep: "is it possible
-            to move this NEXT to the toggle"). It was a `hint` in the label
-            column, which is the narrow one, so a one-line sentence wrapped to
-            three while the switch floated alone in a wide empty column. Beside
-            the switch it gets the full width and reads as what it is: what
-            happens when you turn this on. Same shape as the logo checkbox, so
-            the card has one idea of how a toggle explains itself. */}
-        <Field orientation="horizontal" dataHook="field-rate-first">
-          <Switch
-            id="setup-rate-first"
-            dataHook="setup-rate-first"
-            checked={rating}
-            onCheckedChange={(v) => patch({ ask: v ? "feedback" : "review" })}
-          />
-          <FieldContent>
-            <FieldDescription>
-              Unhappy feedback comes to you first, not straight to Google.
-            </FieldDescription>
-          </FieldContent>
-        </Field>
-      </SetupRow>
+      {/* THE DS SWITCH FIELD (28 Sep): the switch, then its label and what it
+          does, on one line. The explanation still sits with the control, as
+          Ali asked on 7 Sep; it now has the label above it that every other
+          field on the card has. */}
+      <Field orientation="horizontal" dataHook="field-rate-first">
+        <Switch
+          id="setup-rate-first"
+          dataHook="setup-rate-first"
+          checked={rating}
+          onCheckedChange={(v) => patch({ ask: v ? "feedback" : "review" })}
+        />
+        <FieldContent>
+          <FieldLabel htmlFor="setup-rate-first" dataHook="setup-row-rate-first-label">
+            Ask for a rating first
+          </FieldLabel>
+          <FieldDescription>
+            Unhappy feedback comes to you first, not straight to Google.
+          </FieldDescription>
+        </FieldContent>
+      </Field>
       {rating ? (
-        <SetupRow id="ask" label="Rating type">
+        <SetupRow id="ask" label="Rating type" labelFor="setup-ask">
           <Select
             value={draft.feedbackType}
             onValueChange={(v) =>
               patch({ feedbackType: v, feedbackQuestion: FEEDBACK_TYPES[v].question })
             }
           >
-            <SelectTrigger dataHook="setup-ask">
+            <SelectTrigger id="setup-ask" dataHook="setup-ask">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -3192,10 +3184,18 @@ function CampaignWizard({
     // the chosen section is the same either way; only the way you pick a
     // section changes. See isWizardStandalone in ds/wizard-shell.jsx.
     const card = activeId === "general" ? (
-          <Card dataHook="template-basics" className="max-w-none overflow-hidden py-0" density="condensed">
-            <CardContent className="flex flex-col gap-0 p-0">
-              <SetupRow id="name" label="Template name">
+          // THE SAME CARD AS THE OTHER SECTIONS (28 Sep): a DS CardHeader with
+          // the section's own title and line, then the fields.
+          <Card dataHook="template-basics" className="max-w-none">
+            <CardHeader>
+              <CardTitle dataHook="template-basics-title">General</CardTitle>
+              <CardDescription dataHook="template-basics-desc">Name, rating and branding</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FieldGroup>
+              <SetupRow id="name" label="Template name" labelFor="setup-name">
                 <Input
+                  id="setup-name"
                   dataHook="setup-name"
                   value={draft.name}
                   placeholder="Untitled template"
@@ -3223,6 +3223,7 @@ function CampaignWizard({
               <SetupRow id="brand" label="Accent colour">
                 <BrandPicker value={draft.brandColor} onChange={(v) => patch({ brandColor: v })} />
               </SetupRow>
+              </FieldGroup>
             </CardContent>
           </Card>
         ) : (
@@ -3500,10 +3501,18 @@ function CampaignWizard({
   function SetupBody() {
     const chosen = (draft.sites ?? []).filter((x) => x.site);
     return (
-      <Card dataHook="setup-card" className="max-w-none overflow-hidden py-0" density="condensed">
-        <CardContent className="flex flex-col gap-0 p-0">
-          <SetupRow id="name" label="Campaign name">
+      // A DS CARD HEADER, as on the template editor (28 Sep). ASSUMPTION: the
+      // title; Ali named the pattern, not the words, for this card.
+      <Card dataHook="setup-card" className="max-w-none">
+        <CardHeader>
+          <CardTitle dataHook="setup-card-title">Campaign details</CardTitle>
+          <CardDescription dataHook="setup-card-desc">What it is called, what it asks, how it is sent and where reviews go</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FieldGroup>
+          <SetupRow id="name" label="Campaign name" labelFor="setup-name">
             <Input
+              id="setup-name"
               dataHook="setup-name"
               value={draft.name}
               placeholder="Untitled campaign"
@@ -3513,9 +3522,9 @@ function CampaignWizard({
 
           <AskRows draft={draft} patch={patch} />
 
-          <SetupRow id="channel" label="How it is sent">
+          <SetupRow id="channel" label="How it is sent" labelFor="setup-channel">
             <Select value={draft.channel} onValueChange={(v) => patch({ channel: v })}>
-              <SelectTrigger dataHook="setup-channel">
+              <SelectTrigger id="setup-channel" dataHook="setup-channel">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -3552,6 +3561,7 @@ function CampaignWizard({
               </Button>
             </div>
           </SetupRow>
+          </FieldGroup>
         </CardContent>
       </Card>
     );

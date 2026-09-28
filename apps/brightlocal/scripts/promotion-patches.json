@@ -844,6 +844,81 @@
       "why": "Template tabs scroll sideways on a phone (28 Sep): five DS tabs measured 500px in a 390px column, cutting off Contact details and putting a sideways scrollbar on the page. The DS TabsList has no overflow handling, so a layout class lets the row scroll; Back and Next below the content still step through every section.",
       "find": "          <TabsList dataHook=\"template-tabs-list\">\n",
       "replace": "          {/* max-w-full + overflow-x-auto: on a phone the five tabs are wider\n              than the column, and the DS TabsList does not wrap or scroll. */}\n          <TabsList dataHook=\"template-tabs-list\" className=\"max-w-full overflow-x-auto\">\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "  FieldDescription,\n  FieldError,\n} from \"@brightlocal/ui-components/field\";\n",
+      "replace": "  FieldDescription,\n  FieldError,\n  FieldGroup,\n} from \"@brightlocal/ui-components/field\";\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "function SetupRow({ id, label, hint, children }) {\n  return (\n    <div\n      className=\"flex flex-wrap items-start gap-x-4 gap-y-3 border-b px-5 py-4 last:border-b-0\"\n      data-hook={`setup-row-${id}`}\n    >\n      <div className=\"w-44 shrink-0 pt-2.5\">\n        <p className=\"text-sm leading-5 font-medium\">{label}</p>\n        {hint ? <p className=\"text-muted-foreground text-xs\">{hint}</p> : null}\n      </div>\n      {/* THE CONTROL COLUMN NEEDS A REAL BASE WIDTH, or the row's flex-wrap\n          never fires. flex-1 is flex: 1 1 0%, so the control's base size is\n          zero and it always \"fits\" beside the 176px label however little room\n          is left: at 390 the label took 176 of the row's 252 and the control\n          got 60, which truncated the name to \"Ho...\" and pushed the rating\n          helper text out through the card's overflow-hidden as a column of\n          half words. With a 224px base the row wraps as soon as the control\n          cannot honestly sit beside the label, and the control then takes the\n          whole width on its own line. grow/shrink/basis rather than flex-1\n          plus basis-56 so no shorthand can reset the base back to zero. */}\n      <div className=\"min-w-0 grow shrink basis-56\">{children}</div>\n    </div>\n  );\n}\n",
+      "replace": "// A FIELD, NOT A ROW (Ali, 28 Sep: \"this has dividers for each form item -\n// pretty sure we have made this up. Let's use standard label, input, and hint\n// text please\"). This was a two-column row, label left and control right, with\n// a rule under each: a layout of ours, not the DS's. It is the DS Field now,\n// the label above the control and the hint under it, the way LabelledField\n// composes it, and the card's FieldGroup spaces the fields. The name stays so\n// the call sites do not move. `labelFor` points the label at the control when\n// the row is one input; a group (the logo, the colours, the sites) has no one\n// control to point at.\nfunction SetupRow({ id, label, hint, children, labelFor }) {\n  return (\n    <Field dataHook={`setup-row-${id}`}>\n      <FieldLabel htmlFor={labelFor} dataHook={`setup-row-${id}-label`}>\n        {label}\n      </FieldLabel>\n      {children}\n      {hint ? <FieldDescription dataHook={`setup-row-${id}-hint`}>{hint}</FieldDescription> : null}\n    </Field>\n  );\n}\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "      <SetupRow\n        id=\"rate-first\"\n        label=\"Ask for a rating first\"\n      >\n        {/* THE EXPLANATION SITS WITH THE CONTROL (Ali, 7 Sep: \"is it possible\n            to move this NEXT to the toggle\"). It was a `hint` in the label\n            column, which is the narrow one, so a one-line sentence wrapped to\n            three while the switch floated alone in a wide empty column. Beside\n            the switch it gets the full width and reads as what it is: what\n            happens when you turn this on. Same shape as the logo checkbox, so\n            the card has one idea of how a toggle explains itself. */}\n        <Field orientation=\"horizontal\" dataHook=\"field-rate-first\">\n          <Switch\n            id=\"setup-rate-first\"\n            dataHook=\"setup-rate-first\"\n            checked={rating}\n            onCheckedChange={(v) => patch({ ask: v ? \"feedback\" : \"review\" })}\n          />\n          <FieldContent>\n            <FieldDescription>\n              Unhappy feedback comes to you first, not straight to Google.\n            </FieldDescription>\n          </FieldContent>\n        </Field>\n      </SetupRow>\n",
+      "replace": "      {/* THE DS SWITCH FIELD (28 Sep): the switch, then its label and what it\n          does, on one line. The explanation still sits with the control, as\n          Ali asked on 7 Sep; it now has the label above it that every other\n          field on the card has. */}\n      <Field orientation=\"horizontal\" dataHook=\"field-rate-first\">\n        <Switch\n          id=\"setup-rate-first\"\n          dataHook=\"setup-rate-first\"\n          checked={rating}\n          onCheckedChange={(v) => patch({ ask: v ? \"feedback\" : \"review\" })}\n        />\n        <FieldContent>\n          <FieldLabel htmlFor=\"setup-rate-first\" dataHook=\"setup-row-rate-first-label\">\n            Ask for a rating first\n          </FieldLabel>\n          <FieldDescription>\n            Unhappy feedback comes to you first, not straight to Google.\n          </FieldDescription>\n        </FieldContent>\n      </Field>\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "<SetupRow id=\"name\" label=\"Template name\">",
+      "replace": "<SetupRow id=\"name\" label=\"Template name\" labelFor=\"setup-name\">"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "<SetupRow id=\"name\" label=\"Campaign name\">",
+      "replace": "<SetupRow id=\"name\" label=\"Campaign name\" labelFor=\"setup-name\">"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "<SetupRow id=\"ask\" label=\"Rating type\">",
+      "replace": "<SetupRow id=\"ask\" label=\"Rating type\" labelFor=\"setup-ask\">"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "<SetupRow id=\"channel\" label=\"How it is sent\">",
+      "replace": "<SetupRow id=\"channel\" label=\"How it is sent\" labelFor=\"setup-channel\">"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "                  dataHook=\"setup-name\"\n                  value={draft.name}\n                  placeholder=\"Untitled template\"",
+      "replace": "                  id=\"setup-name\"\n                  dataHook=\"setup-name\"\n                  value={draft.name}\n                  placeholder=\"Untitled template\""
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "              dataHook=\"setup-name\"\n              value={draft.name}\n              placeholder=\"Untitled campaign\"",
+      "replace": "              id=\"setup-name\"\n              dataHook=\"setup-name\"\n              value={draft.name}\n              placeholder=\"Untitled campaign\""
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "<SelectTrigger dataHook=\"setup-ask\">",
+      "replace": "<SelectTrigger id=\"setup-ask\" dataHook=\"setup-ask\">"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "<SelectTrigger dataHook=\"setup-channel\">",
+      "replace": "<SelectTrigger id=\"setup-channel\" dataHook=\"setup-channel\">"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "          <Card dataHook=\"template-basics\" className=\"max-w-none overflow-hidden py-0\" density=\"condensed\">\n            <CardContent className=\"flex flex-col gap-0 p-0\">\n",
+      "replace": "          // THE SAME CARD AS THE OTHER SECTIONS (28 Sep): a DS CardHeader with\n          // the section's own title and line, then the fields.\n          <Card dataHook=\"template-basics\" className=\"max-w-none\">\n            <CardHeader>\n              <CardTitle dataHook=\"template-basics-title\">General</CardTitle>\n              <CardDescription dataHook=\"template-basics-desc\">Name, rating and branding</CardDescription>\n            </CardHeader>\n            <CardContent>\n              <FieldGroup>\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "                <BrandPicker value={draft.brandColor} onChange={(v) => patch({ brandColor: v })} />\n              </SetupRow>\n            </CardContent>\n          </Card>\n",
+      "replace": "                <BrandPicker value={draft.brandColor} onChange={(v) => patch({ brandColor: v })} />\n              </SetupRow>\n              </FieldGroup>\n            </CardContent>\n          </Card>\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "      <Card dataHook=\"setup-card\" className=\"max-w-none overflow-hidden py-0\" density=\"condensed\">\n        <CardContent className=\"flex flex-col gap-0 p-0\">\n",
+      "replace": "      // A DS CARD HEADER, as on the template editor (28 Sep). ASSUMPTION: the\n      // title; Ali named the pattern, not the words, for this card.\n      <Card dataHook=\"setup-card\" className=\"max-w-none\">\n        <CardHeader>\n          <CardTitle dataHook=\"setup-card-title\">Campaign details</CardTitle>\n          <CardDescription dataHook=\"setup-card-desc\">What it is called, what it asks, how it is sent and where reviews go</CardDescription>\n        </CardHeader>\n        <CardContent>\n          <FieldGroup>\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "                Edit\n              </Button>\n            </div>\n          </SetupRow>\n        </CardContent>\n      </Card>\n    );\n  }\n",
+      "replace": "                Edit\n              </Button>\n            </div>\n          </SetupRow>\n          </FieldGroup>\n        </CardContent>\n      </Card>\n    );\n  }\n"
     }
   ],
   "app/(app)/locations/[location]/reviews/_option-a/page.jsx": [
@@ -2586,6 +2661,81 @@
       "why": "Template tabs scroll sideways on a phone (28 Sep): five DS tabs measured 500px in a 390px column, cutting off Contact details and putting a sideways scrollbar on the page. The DS TabsList has no overflow handling, so a layout class lets the row scroll; Back and Next below the content still step through every section.",
       "find": "          <TabsList dataHook=\"template-tabs-list\">\n",
       "replace": "          {/* max-w-full + overflow-x-auto: on a phone the five tabs are wider\n              than the column, and the DS TabsList does not wrap or scroll. */}\n          <TabsList dataHook=\"template-tabs-list\" className=\"max-w-full overflow-x-auto\">\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "  FieldDescription,\n  FieldError,\n} from \"@brightlocal/ui-components/field\";\n",
+      "replace": "  FieldDescription,\n  FieldError,\n  FieldGroup,\n} from \"@brightlocal/ui-components/field\";\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "function SetupRow({ id, label, hint, children }) {\n  return (\n    <div\n      className=\"flex flex-wrap items-center gap-x-4 gap-y-3 border-b px-5 py-4 last:border-b-0\"\n      data-hook={`setup-row-${id}`}\n    >\n      <div className=\"w-44 shrink-0\">\n        <p className=\"text-sm font-medium\">{label}</p>\n        {hint ? <p className=\"text-muted-foreground text-xs\">{hint}</p> : null}\n      </div>\n      <div className=\"min-w-0 flex-1\">{children}</div>\n    </div>\n  );\n}\n",
+      "replace": "// A FIELD, NOT A ROW (Ali, 28 Sep: \"this has dividers for each form item -\n// pretty sure we have made this up. Let's use standard label, input, and hint\n// text please\"). This was a two-column row, label left and control right, with\n// a rule under each: a layout of ours, not the DS's. It is the DS Field now,\n// the label above the control and the hint under it, the way LabelledField\n// composes it, and the card's FieldGroup spaces the fields. The name stays so\n// the call sites do not move. `labelFor` points the label at the control when\n// the row is one input; a group (the logo, the colours, the sites) has no one\n// control to point at.\nfunction SetupRow({ id, label, hint, children, labelFor }) {\n  return (\n    <Field dataHook={`setup-row-${id}`}>\n      <FieldLabel htmlFor={labelFor} dataHook={`setup-row-${id}-label`}>\n        {label}\n      </FieldLabel>\n      {children}\n      {hint ? <FieldDescription dataHook={`setup-row-${id}-hint`}>{hint}</FieldDescription> : null}\n    </Field>\n  );\n}\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "      <SetupRow\n        id=\"rate-first\"\n        label=\"Ask for a rating first\"\n      >\n        {/* THE EXPLANATION SITS WITH THE CONTROL (Ali, 7 Sep: \"is it possible\n            to move this NEXT to the toggle\"). It was a `hint` in the label\n            column, which is the narrow one, so a one-line sentence wrapped to\n            three while the switch floated alone in a wide empty column. Beside\n            the switch it gets the full width and reads as what it is: what\n            happens when you turn this on. Same shape as the logo checkbox, so\n            the card has one idea of how a toggle explains itself. */}\n        <Field orientation=\"horizontal\" dataHook=\"field-rate-first\">\n          <Switch\n            id=\"setup-rate-first\"\n            dataHook=\"setup-rate-first\"\n            checked={rating}\n            onCheckedChange={(v) => patch({ ask: v ? \"feedback\" : \"review\" })}\n          />\n          <FieldContent>\n            <FieldDescription>\n              Unhappy feedback comes to you first, not straight to Google.\n            </FieldDescription>\n          </FieldContent>\n        </Field>\n      </SetupRow>\n",
+      "replace": "      {/* THE DS SWITCH FIELD (28 Sep): the switch, then its label and what it\n          does, on one line. The explanation still sits with the control, as\n          Ali asked on 7 Sep; it now has the label above it that every other\n          field on the card has. */}\n      <Field orientation=\"horizontal\" dataHook=\"field-rate-first\">\n        <Switch\n          id=\"setup-rate-first\"\n          dataHook=\"setup-rate-first\"\n          checked={rating}\n          onCheckedChange={(v) => patch({ ask: v ? \"feedback\" : \"review\" })}\n        />\n        <FieldContent>\n          <FieldLabel htmlFor=\"setup-rate-first\" dataHook=\"setup-row-rate-first-label\">\n            Ask for a rating first\n          </FieldLabel>\n          <FieldDescription>\n            Unhappy feedback comes to you first, not straight to Google.\n          </FieldDescription>\n        </FieldContent>\n      </Field>\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "<SetupRow id=\"name\" label=\"Template name\">",
+      "replace": "<SetupRow id=\"name\" label=\"Template name\" labelFor=\"setup-name\">"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "<SetupRow id=\"name\" label=\"Campaign name\">",
+      "replace": "<SetupRow id=\"name\" label=\"Campaign name\" labelFor=\"setup-name\">"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "<SetupRow id=\"ask\" label=\"Rating type\">",
+      "replace": "<SetupRow id=\"ask\" label=\"Rating type\" labelFor=\"setup-ask\">"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "<SetupRow id=\"channel\" label=\"How it is sent\">",
+      "replace": "<SetupRow id=\"channel\" label=\"How it is sent\" labelFor=\"setup-channel\">"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "                  dataHook=\"setup-name\"\n                  value={draft.name}\n                  placeholder=\"Untitled template\"",
+      "replace": "                  id=\"setup-name\"\n                  dataHook=\"setup-name\"\n                  value={draft.name}\n                  placeholder=\"Untitled template\""
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "              dataHook=\"setup-name\"\n              value={draft.name}\n              placeholder=\"Untitled campaign\"",
+      "replace": "              id=\"setup-name\"\n              dataHook=\"setup-name\"\n              value={draft.name}\n              placeholder=\"Untitled campaign\""
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "<SelectTrigger dataHook=\"setup-ask\">",
+      "replace": "<SelectTrigger id=\"setup-ask\" dataHook=\"setup-ask\">"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "<SelectTrigger dataHook=\"setup-channel\">",
+      "replace": "<SelectTrigger id=\"setup-channel\" dataHook=\"setup-channel\">"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "          <Card dataHook=\"template-basics\" className=\"max-w-none overflow-hidden py-0\" density=\"condensed\">\n            <CardContent className=\"flex flex-col gap-0 p-0\">\n",
+      "replace": "          // THE SAME CARD AS THE OTHER SECTIONS (28 Sep): a DS CardHeader with\n          // the section's own title and line, then the fields.\n          <Card dataHook=\"template-basics\" className=\"max-w-none\">\n            <CardHeader>\n              <CardTitle dataHook=\"template-basics-title\">General</CardTitle>\n              <CardDescription dataHook=\"template-basics-desc\">Name, rating and branding</CardDescription>\n            </CardHeader>\n            <CardContent>\n              <FieldGroup>\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "                <BrandPicker value={draft.brandColor} onChange={(v) => patch({ brandColor: v })} />\n              </SetupRow>\n            </CardContent>\n          </Card>\n",
+      "replace": "                <BrandPicker value={draft.brandColor} onChange={(v) => patch({ brandColor: v })} />\n              </SetupRow>\n              </FieldGroup>\n            </CardContent>\n          </Card>\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "      <Card dataHook=\"setup-card\" className=\"max-w-none overflow-hidden py-0\" density=\"condensed\">\n        <CardContent className=\"flex flex-col gap-0 p-0\">\n",
+      "replace": "      // A DS CARD HEADER, as on the template editor (28 Sep). ASSUMPTION: the\n      // title; Ali named the pattern, not the words, for this card.\n      <Card dataHook=\"setup-card\" className=\"max-w-none\">\n        <CardHeader>\n          <CardTitle dataHook=\"setup-card-title\">Campaign details</CardTitle>\n          <CardDescription dataHook=\"setup-card-desc\">What it is called, what it asks, how it is sent and where reviews go</CardDescription>\n        </CardHeader>\n        <CardContent>\n          <FieldGroup>\n"
+    },
+    {
+      "why": "DS card header and DS Fields on the template General card and the campaign setup card (Ali, 28 Sep: \"we need a standard card title - this has dividers for each form item - pretty sure we have made this up. Let's us standard label, input, and hint text please\"). SetupRow was a two-column row with a rule under each; it is the DS Field now, and the cards carry CardHeader + CardTitle like the other section cards.",
+      "find": "                Edit\n              </Button>\n            </div>\n          </SetupRow>\n        </CardContent>\n      </Card>\n    );\n  }\n",
+      "replace": "                Edit\n              </Button>\n            </div>\n          </SetupRow>\n          </FieldGroup>\n        </CardContent>\n      </Card>\n    );\n  }\n"
     }
   ],
   "app/(app)/locations/[location]/page.jsx": [
