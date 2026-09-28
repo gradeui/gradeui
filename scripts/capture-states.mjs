@@ -403,7 +403,8 @@ async function templateEditor(page, tab = "general") {
   await waitForHook(page, '[data-hook="template-t1-open"]');
   await wait(400);
   await press(page, '[data-hook="template-t1-open"]');
-  await waitForHook(page, '[data-hook="template-rail"]');
+  // Tabs in the standard editors (28 Sep), the rail when standalone.
+  await waitForHook(page, '[data-hook="template-tabs-list"], [data-hook="template-rail"]');
   await wait(500);
   if (tab !== "general") {
     await press(page, `[data-hook="template-tab-${tab}"]`);
@@ -513,6 +514,12 @@ async function hover(page, selector) {
 // mode's primary action is Go live, which lands on `golive` instead.
 async function newCampaignTo(page, step, { channel = null } = {}) {
   await press(page, '[data-hook="new-campaign"]');
+  // A campaign only starts from a template (28 Sep): New campaign opens the
+  // picker, and Create campaign on its default (the first template) opens
+  // the settings page filled in from it.
+  await waitForHook(page, '[data-hook="new-campaign-picker"]');
+  await wait(400);
+  await press(page, '[data-hook="new-campaign-create"]');
   await waitForHook(page, '[data-hook="setup-card"]');
   await wait(500);
   if (channel) {
@@ -941,7 +948,7 @@ const STATES = [
     // the page is full bleed (Ali, 20 Sep: "I dont want scrolling tables").
     `(() => {
        const desc = document.querySelector('[data-hook="widget-page-header-description"]');
-       if (!desc || !/List: Select reviews/.test(desc.textContent)) return false;
+       if (!desc || !/(List: )?Select reviews/.test(desc.textContent)) return false;
        if (document.querySelector('[data-hook="reviews-preview-card"]')) return false;
        for (const h of ["reviews-yelp-notice", "select-reviews-card",
                         "picker-heading", "picker-bar", "filter-ratings", "filter-date",
@@ -962,7 +969,7 @@ const STATES = [
   ["widgets-09-select-reviews-json", "widgets", async (p) => { await showcaseReviews(p, "json"); },
     `(() => {
        const desc = document.querySelector('[data-hook="widget-page-header-description"]');
-       return !!desc && /JSON feed: Select reviews/.test(desc.textContent)
+       return !!desc && /(JSON feed: )?Select reviews/.test(desc.textContent)
          && !document.querySelector('[data-hook="widget-feed-url"]')
          && !!document.querySelector('[data-hook="select-reviews-table"]')
          && !document.querySelector('[data-hook="design-page"]');
@@ -1194,11 +1201,13 @@ const STATES = [
     await wait(700);
     await press(p, '[data-hook="design-sheet-done"]');
     await wait(900);
-    await press(p, '[data-hook="widget-cancel"]');
+    // No close X in the standard editor (28 Sep): the trail's Review
+    // Showcase crumb is the way out. The X still exists standalone.
+    if (!(await press(p, '[data-hook="widget-cancel"]'))) await pressText(p, "Review Showcase", 'nav[data-slot="breadcrumb"] a');
     await wait(900);
   },
     `!!document.querySelector('[data-hook="leave-title"]') && !!document.querySelector('[data-hook="leave-confirm"]')`,
-    "Close after a change: Leave without saving your changes, the sentence about what reverts, Keep editing and Discard and leave."],
+    "Leaving after a change, through the Review Showcase crumb: Leave without saving your changes, the sentence about what reverts, Keep editing and Discard and leave."],
   // SKIPPED, AND STAYING SKIPPED (Ali, 20 Sep, in session: "we dont really
   // need to show any mobile screenshots right now, let's stick to desktop").
   // Its skip entry in APP_OVERRIDES is keyed on this exact id, which is why
@@ -1490,19 +1499,22 @@ const STATES = [
     `!!document.querySelector('[data-hook="setup-card"]')
      && !!document.querySelector('[data-hook="setup-channel"]')
      && !document.querySelector('[data-hook="template-rail"]')`,
-    "A Draft reopens on the campaign settings page: Review campaign as the header, the four settings rows, Review and send, and Start from a template underneath."],
-  ["getreviews-27-new-campaign", "getreviews", async (p) => { await newCampaignTo(p, "setup"); },
-    `!!document.querySelector('[data-hook="setup-card"]')
-     && /Untitled campaign/.test(document.querySelector('[data-hook="campaign-page-header"]').innerText)`,
-    "New campaign: the same settings page with Untitled campaign in the header and the rating-first switch on by default."],
-  ["getreviews-28-pick-template", "getreviews", async (p) => {
-    await newCampaignTo(p, "setup");
-    await press(p, '[data-hook="setup-template"]');
-    await wait(900);
+    "A Draft reopens on the campaign settings page: Review campaign as the header, the Campaign details card with its fields, and Review and send."],
+  // A CAMPAIGN ONLY STARTS FROM A TEMPLATE (28 Sep). 27 is New campaign's
+  // picker; 28 is the settings page it opens, filled in from the template.
+  ["getreviews-27-new-campaign", "getreviews", async (p) => {
+    await press(p, '[data-hook="new-campaign"]');
+    await waitForHook(p, '[data-hook="new-campaign-picker"]');
+    await wait(700);
   },
-    `!!document.querySelector('[data-hook="template-t1"]')
-     && /Pick a template/.test(document.querySelector('[data-hook="wizard-step-title"]').textContent)`,
-    "Start from a template: the Pick a template step, its sub line, and one row per template with its ask type."],
+    `!!document.querySelector('[data-hook="new-campaign-picker"]')
+     && /Choose a template/.test(document.querySelector('[data-hook="new-campaign-picker-title"]').textContent)
+     && document.querySelectorAll('[data-hook="new-campaign-picker"] [role="radio"]').length > 1`,
+    "New campaign: Choose a template, the one sentence under it, every template with its ask type, the first chosen, Create campaign and the close button."],
+  ["getreviews-28-pick-template", "getreviews", async (p) => { await newCampaignTo(p, "setup"); },
+    `!!document.querySelector('[data-hook="setup-card"]')
+     && !!document.querySelector('[data-hook="setup-card-title"]')`,
+    "Create campaign from the first template: the settings page filled in from it, the Campaign details card, and Review and send."],
   // 29 IS DELIBERATELY VACANT. Expanding a template row on the Pick a
   // template step (its summary rows and Use this template) throws
   // "TypeError: Cannot read properties of undefined (reading 'map')" in
@@ -1510,11 +1522,14 @@ const STATES = [
   // press template-t1 asserting template-t1-use once the screen is fixed.
   ["getreviews-30-leave-dialog", "getreviews", async (p) => {
     await newCampaignTo(p, "setup");
-    await press(p, '[data-hook="setup-cancel"]');
+    // No close X in the standard editor (28 Sep): the Review Builder crumb
+    // asks first. The X still exists standalone.
+    if (!(await press(p, '[data-hook="setup-cancel"]'))) await pressText(p, "Review Builder", 'nav[data-slot="breadcrumb"] a');
     await wait(900);
   },
-    `!!document.querySelector('[data-hook="leave-title"]') && !!document.querySelector('[data-hook="cancel-yes"]')`,
-    "Close on the settings page: the leave dialog and its two buttons."],
+    `!!document.querySelector('[data-hook="leave-title"]') && !!document.querySelector('[data-hook="cancel-yes"]')
+     && !!document.querySelector('[data-hook="leave-without-saving"]')`,
+    "Leaving the settings page through the Review Builder crumb: Leave setup?, its sentence, the close button, Leave and Save and leave."],
   ["getreviews-31-recipients-email", "getreviews", async (p) => { await newCampaignTo(p, "recipients"); },
     `!!document.querySelector('[data-hook="audience-field"]')
      && !!document.querySelector('[data-hook="contacts-upload"]')
@@ -1664,17 +1679,17 @@ const STATES = [
     await waitForHook(p, '[data-hook="new-template"]');
     await wait(400);
     await press(p, '[data-hook="new-template"]');
-    await waitForHook(p, '[data-hook="template-rail"]');
+    await waitForHook(p, '[data-hook="template-tabs-list"], [data-hook="template-rail"]');
     await wait(600);
   },
-    `!!document.querySelector('[data-hook="template-rail"]')
+    `!!(document.querySelector('[data-hook="template-tabs-list"]') || document.querySelector('[data-hook="template-rail"]'))
      && /Untitled template/.test(document.querySelector('[data-hook="template-page-header"]').innerText)`,
-    "New template: the editor with Untitled template in the header and Save template as the action."],
+    "New template: the editor with Untitled template in the header, the five section tabs and Save template as the action."],
   ["getreviews-53-template-general", "getreviews", async (p) => { await templateEditor(p, "general"); },
     `!!document.querySelector('[data-hook="template-tab-general"][aria-selected="true"]')
      && !!document.querySelector('[data-hook="template-basics"]')
      && !document.querySelector('[data-hook="setup-channel"]')`,
-    "Editing a template, General: the five rail items with their sub lines, the name, rating-first, rating type, logo and accent colour rows."],
+    "Editing a template, General: the five section tabs, then the General card with its name, rating-first, rating type, logo and accent colour fields."],
   ["getreviews-54-template-message-email", "getreviews", async (p) => { await templateEditor(p, "invite"); },
     `!!document.querySelector('[data-hook="template-tab-invite"][aria-selected="true"]')
      && !!document.querySelector('[data-hook="preview-frame-invite"] [data-hook="email-preview-rule"]')`,
