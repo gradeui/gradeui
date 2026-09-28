@@ -42,6 +42,16 @@ import {
 } from "@brightlocal/ui-components/centred-layout";
 import { FieldError } from "@brightlocal/ui-components/field";
 import {
+  SidebarProvider,
+  SidebarTrigger,
+  GlobalLayoutContentBody,
+  Logo,
+} from "@brightlocal/ui-components";
+import { Menu } from "@brightlocal/icons";
+import { AppLayoutShell } from "@brightlocal/proposal-shell";
+import { ProposalSidebar } from "@brightlocal/proposal-nav";
+import { PageHeader } from "@brightlocal/proposal-page";
+import {
   Stepper,
   StepperNav,
   StepperItem,
@@ -193,6 +203,109 @@ export function WizardSteps({ steps, value, dataHook = "wizard-stepper", ariaLab
  * "Untitled widget", not "New widget", so the header does not change identity
  * halfway through the task.
  */
+// STANDARD OR STANDALONE (Ali, 28 Sep: "we have everything using all the
+// default globallayout options to save on development time and also decisions
+// made by the team - we could have it as an option to have this layout we have
+// now"). Review Builder and Review Showcase are low-usage areas, so their
+// editors do not get a pattern of their own by default: they sit in the same
+// AppLayoutShell as every other screen, sidebar and all, with the DS page
+// header, and the trail is the way back. The full-screen shell below is kept
+// as the "standalone" option (Cmd K, /settings, ?editors=standalone).
+//
+// A plain function, not a hook: callers read it inside render helpers that
+// are called conditionally (TemplateBody), where a hook would break the rules
+// of hooks. The demo settings remount every shell when the choice changes, so
+// a read during render is always current. Outside the app (Studio has no such
+// setting) nothing sets it, and the editors keep the standard layout.
+export function isWizardStandalone() {
+  try {
+    return window.__gdsEditorLayout === "standalone";
+  } catch {
+    return false;
+  }
+}
+
+// Which sidebar row an editor belongs to, from the route, so the pages do not
+// have to say. Review Builder is "reviews-get", Review Showcase
+// "reviews-widgets" (proposal-nav.jsx).
+function sidebarIdForPath() {
+  try {
+    const path = window.location.pathname;
+    if (path.includes("/reviews/builder")) return "reviews-get";
+    if (path.includes("/reviews/showcase")) return "reviews-widgets";
+  } catch {}
+  return undefined;
+}
+
+function StandardWizardShell({
+  title,
+  description,
+  header,
+  steps,
+  value,
+  footer,
+  error,
+  children,
+  dataHook,
+  sidebarActiveId,
+}) {
+  // The same shell props the Review Builder hub passes to AppLayoutShell, so
+  // stepping into an editor does not change the chrome around it.
+  return (
+    <SidebarProvider>
+      <AppLayoutShell
+        preset="live-site"
+        navDensity="comfortable"
+        stickyHeader
+        flush
+        pinnedSidebar
+        dataHook={`${dataHook}-app-layout`}
+        sidebar={<ProposalSidebar dataHook={`${dataHook}-sidebar`} activeId={sidebarActiveId ?? sidebarIdForPath()} />}
+        mobileBar={
+          <div className="flex items-center gap-3 border-b px-4 py-3 lg:hidden">
+            <SidebarTrigger>
+              <Menu className="size-5" />
+            </SidebarTrigger>
+            <Logo className="h-5" dataHook="mobile-logo" />
+          </div>
+        }
+        header={
+          header ?? (
+            <PageHeader
+              dataHook={`${dataHook}-page-header`}
+              breadcrumbs={false}
+              title={title}
+              description={description}
+            />
+          )
+        }
+      >
+        {/* dataHook `${dataHook}-layout` so WIZARD_TYPE_SCALE, which is scoped
+            to that hook, still reaches the fields. */}
+        <GlobalLayoutContentBody className="gap-4" dataHook={`${dataHook}-layout`}>
+          <style>{WIZARD_TYPE_SCALE.replaceAll("__HOOK__", dataHook)}</style>
+          {steps?.length ? (
+            <WizardSteps steps={steps} value={value} dataHook={`${dataHook}-stepper`} ariaLabel={title} />
+          ) : null}
+          {children}
+          {error ? (
+            <FieldError dataHook={`${dataHook}-error`} role="alert">
+              {error}
+            </FieldError>
+          ) : null}
+          {/* No pinned footer in a standard page: the actions sit at the end of
+              the content, under a rule, where a settings page puts them. */}
+          {footer ? (
+            <div data-hook={`${dataHook}-footer`} className="flex flex-wrap items-center gap-2 border-t pt-4">
+              {footer}
+            </div>
+          ) : null}
+        </GlobalLayoutContentBody>
+      </AppLayoutShell>
+    </SidebarProvider>
+  );
+}
+
 export function WizardShell({
   title,
   description,
@@ -210,7 +323,27 @@ export function WizardShell({
   children,
   dataHook = "wizard",
   contentClassName = "",
+  // Standard mode only: the sidebar row to highlight. Inferred from the route
+  // when omitted.
+  sidebarActiveId,
 }) {
+  if (!isWizardStandalone()) {
+    return (
+      <StandardWizardShell
+        title={title}
+        description={description}
+        header={header}
+        steps={steps}
+        value={value}
+        footer={footer}
+        error={error}
+        dataHook={dataHook}
+        sidebarActiveId={sidebarActiveId}
+      >
+        {children}
+      </StandardWizardShell>
+    );
+  }
   // ONE CENTRED COLUMN, max-w-4xl, for header, content and footer alike. Two
   // attempts on 7 Sep to widen this (header only, then both) were both wrong;
   // Ali: "the width of both was completely fine before". Leave it.

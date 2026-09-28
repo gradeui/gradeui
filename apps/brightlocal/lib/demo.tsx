@@ -59,6 +59,13 @@ export interface DemoSettings {
    *  without them (Ali, 12 Sep). Off by default since 17 Sep: the tweaker
    *  (Alt+T), Cmd K, /settings or ?insights=on turn them on. */
   insights: boolean;
+  /** Where the Review Builder and Review Showcase editors live (Ali, 28 Sep:
+   *  "we have everything using all the default globallayout options... we
+   *  could have it as an option to have this layout we have now").
+   *  "standard" puts them in the app's own GlobalLayout: sidebar, the DS page
+   *  header with the trail as the way back, DS Tabs for template sections, no
+   *  close button. "standalone" is the full-screen editor they had before. */
+  editors: "standard" | "standalone";
 }
 
 interface DemoContextValue {
@@ -73,6 +80,7 @@ interface DemoContextValue {
   setBeaconTone: (tone: DemoSettings["beaconTone"]) => void;
   setAppearance: (appearance: DemoSettings["appearance"]) => void;
   setInsights: (insights: boolean) => void;
+  setEditors: (editors: DemoSettings["editors"]) => void;
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
   notesOpen: boolean;
@@ -89,6 +97,7 @@ declare global {
     __gdsShellLook?: string | null;
     __gdsTweakScope?: string | null;
     __gdsLayoutEngine?: string | null;
+    __gdsEditorLayout?: string | null;
   }
 }
 
@@ -129,6 +138,9 @@ function applySeams(settings: DemoSettings) {
   const persona = personaById(settings.personaId);
   window.__gdsTweakScope = "app";
   window.__gdsLayoutEngine = settings.engine;
+  // Read by WizardShell (ds/wizard-shell.jsx isWizardStandalone): standard or
+  // standalone editors. Anything that is not "standalone" is standard.
+  window.__gdsEditorLayout = settings.editors ?? "standard";
   document.documentElement.setAttribute("data-beacon-tone", settings.beaconTone ?? "neutral");
   document.documentElement.classList.toggle("dark", settings.appearance === "dark");
   // color-scheme as well as the class. Surfaces outside AppLayoutShell (the
@@ -173,6 +185,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     beaconTone: "neutral",
     appearance: "light",
     insights: false,
+    editors: "standard",
   });
   const [epoch, setEpoch] = React.useState(0);
   const [ready, setReady] = React.useState(false);
@@ -192,6 +205,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       beaconTone: "neutral",
       appearance: "light",
       insights: false,
+      editors: "standard",
       ...(stored ?? {}),
     };
     if (urlPersona && PERSONAS.some((p) => p.id === urlPersona)) next.personaId = urlPersona;
@@ -207,6 +221,9 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
     const urlInsights = params.get("insights");
     if (urlInsights === "off" || urlInsights === "false" || urlInsights === "0") next.insights = false;
     if (urlInsights === "on" || urlInsights === "true" || urlInsights === "1") next.insights = true;
+    // ?editors=standard|standalone, sticky like ?engine=.
+    const urlEditors = params.get("editors");
+    if (urlEditors === "standard" || urlEditors === "standalone") next.editors = urlEditors;
     const urlLook = params.get("look");
     if (urlLook && (urlLook === "authored" || (LOOK_PRESETS as Record<string, unknown>)[urlLook])) next.look = urlLook;
     if (next.look !== "authored" && !(LOOK_PRESETS as Record<string, unknown>)[next.look]) next.look = "authored";
@@ -261,6 +278,7 @@ function DemoProviderInner({ children }: { children: React.ReactNode }) {
       setBeaconTone: (beaconTone) => update({ beaconTone }),
       setAppearance: (appearance) => update({ appearance }),
       setInsights: (insights) => update({ insights }),
+      setEditors: (editors) => update({ editors }),
       setVariant: (base, slug) =>
         setSettings((prev) => {
           const next = { ...prev, variants: { ...prev.variants, [base]: slug } };

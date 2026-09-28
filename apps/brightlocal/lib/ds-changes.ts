@@ -46,6 +46,15 @@ export const DS_CHANGES: DsChange[] = [
     ask: "Stop drag-to-dismiss from starting on interactive content: set data-vaul-no-drag on Slider (and the other drag-operated controls), or default right and left drawers to handleOnly, where swipe-to-close is not the expected gesture.",
   },
   {
+    id: "tabs-narrow-overflow",
+    title: "A row of Tabs has nowhere to go on a phone",
+    finding:
+      "TabsList is one row with no wrap, no scroll and no collapse. The Review Builder template editor's five sections (General, Message, Rating question, Public review, Contact details) measured 500px in a 390px column: the last tab was cut off and the page grew a sideways scrollbar. Storybook calls Tabs responsive and mobile friendly, but nothing in the component handles a row wider than its container.",
+    workaround:
+      "The template editor gives its TabsList max-w-full and overflow-x-auto, a layout class, so the row scrolls inside its own width. Back and Next under the content still step through every section on narrow screens.",
+    ask: "Give TabsList an overflow behaviour of its own (a scrolling row with edge fades, or a Select below a breakpoint, the rule the Filtering pattern already sets for toggle rows), and document the maximum number of tabs a phone can take.",
+  },
+  {
     id: "togglegroupitem-selected-state",
     title: "ToggleGroupItem's selected state does not show",
     finding:

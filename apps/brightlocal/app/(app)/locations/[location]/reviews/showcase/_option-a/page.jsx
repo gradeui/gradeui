@@ -264,7 +264,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@brightlocal/ui-components/select";
-import { WizardShell } from "@brightlocal/wizard-shell";
+import { WizardShell, isWizardStandalone } from "@brightlocal/wizard-shell";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -3903,9 +3903,13 @@ export default function RMReviewShowcasePage() {
         <Button variant="primary" dataHook="widget-save" onClick={saveDraft}>
           Save showcase
         </Button>
-        <Button variant="secondary" iconOnly dataHook="widget-cancel" aria-label="Close" onClick={cancelSettings}>
-          <X className="size-4" />
-        </Button>
+        {/* Standalone only (Ali, 28 Sep: no Cancel or X in the headers of a
+            standard page). The trail's Review Showcase crumb does its job there. */}
+        {isWizardStandalone() ? (
+          <Button variant="secondary" iconOnly dataHook="widget-cancel" aria-label="Close" onClick={cancelSettings}>
+            <X className="size-4" />
+          </Button>
+        ) : null}
       </>
     );
     // NO FOOTER AT ALL NOW. Back and Next used to walk the three rail
@@ -3924,7 +3928,9 @@ export default function RMReviewShowcasePage() {
     try {
       nativeHeader = window.__gdsLayoutEngine === "native" || window.__gdsLayoutEngine === "native-fixed";
     } catch {}
-    const bodyGutter = nativeHeader ? "px-4 md:px-6 lg:px-section-xs" : "";
+    // Standalone only: in the standard page GlobalLayoutContentBody already
+    // lines the body up with the header.
+    const bodyGutter = nativeHeader && isWizardStandalone() ? "px-4 md:px-6 lg:px-section-xs" : "";
     const heading = FORMATS[draft.format].heading;
     return (
       <WizardShell
@@ -3943,9 +3949,21 @@ export default function RMReviewShowcasePage() {
             // The SAME header as every other page (Ali, 8 Sep: "it doesn't
             // look like it is the correct page header"): trail and help on,
             // so stepping into a showcase does not change the page's chrome.
-            breadcrumbs={crumbs}
-            title="Review Showcase"
-            description={`${heading}: ${onDesign ? "Widget design" : "Select reviews"}`}
+            // STANDARD PAGE (28 Sep): no close button, so the trail carries the
+            // way back to the list, and the title is the page you are on, the
+            // showcase's type, as the DS breadcrumb rules have it (ancestors in
+            // the trail, the current page in the title). ASSUMPTION: the type
+            // is the right title; a showcase has no name of its own. Standalone
+            // keeps the 7 Sep header, "Review Showcase" with the type below it.
+            breadcrumbs={isWizardStandalone() ? crumbs : [...crumbs, { label: "Review Showcase", onClick: cancelSettings }]}
+            title={isWizardStandalone() ? "Review Showcase" : heading}
+            description={
+              isWizardStandalone()
+                ? `${heading}: ${onDesign ? "Widget design" : "Select reviews"}`
+                : onDesign
+                  ? "Widget design"
+                  : "Select reviews"
+            }
             // THIS SHOWCASE'S DATE (Showcase audit, 10 Sep). "auto" binds the
             // account's own refresh date, so the header said "Last updated
             // August 18, 2026" while each showcase carried a real `updated`

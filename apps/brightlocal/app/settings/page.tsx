@@ -19,7 +19,7 @@ const LOOK_LABELS: Record<string, string> = {
 /** The long-form version of the Cmd+K menu, for when a reviewer wants to
  *  read the options rather than search them. */
 export default function SettingsPage() {
-  const { settings, setPersona, setLook, setEngine, setUpsell, setFixItForMe, setBeaconTone, setAppearance, setInsights } = useDemo();
+  const { settings, setPersona, setLook, setEngine, setUpsell, setFixItForMe, setBeaconTone, setAppearance, setInsights, setEditors } = useDemo();
   const looks = [...Object.keys(LOOK_PRESETS), "authored"];
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-10 px-6 py-16">
@@ -71,6 +71,26 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3">
             <RadioGroupItem value="modified" id="engine-modified" />
             <Label htmlFor="engine-modified">Modified GlobalLayout</Label>
+          </div>
+        </RadioGroup>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-heading-section">Editors</h2>
+        <p className="text-muted-foreground text-sm">
+          Where the Review Builder and Review Showcase editors live. Standard puts them in the
+          same page layout as every other screen: the sidebar, the design system page header with
+          the trail as the way back, and design system tabs for a template's sections. Standalone
+          is the full-screen editor they had before, with its own close button.
+        </p>
+        <RadioGroup dataHook="settings-editors" value={settings.editors ?? "standard"} onValueChange={(v) => setEditors(v as "standard" | "standalone")}>
+          <div className="flex items-center gap-3">
+            <RadioGroupItem value="standard" id="editors-standard" />
+            <Label htmlFor="editors-standard">Standard page layout</Label>
+          </div>
+          <div className="flex items-center gap-3">
+            <RadioGroupItem value="standalone" id="editors-standalone" />
+            <Label htmlFor="editors-standalone">Standalone (full screen)</Label>
           </div>
         </RadioGroup>
       </section>

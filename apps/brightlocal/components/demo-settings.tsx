@@ -31,6 +31,11 @@ const ENGINE_LABELS = {
   modified: "Modified GlobalLayout (proposal shell)",
 } as const;
 
+const EDITOR_LABELS = {
+  standard: "Editors in the standard page layout",
+  standalone: "Editors standalone (full screen)",
+} as const;
+
 const LOOK_LABELS: Record<string, string> = {
   "live-site": "Live Site (DS default)",
   "subtle-depth": "Subtle Depth",
@@ -39,7 +44,7 @@ const LOOK_LABELS: Record<string, string> = {
 };
 
 export function DemoSettingsPanel() {
-  const { menuOpen, setMenuOpen, setNotesOpen, settings, persona, setPersona, setLook, setVariant, setEngine, setUpsell, setFixItForMe, setBeaconTone, setAppearance, setInsights } = useDemo();
+  const { menuOpen, setMenuOpen, setNotesOpen, settings, persona, setPersona, setLook, setVariant, setEngine, setUpsell, setFixItForMe, setBeaconTone, setAppearance, setInsights, setEditors } = useDemo();
   const router = useRouter();
   const pathname = usePathname();
   const location = locationFromPath(pathname) ?? persona.dataset;
@@ -93,6 +98,24 @@ export function DemoSettingsPanel() {
                 >
                   {ENGINE_LABELS[e]}
                   {settings.engine === e ? <Check className="ml-auto size-4" /> : null}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+            {/* Review Builder and Review Showcase editors (Ali, 28 Sep). */}
+            <CommandGroup heading="Editors">
+              {(["standard", "standalone"] as const).map((e) => (
+                <CommandItem
+                  key={e}
+                  dataHook={`demo-editors-${e}`}
+                  value={`editors ${EDITOR_LABELS[e]}`}
+                  onSelect={() => {
+                    setEditors(e);
+                    setMenuOpen(false);
+                  }}
+                >
+                  {EDITOR_LABELS[e]}
+                  {(settings.editors ?? "standard") === e ? <Check className="ml-auto size-4" /> : null}
                 </CommandItem>
               ))}
             </CommandGroup>

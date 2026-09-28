@@ -294,7 +294,7 @@ import {
   useProposalData,
   EmptyState,
 } from "@brightlocal/proposal";
-import { WizardShell } from "@brightlocal/wizard-shell";
+import { WizardShell, isWizardStandalone } from "@brightlocal/wizard-shell";
 import { FacetedFilterMenu, SingleSelectMenu } from "@brightlocal/facet-menu";
 import { PreviewFrame } from "@brightlocal/preview-frame";
 import { SideSheetHeader } from "@brightlocal/side-sheet-header";
@@ -3188,56 +3188,10 @@ function CampaignWizard({
     // minmax(0,1fr) below md too: a single auto column takes the card's
     // min-content, and a preview inside it can force the page to scroll
     // sideways on a phone (found on Review Showcase, 7 Sep).
-    return (
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[16rem_minmax(0,1fr)]">
-        {/* PLAIN BUTTONS, NOT THE DS SIDEBAR (Ali, 7 Sep: "sidebar content
-            seems to be fixed"). SidebarMenuButton is app-chrome machinery: it
-            requires a SidebarProvider, and that provider ships its own wrapper
-            with `min-h-svh w-full` plus positioning meant for a fixed app
-            sidebar. Inside a page that already scrolls, that fought the layout
-            rather than serving it, and it blanked the page outright when the
-            provider was missing.
-            So this keeps what was wanted from it, an icon, a label, subtext and
-            an active state, and drops what belongs to the app frame. It carries
-            tablist semantics so it is still navigable by keyboard. */}
-        {/* STICKY (Ali, 7 Sep: "left rail should be sticky"). The shell's content
-                    area is the scroller and the header sits outside it, so top-0 pins
-                    the rail flush under the header while the cards scroll past.
-                    self-start stops the grid stretching it to the card's height, which
-                    would leave nothing for sticky to do. md only: below that the rail
-                    stacks above the card and should scroll away with it. */}
-        <div
-          role="tablist"
-          aria-orientation="vertical"
-          aria-label="Template sections"
-          className="flex flex-col gap-1 md:sticky md:top-0 md:self-start"
-          data-hook="template-rail"
-        >
-          {sections.map((x) => {
-            const on = x.id === activeId;
-            return (
-              <button
-                key={x.id}
-                type="button"
-                role="tab"
-                aria-selected={on}
-                data-hook={`template-tab-${x.id}`}
-                onClick={() => setBeatId(x.id)}
-                className={`flex items-start gap-2.5 rounded-md px-3 py-2.5 text-left transition-colors ${
-                  on ? "bg-muted" : "hover:bg-muted/50"
-                }`}
-              >
-                <x.Icon className={`mt-0.5 size-4 shrink-0 ${on ? "" : "text-muted-foreground"}`} />
-                <span className="flex min-w-0 flex-col">
-                  <span className={`truncate text-sm ${on ? "font-medium" : ""}`}>{x.rail}</span>
-                  <span className="text-muted-foreground truncate text-xs">{x.sub}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {activeId === "general" ? (
+    // DS TABS BY DEFAULT, THE RAIL WHEN STANDALONE (Ali, 28 Sep). The card for
+    // the chosen section is the same either way; only the way you pick a
+    // section changes. See isWizardStandalone in ds/wizard-shell.jsx.
+    const card = activeId === "general" ? (
           <Card dataHook="template-basics" className="max-w-none overflow-hidden py-0" density="condensed">
             <CardContent className="flex flex-col gap-0 p-0">
               <SetupRow id="name" label="Template name">
@@ -3342,7 +3296,82 @@ function CampaignWizard({
               ) : null}
             </CardContent>
           </Card>
-        )}
+        );
+    // STANDARD: DS Tabs, the design system's own answer for "organizing
+    // related content into clearly labeled sections users can flip between"
+    // (Storybook, Tabs). One panel at a time, as Ali asked on 7 Sep; the
+    // rail's one-line captions do not fit a tab and go. The triggers keep
+    // the rail's template-tab-* hooks, so anything that pressed a rail
+    // button presses the tab.
+    if (!isWizardStandalone()) {
+      return (
+        <Tabs value={activeId} onValueChange={setBeatId} dataHook="template-tabs" className="flex flex-col gap-4">
+          {/* max-w-full + overflow-x-auto: on a phone the five tabs are wider
+              than the column, and the DS TabsList does not wrap or scroll. */}
+          <TabsList dataHook="template-tabs-list" className="max-w-full overflow-x-auto">
+            {sections.map((x) => (
+              <TabsTrigger key={x.id} value={x.id} dataHook={`template-tab-${x.id}`}>
+                {x.rail}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsContent value={activeId} dataHook={`template-panel-${activeId}`}>
+            {card}
+          </TabsContent>
+        </Tabs>
+      );
+    }
+    // STANDALONE: the rail, exactly as it was.
+    return (
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[16rem_minmax(0,1fr)]">
+        {/* PLAIN BUTTONS, NOT THE DS SIDEBAR (Ali, 7 Sep: "sidebar content
+            seems to be fixed"). SidebarMenuButton is app-chrome machinery: it
+            requires a SidebarProvider, and that provider ships its own wrapper
+            with `min-h-svh w-full` plus positioning meant for a fixed app
+            sidebar. Inside a page that already scrolls, that fought the layout
+            rather than serving it, and it blanked the page outright when the
+            provider was missing.
+            So this keeps what was wanted from it, an icon, a label, subtext and
+            an active state, and drops what belongs to the app frame. It carries
+            tablist semantics so it is still navigable by keyboard. */}
+        {/* STICKY (Ali, 7 Sep: "left rail should be sticky"). The shell's content
+                    area is the scroller and the header sits outside it, so top-0 pins
+                    the rail flush under the header while the cards scroll past.
+                    self-start stops the grid stretching it to the card's height, which
+                    would leave nothing for sticky to do. md only: below that the rail
+                    stacks above the card and should scroll away with it. */}
+        <div
+          role="tablist"
+          aria-orientation="vertical"
+          aria-label="Template sections"
+          className="flex flex-col gap-1 md:sticky md:top-0 md:self-start"
+          data-hook="template-rail"
+        >
+          {sections.map((x) => {
+            const on = x.id === activeId;
+            return (
+              <button
+                key={x.id}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                data-hook={`template-tab-${x.id}`}
+                onClick={() => setBeatId(x.id)}
+                className={`flex items-start gap-2.5 rounded-md px-3 py-2.5 text-left transition-colors ${
+                  on ? "bg-muted" : "hover:bg-muted/50"
+                }`}
+              >
+                <x.Icon className={`mt-0.5 size-4 shrink-0 ${on ? "" : "text-muted-foreground"}`} />
+                <span className="flex min-w-0 flex-col">
+                  <span className={`truncate text-sm ${on ? "font-medium" : ""}`}>{x.rail}</span>
+                  <span className="text-muted-foreground truncate text-xs">{x.sub}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {card}
       </div>
     );
   }
@@ -4584,11 +4613,14 @@ function CampaignWizard({
     { label: "Reviews", goto: "screen:dmrotrhbcxk66" },
     { label: "Review Builder", onClick: () => setCancelConfirm(true) },
   ];
-  const closeAction = (
+  // NO CLOSE BUTTON IN A STANDARD PAGE (Ali, 28 Sep: "i'd drop the Cancel or
+  // X buttons in the headers"). The trail's Review Builder crumb is the way
+  // back, and it asks first (Leave setup?). Standalone keeps the X.
+  const closeAction = isWizardStandalone() ? (
     <Button variant="secondary" iconOnly dataHook="step-close" aria-label="Close" onClick={() => setCancelConfirm(true)}>
       <X className="size-4" />
     </Button>
-  );
+  ) : null;
   const setupActions = (
     <>
       {setupKind === "template" ? (
@@ -4600,9 +4632,12 @@ function CampaignWizard({
           {standingNow ? "Go live" : "Review and send"}
         </Button>
       )}
-      <Button variant="secondary" iconOnly dataHook="setup-cancel" aria-label="Close" onClick={() => setCancelConfirm(true)}>
-        <X className="size-4" />
-      </Button>
+      {/* Standalone only, as closeAction above. */}
+      {isWizardStandalone() ? (
+        <Button variant="secondary" iconOnly dataHook="setup-cancel" aria-label="Close" onClick={() => setCancelConfirm(true)}>
+          <X className="size-4" />
+        </Button>
+      ) : null}
     </>
   );
   // BELOW lg ONLY, and only where there is a rail to walk (the template
@@ -4695,7 +4730,9 @@ function CampaignWizard({
   try {
     nativeHeader = window.__gdsLayoutEngine === "native" || window.__gdsLayoutEngine === "native-fixed";
   } catch {}
-  const bodyGutter = nativeHeader ? "px-4 md:px-6 lg:px-section-xs" : "";
+  // Standalone only: in the standard page GlobalLayoutContentBody already lines
+  // the body up with the header, so a gutter here would indent it twice.
+  const bodyGutter = nativeHeader && isWizardStandalone() ? "px-4 md:px-6 lg:px-section-xs" : "";
 
   // AND EVERYTHING ELSE IN THAT COLUMN, or the fix just moves the misalignment.
   // The shell lays the footer actions out in its own mx-auto max-w-4xl row and
