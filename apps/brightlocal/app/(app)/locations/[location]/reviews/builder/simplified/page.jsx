@@ -3328,7 +3328,7 @@ function CampaignWizard({
                   },
                 ]
               : []),
-            { id: "fresh", label: "Start fresh", caption: "Build a new campaign from scratch." },
+            // No "Start fresh" (Ali, 28 Sep): a campaign only starts from a template.
           ]}
         />
       );
@@ -4339,11 +4339,9 @@ function CampaignWizard({
         <Button variant="ghost" dataHook="setup-cancel" onClick={() => setCancelConfirm(true)}>
           Cancel
         </Button>
-        {setupKind === "template" ? null : (
-          <Button variant="ghost" dataHook="setup-template" onClick={() => setStep("template")}>
-            Start from a template
-          </Button>
-        )}
+        {/* No "Start from a template" here any more (28 Sep): every campaign
+            already starts from one, picked in New campaign's dialog or from
+            the Templates page. */}
         <span className="grow" />
         {/* ENABLED FROM THE FIRST RENDER. There is nothing to validate: every
             setting already holds a working value, which is the point. */}
@@ -6186,6 +6184,84 @@ function CustomerPreviewDrawer({ open, onOpenChange, config, expired }) {
   );
 }
 
+// NEW CAMPAIGN STARTS FROM A TEMPLATE (Ali, 28 Sep: "in Review Builder, you
+// can only create campaigns from a template"). This is how the product works,
+// so New campaign no longer opens a blank setup: it opens this picker, and
+// Create campaign runs the same template path the Templates page's own
+// "Create campaign" uses (startWizard with fromTemplate), so setup opens
+// filled in from the template. A DS Dialog with its close button, and the
+// template list as a DS RadioGroup in the box style ChoiceCards already
+// uses, the first template chosen by default (radios always have one, 3 Sep).
+// No Cancel beside Create campaign: the X is the way out, as on Leave setup.
+// Module scope on purpose: a component declared inside another remounts on
+// every render.
+function NewCampaignButton({ templates, onPick, icon = null }) {
+  const [open, setOpen] = useState(false);
+  const [chosen, setChosen] = useState(null);
+  const current = chosen ?? templates[0]?.id ?? null;
+  return (
+    <>
+      <Button
+        variant="primary"
+        dataHook="new-campaign"
+        disabled={!templates.length}
+        onClick={() => {
+          setChosen(null);
+          setOpen(true);
+        }}
+      >
+        {icon}
+        New campaign
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent dataHook="new-campaign-picker">
+          <DialogHeader>
+            <DialogTitle dataHook="new-campaign-picker-title">Choose a template</DialogTitle>
+            <DialogDescription dataHook="new-campaign-picker-desc">
+              Every campaign starts from a template. You can change any of it before you send.
+            </DialogDescription>
+          </DialogHeader>
+          <RadioGroup
+            dataHook="new-campaign-templates"
+            variant="box"
+            value={current ?? ""}
+            onValueChange={setChosen}
+            className="max-h-80 overflow-y-auto"
+          >
+            <div className="grid gap-3">
+              {templates.map((t) => (
+                <Field key={t.id} orientation="horizontal" variant="box">
+                  <RadioGroupItem id={`new-campaign-${t.id}`} value={t.id} />
+                  <FieldContent>
+                    <FieldLabel htmlFor={`new-campaign-${t.id}`} dataHook={`new-campaign-${t.id}-label`}>
+                      {t.name}
+                    </FieldLabel>
+                    <FieldDescription dataHook={`new-campaign-${t.id}-desc`}>{askLabel(t.config)}</FieldDescription>
+                  </FieldContent>
+                </Field>
+              ))}
+            </div>
+          </RadioGroup>
+          <DialogFooter>
+            <Button
+              variant="primary"
+              dataHook="new-campaign-create"
+              disabled={!current}
+              onClick={() => {
+                const picked = templates.find((t) => t.id === current);
+                setOpen(false);
+                if (picked) onPick(picked);
+              }}
+            >
+              Create campaign
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 /* =================================== app ================================== */
 
 export default function RMReviewBuilderSimplifiedPage() {
@@ -6514,9 +6590,7 @@ export default function RMReviewBuilderSimplifiedPage() {
             New template
           </Button>
         ) : (
-          <Button variant="primary" dataHook="new-campaign" onClick={() => startWizard()}>
-            New campaign
-          </Button>
+          <NewCampaignButton templates={templates} onPick={(t) => startWizard(t, { fromTemplate: true })} />
         )}
       </>
     ) : (
