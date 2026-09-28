@@ -7,12 +7,16 @@ import {
   AvatarFallback,
   Badge,
   Breadcrumb,
+  BreadcrumbEllipsis,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
   Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   Card,
   CardContent,
   CardDescription,
@@ -286,18 +290,111 @@ export function CardTitleLink({ children, dataHook, className = "", ...rest }) {
   );
 }
 
+// ─── DsTrailList: the DS breadcrumb rules (28 Sep) ────────────────────
+// Both page headers render their trail through this, so the rules live in
+// one place. They are the design system's own, from the Breadcrumb docs
+// (Storybook, UI Components/Breadcrumb, "Platform navigation rules (NP
+// spec)"), which Ali asked us to follow on 28 Sep ("we are trying now to
+// match the DS as much as possible"):
+//   - ancestors only: the page title is the current page, never a crumb
+//   - the trail starts at the root and the root never drops
+//   - at most three crumbs: deeper trails keep the root and the nearest
+//     ancestor and collapse the middle behind a BreadcrumbEllipsis in a
+//     DropdownMenuTrigger that lists the hidden pages (the DS's Dropdown
+//     story, composed exactly as it is there)
+//   - trails never wrap; only the LOCATION crumb truncates, with a max
+//     width and its full name in a Tooltip
+// It renders the LIST, not the Breadcrumb: GlobalLayoutContentHeader slots
+// its children by `child.type === Breadcrumb`, so the Breadcrumb itself
+// has to stay a direct child of the header.
+const DS_TRAIL_MAX = 3;
+
+function DsTrailList({ trail, dataHook, onCrumbClick, locationName }) {
+  const collapsed = trail.length > DS_TRAIL_MAX;
+  const hidden = collapsed ? trail.slice(1, -1) : [];
+  const shown = collapsed ? [trail[0], null, trail[trail.length - 1]] : trail;
+  const isLocation = (crumb) =>
+    crumb.bind === "location" || (locationName != null && crumb.label === locationName);
+  return (
+    <BreadcrumbList>
+      {shown.map((crumb, i) => (
+        <React.Fragment key={crumb ? `${crumb.label}-${i}` : "ellipsis"}>
+          {i > 0 ? <BreadcrumbSeparator /> : null}
+          {crumb === null ? (
+            <BreadcrumbItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button dataHook={`${dataHook}-ellipsis`} iconOnly size="sm" variant="ghost">
+                    <BreadcrumbEllipsis className="size-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {hidden.map((h, j) => (
+                    <DropdownMenuItem key={`${h.label}-${j}`} asChild>
+                      <a
+                        href={h.href ?? "#"}
+                        data-grade-goto={h.goto}
+                        data-grade-transition={h.transition}
+                        onClick={onCrumbClick(h)}
+                      >
+                        {h.label}
+                      </a>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </BreadcrumbItem>
+          ) : isLocation(crumb) ? (
+            // min-w-0 on the li as well as the link: the li is a flex item of
+            // the ol, and min-width:auto would hold it at its content width,
+            // so the truncate would never fire.
+            <BreadcrumbItem className="min-w-0">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <BreadcrumbLink
+                      href={crumb.href ?? "#"}
+                      data-grade-goto={crumb.goto}
+                      data-grade-transition={crumb.transition}
+                      onClick={onCrumbClick(crumb)}
+                      className="min-w-0 max-w-48 truncate"
+                    >
+                      {crumb.label}
+                    </BreadcrumbLink>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">{crumb.label}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </BreadcrumbItem>
+          ) : (
+            <BreadcrumbItem>
+              <BreadcrumbLink
+                href={crumb.href ?? "#"}
+                data-grade-goto={crumb.goto}
+                data-grade-transition={crumb.transition}
+                onClick={onCrumbClick(crumb)}
+              >
+                {crumb.label}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+          )}
+        </React.Fragment>
+      ))}
+    </BreadcrumbList>
+  );
+}
+
 // ─── PageHeader — the composed page header ────────────────────────────
 // There is NO PageHeader component in the DS — the page header IS this
 // composition (recipe: page-header-with-breadcrumbs.jsx; upstream note:
-// it should be a component). Trail RULE: ANCESTORS ONLY, max four — the
-// current page never appears in the breadcrumb (the H2 IS the current
-// page); BreadcrumbPage is deliberately unused. The cap was two until
-// 27 Aug — inherited guidance rather than a constraint anyone hit, and it
-// truncated legitimate deep trails. Now four, which is the full depth of
-// the deepest real page (All Locations > Location > Reviews > Inbox). `meta` renders in the
+// it should be a component). Trail RULE: the DS's, through DsTrailList
+// above (28 Sep): ancestors only (the H2 IS the current page), at most
+// three crumbs with the middle of a deeper trail behind an ellipsis menu,
+// and the root never drops. It was "ancestors only, max four" from 27 Aug,
+// clamped to the deepest four, which could drop the root. `meta` renders in the
 // muted row under the title; `actions` right-aligns (buttons, menus).
 function ModifiedPageHeader({
-  // ANCESTORS ONLY, max four. `[]` keeps the row's FOOTPRINT (invisible
+  // ANCESTORS ONLY (see DsTrailList). `[]` keeps the row's FOOTPRINT (invisible
   // spacer) so the band is the same height on every page; `false`
   // removes the row entirely — see the utility-row note below.
   breadcrumbs = [],
@@ -391,17 +488,11 @@ function ModifiedPageHeader({
   // those pages; the empty-band alternative read worse.
   const hasTrail = breadcrumbs !== false;
   const trail = (hasTrail ? breadcrumbs : [])
-    // Trail is ANCESTORS ONLY, max FOUR (the H2 is the current page).
-    // Enforced here, not just documented — a screen passing a deeper
-    // trail is clamped to the DEEPEST four (nearest the current page),
-    // so the immediate parent always survives the trim (Ali, 20 Jul).
-    // Widened two → three → four (Ali, 27 Aug). The old cap was inherited
-    // guidance, not a measured constraint, and it silently ate the root
-    // crumb on sub-tool pages, which read as if the page floated. Four is
-    // the full depth of the deepest real trail, so nothing truncates now.
-    // Mobile still shows the last crumb only, so this costs nothing
-    // below sm.
-    .slice(-4)
+    // Trail is ANCESTORS ONLY (the H2 is the current page). No clamp: it
+    // used to keep the deepest four, which dropped the root on a deep
+    // trail, and the DS rule is that the root never drops. Depth is now
+    // DsTrailList's job, which collapses the middle instead (28 Sep).
+    // Mobile still shows the last crumb only.
     // DATA-BOUND crumb: { bind: "location" } resolves to the CURRENT
     // location's name at render position — "All Locations > Blackberry
     // Farm Park" follows dataset switches with zero per-screen wiring
@@ -614,39 +705,20 @@ function ModifiedPageHeader({
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
-              {/* sm+: the full trail. */}
+              {/* sm+: the trail on the DS rules (DsTrailList). Crumbs are
+                  {label, href?, goto?, transition?, onClick?}; goto is a
+                  screen link (STUDIO-FLOWS), so crumbs navigate in shares
+                  and embeds. */}
               <Breadcrumb
                 dataHook={`${dataHook}-breadcrumb`}
                 className="hidden min-w-0 text-[length:var(--gds-page-header-crumb-size,0.875rem)] sm:block"
               >
-                <BreadcrumbList>
-                  {trail.map((crumb, i) => (
-                    <React.Fragment key={crumb.label}>
-                      {/* Separator BETWEEN crumbs — the DS's Breadcrumb is
-                          shadcn-family: separators are explicit siblings,
-                          not auto-inserted (they were silently missing —
-                          Ali, 18 Jul). */}
-                      {i > 0 ? <BreadcrumbSeparator /> : null}
-                      <BreadcrumbItem>
-                        {/* crumb.goto — screen link (STUDIO-FLOWS):
-                            ancestors are usually other screens in the flow,
-                            so crumbs navigate in shares/embeds. {label,
-                            href?, goto?, transition?}. */}
-                        <BreadcrumbLink
-                          href={crumb.href ?? "#"}
-                          data-grade-goto={crumb.goto}
-                          data-grade-transition={crumb.transition}
-                          onClick={crumbHandler(crumb)}
-                          // Wrap BETWEEN crumbs, never inside one — a crumb
-                          // breaking word-per-line reads as layout failure.
-                          className="whitespace-nowrap"
-                        >
-                          {crumb.label}
-                        </BreadcrumbLink>
-                      </BreadcrumbItem>
-                    </React.Fragment>
-                  ))}
-                </BreadcrumbList>
+                <DsTrailList
+                  trail={trail}
+                  dataHook={`${dataHook}-breadcrumb`}
+                  onCrumbClick={crumbHandler}
+                  locationName={data.location?.name}
+                />
               </Breadcrumb>
             </>
           )}
@@ -1656,8 +1728,9 @@ function NativePageHeader({
   const lastUpdatedValue = bindLastUpdated
     ? (data.aiInsights?.lastUpdated ?? null)
     : lastUpdated || null;
+  // No clamp (it kept the deepest four and could drop the root);
+  // DsTrailList collapses a deep trail instead.
   const trail = (breadcrumbs === false ? [] : breadcrumbs)
-    .slice(-4)
     .map((crumb) =>
       crumb.bind === "location" ? { ...crumb, label: data.location.name } : crumb,
     );
@@ -1719,29 +1792,18 @@ function NativePageHeader({
           </BreadcrumbList>
         </Breadcrumb>
       ) : null}
-      {/* md+: the full trail, the page itself as the last crumb. */}
+      {/* md+: the trail on the DS rules (DsTrailList): ancestors only, the
+          page title below is the current page, at most three crumbs. This
+          used to end with the page itself as a BreadcrumbPage, which the DS
+          keeps for standalone breadcrumbs, never a page header's. */}
       {trail.length ? (
         <Breadcrumb dataHook={`${dataHook}-breadcrumbs`} className="hidden min-w-0 md:block">
-          <BreadcrumbList>
-            {trail.map((crumb, i) => (
-              <React.Fragment key={`${crumb.label}-${i}`}>
-                <BreadcrumbItem>
-                  <BreadcrumbLink
-                    href={crumb.href ?? "#"}
-                    data-grade-goto={crumb.goto}
-                    data-grade-transition={crumb.transition}
-                    onClick={crumbClick(crumb)}
-                  >
-                    {crumb.label}
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-              </React.Fragment>
-            ))}
-            <BreadcrumbItem>
-              <BreadcrumbPage>{title}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
+          <DsTrailList
+            trail={trail}
+            dataHook={`${dataHook}-breadcrumbs`}
+            onCrumbClick={crumbClick}
+            locationName={data.location?.name}
+          />
         </Breadcrumb>
       ) : null}
       {/* The DS header slots its children but styles none of them: a bare
