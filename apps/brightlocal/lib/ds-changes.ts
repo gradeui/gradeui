@@ -37,6 +37,15 @@ export const DS_CHANGES: DsChange[] = [
       "ui-components 3.0.0 puts DialogTitle, SheetTitle, DrawerTitle and AlertDialogTitle on text-heading-section (Inter 20/28, semibold) in the component itself, so a title no longer depends on anything it would inherit from the shell. The unscoped rules in app/custom.css are gone.",
   },
   {
+    id: "drawer-drag-dismiss-controls",
+    title: "A right-hand Drawer closes when you drag a control inside it",
+    finding:
+      "Drawer is vaul, and vaul reads a horizontal drag anywhere in a right-hand drawer as a swipe to dismiss. On the Review Showcase design sheet, dragging the Slider for the number of reviews slid the whole drawer shut mid-edit (Ali, 28 Sep). Any control that is operated by dragging (Slider, a range, a resizable panel, selecting text in an input) is exposed.",
+    workaround:
+      "The design sheet's body carries data-vaul-no-drag, vaul's own opt-out, so nothing in the controls can start a dismiss; the close button and Done still close it.",
+    ask: "Stop drag-to-dismiss from starting on interactive content: set data-vaul-no-drag on Slider (and the other drag-operated controls), or default right and left drawers to handleOnly, where swipe-to-close is not the expected gesture.",
+  },
+  {
     id: "togglegroupitem-selected-state",
     title: "ToggleGroupItem's selected state does not show",
     finding:

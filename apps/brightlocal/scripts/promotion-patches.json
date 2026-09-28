@@ -1844,6 +1844,26 @@
       "why": "The dashboard's single Edit callback becomes the two the card now has, so the showcase list can open either editor page directly.",
       "find": "            onEdit={startEdit}\n",
       "replace": "            onEditReviews={(w) => openSettings(w, \"reviews\")}\n            onEditDesign={(w) => openSettings(w, \"design\")}\n"
+    },
+    {
+      "why": "Design sheet at the DS Drawer's own width (Ali, 28 Sep: the design drawer should be the normal or default width, not the larger one). It wore the screen's DRAWER_WIDTH clamp, up to 40rem; the DS right-hand Drawer ships w-3/4 up to max-w-sm.",
+      "find": "// this is the one clamp left. Three sheets wear it: the preview and embed\n// drawers on the showcase list, and the design part sheet in the editor.\n",
+      "replace": "// this is the one clamp left. Two sheets wear it: the preview and embed\n// drawers on the showcase list. The design part sheet in the editor does not\n// any more: it is a narrow column of controls, so it takes the DS Drawer's own\n// width (Ali, 28 Sep: \"the normal or default width\").\n"
+    },
+    {
+      "why": "Design sheet at the DS Drawer's own width (Ali, 28 Sep: the design drawer should be the normal or default width, not the larger one). It wore the screen's DRAWER_WIDTH clamp, up to 40rem; the DS right-hand Drawer ships w-3/4 up to max-w-sm.",
+      "find": "          phone: Review Manager's rule, copied rather than reinvented, and the\n          same DRAWER_WIDTH clamp the preview and embed sheets on the list\n          page use, so every overlay on this screen is the same object. */}",
+      "replace": "          phone: Review Manager's rule, copied rather than reinvented. The\n          WIDTH is the DS Drawer's own (w-3/4 up to max-w-sm), not the\n          DRAWER_WIDTH clamp the preview and embed sheets use: this is a\n          column of controls, and Ali asked for the default (28 Sep). */}"
+    },
+    {
+      "why": "Design sheet at the DS Drawer's own width (Ali, 28 Sep: the design drawer should be the normal or default width, not the larger one). It wore the screen's DRAWER_WIDTH clamp, up to 40rem; the DS right-hand Drawer ships w-3/4 up to max-w-sm.",
+      "find": "          dataHook=\"design-sheet\"\n          className={`flex flex-col ${narrow ? \"\" : \"h-full\"} ${DRAWER_WIDTH}`}",
+      "replace": "          dataHook=\"design-sheet\"\n          className={`flex flex-col ${narrow ? \"\" : \"h-full\"}`}"
+    },
+    {
+      "why": "Sliders dragged the design sheet shut (Ali, 28 Sep). The DS Drawer is vaul, and vaul reads a horizontal drag anywhere in a right-hand drawer as a swipe to dismiss, so dragging a Slider closed it. data-vaul-no-drag is vaul's own opt-out; on the body it covers every control, and the header's close button and Done still close it.",
+      "find": "            style={{ scrollbarWidth: \"thin\", scrollbarColor: \"var(--border) transparent\" }}\n            data-hook=\"design-controls\"\n          >",
+      "replace": "            style={{ scrollbarWidth: \"thin\", scrollbarColor: \"var(--border) transparent\" }}\n            data-hook=\"design-controls\"\n            // NO DRAG TO DISMISS FROM THE CONTROLS (Ali, 28 Sep: using a slider\n            // slid the drawer shut). The DS Drawer is vaul, which takes a\n            // horizontal drag anywhere in a right-hand drawer as a swipe to\n            // close, so a Slider thumb dragged the whole sheet away.\n            // data-vaul-no-drag is vaul's own opt-out; the close button and\n            // Done still close it. Ledger: /docs/changes.\n            data-vaul-no-drag=\"\"\n          >"
     }
   ],
   "app/(app)/locations/[location]/reviews/builder/simplified/page.jsx": [

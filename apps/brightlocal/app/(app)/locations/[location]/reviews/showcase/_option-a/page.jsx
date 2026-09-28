@@ -506,8 +506,10 @@ const DRAWER_WIDTH =
 
 // There used to be a second, wider clamp here for the Select Reviews sheet.
 // Select reviews is a full-bleed page now, so the wide clamp went with it and
-// this is the one clamp left. Three sheets wear it: the preview and embed
-// drawers on the showcase list, and the design part sheet in the editor.
+// this is the one clamp left. Two sheets wear it: the preview and embed
+// drawers on the showcase list. The design part sheet in the editor does not
+// any more: it is a narrow column of controls, so it takes the DS Drawer's own
+// width (Ali, 28 Sep: "the normal or default width").
 
 // THE SAME POOL AS REVIEW TRACKER, BY CONSTRUCTION (coordinator, 7 Sep:
 // "Thirty reviews at 3.8 does not demonstrate a showcase, and the Tracker's
@@ -3647,9 +3649,10 @@ function WidgetDesign({ widget, setWidget }) {
 
       {/* ONE SHEET, DRIVEN BY WHICH PART IS OPEN. A drawer per group would be
           six copies of the same furniture. Right-hand from sm up, bottom on a
-          phone: Review Manager's rule, copied rather than reinvented, and the
-          same DRAWER_WIDTH clamp the preview and embed sheets on the list
-          page use, so every overlay on this screen is the same object. */}
+          phone: Review Manager's rule, copied rather than reinvented. The
+          WIDTH is the DS Drawer's own (w-3/4 up to max-w-sm), not the
+          DRAWER_WIDTH clamp the preview and embed sheets use: this is a
+          column of controls, and Ali asked for the default (28 Sep). */}
       <Drawer
         open={open !== null}
         onOpenChange={(o) => (o ? null : setEditing(null))}
@@ -3672,7 +3675,7 @@ function WidgetDesign({ widget, setWidget }) {
         `}</style>
         <DrawerContent
           dataHook="design-sheet"
-          className={`flex flex-col ${narrow ? "" : "h-full"} ${DRAWER_WIDTH}`}
+          className={`flex flex-col ${narrow ? "" : "h-full"}`}
           style={narrow ? { marginTop: 0, maxHeight: "92svh" } : undefined}
         >
           {/* Title only, no hint (Ali, 7 Sep: "drop the descriptions in the
@@ -3687,6 +3690,13 @@ function WidgetDesign({ widget, setWidget }) {
             className="mx-0 mt-0 flex min-h-0 max-w-none grow flex-col gap-5 overflow-y-auto px-4 py-4"
             style={{ scrollbarWidth: "thin", scrollbarColor: "var(--border) transparent" }}
             data-hook="design-controls"
+            // NO DRAG TO DISMISS FROM THE CONTROLS (Ali, 28 Sep: using a slider
+            // slid the drawer shut). The DS Drawer is vaul, which takes a
+            // horizontal drag anywhere in a right-hand drawer as a swipe to
+            // close, so a Slider thumb dragged the whole sheet away.
+            // data-vaul-no-drag is vaul's own opt-out; the close button and
+            // Done still close it. Ledger: /docs/changes.
+            data-vaul-no-drag=""
           >
             {open ? <DesignGroupFields id={open.id} widget={widget} setWidget={setWidget} /> : null}
           </DrawerBody>
