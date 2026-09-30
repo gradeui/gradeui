@@ -30,6 +30,16 @@
         "dev"
       ],
       "port": 3020
+    },
+    {
+      "name": "styleguide",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--dir",
+        "/Users/alastairdriver/Development/glint/Glint-Styleguide",
+        "dev"
+      ],
+      "port": 3030
     }
   ]
 }
