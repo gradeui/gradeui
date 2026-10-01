@@ -117,7 +117,15 @@
     let node = await nested("Icon / " + pascal) || await nested("Icon / " + (alias[pascal] || ""));
     if (reg[cacheName] && !node) node = await figma.getNodeByIdAsync(reg[cacheName]).catch(() => null);
     if (!node && key && !cfg.noImport) {
-      try { node = await timeout(figma.importComponentByKeyAsync(key), cfg.importMs || 6000); reg[cacheName] = node.id; saveReg(); } catch (e) { node = null; }
+      try {
+        node = await timeout(figma.importComponentByKeyAsync(key), cfg.importMs || 6000);
+        reg[cacheName] = node.id; saveReg();
+        // pin it, or the import is garbage-collected once nothing uses it
+        const lp = figma.root.children.find((p) => p.name === "DS rebuild · library");
+        if (lp) await lp.loadAsync();
+        const holder = lp && lp.children.find((x) => x.name === "pinned library components");
+        if (holder) { const i = node.createInstance(); i.name = "pin · Icon/" + pascal; holder.appendChild(i); }
+      } catch (e) { node = null; }
     }
     nodeCache[cacheName] = node;
     return node;
@@ -214,8 +222,12 @@
   }
 
   // ── node makers ───────────────────────────────────────────────────────
+  // In AUTO mode (masters) the parent is an auto-layout frame: appending is
+  // placing, and x/y are ignored by the layout.
+  let AUTO = false;
   const place = (node, parent, box, ox, oy) => {
     parent.appendChild(node);
+    if (AUTO && parent.layoutMode && parent.layoutMode !== "NONE") return;
     node.x = box.x - ox;
     node.y = box.y - oy;
   };
@@ -249,7 +261,9 @@
 
   async function makeText(run, fontSpec, parent, ox, oy, nameHint) {
     const t = figma.createText();
-    const fs = fontSpec || {};
+    const fs0 = fontSpec || {};
+    const k = fs0.scale || 1;
+    const fs = k === 1 ? fs0 : Object.assign({}, fs0, { size: (fs0.size || 14) * k, lh: fs0.lh ? fs0.lh * k : null, ls: (fs0.ls || 0) * k });
     t.fontName = await font(fs.family, styleFor(fs.weight || 400, fs.italic));
     t.fontSize = fs.size || 14;
     const lh = fs.lh || Math.round((fs.size || 14) * 1.2);
@@ -262,9 +276,9 @@
     if (fs.decoration && /line-through/.test(fs.decoration)) t.textDecoration = "STRIKETHROUGH";
     const p = solid(fs.color);
     t.fills = p ? [p] : [];
-    let txt = run.t;
-    if (run.lines <= 1) txt = txt.trim();
-    else txt = txt.replace(/^\s+|\s+$/g, "");
+    let txt = run.t.replace(/^\s+|\s+$/g, "");
+    // nowrap text is one line whatever getClientRects said
+    if (fs.nowrap && !/\n/.test(txt)) run = Object.assign({}, run, { lines: 1 });
     t.characters = txt || " ";
     t.name = nameHint || txt.slice(0, 40);
     const box = run.box;
@@ -282,10 +296,13 @@
       else if (fs.align === "center") t.x = box.x + box.w / 2 - t.width / 2 - ox;
     } else {
       t.textAutoResize = "HEIGHT";
-      t.resize(Math.max(1, box.w + 1), t.height);
+      // Figma's Inter runs ~1% wider than Chrome's: without slack a wrapped
+      // line breaks a word early
+      const w = Math.max(1, box.w * 1.015 + 2);
+      t.resize(w, t.height);
       t.textAlignHorizontal = fs.align === "center" ? "CENTER" : fs.align === "right" || fs.align === "end" ? "RIGHT" : "LEFT";
       parent.appendChild(t);
-      t.x = box.x - ox;
+      t.x = (fs.align === "center" ? box.x + box.w / 2 - w / 2 : fs.align === "right" || fs.align === "end" ? box.x + box.w - w : box.x) - ox;
     }
     t.y = box.y - dy - oy;
     // Truncated in the browser: an ellipsis on one line, or a line clamp.
@@ -293,7 +310,8 @@
     if (fs.clamp && lines > fs.clamp) {
       try { t.textAutoResize = "HEIGHT"; t.resize(Math.max(1, box.w + 1), t.height); t.textTruncation = "ENDING"; t.maxLines = fs.clamp; } catch {}
     } else if (run.vis && (fs.ellipsis || fs.nowrap) && run.vis.w < box.w - 1) {
-      try { t.textAutoResize = "NONE"; t.resize(Math.max(1, run.vis.w), lh); t.textTruncation = fs.ellipsis ? "ENDING" : "DISABLED"; t.x = run.vis.x - ox; } catch {}
+      // clipped one-liner: the ellipsis usually lives on an ancestor cell
+      try { t.textAutoResize = "NONE"; t.resize(Math.max(1, run.vis.w), lh); t.textTruncation = "ENDING"; t.x = run.vis.x - ox; } catch {}
     }
     return t;
   }
@@ -307,6 +325,23 @@
     const byComp = !s.lucide && n.comps && n.comps.map((c) => c.n).find((nm) => ICON_KEYS[nm]);
     const ic = s.lucide ? await icon(s.lucide) : byComp ? await icon(byComp) : null;
     let node;
+    // Review-site marks: the DS Social Media Icon, picked by brand colour
+    // (the app's SourceMark components are minified to one letter).
+    let social = null;
+    if (n.comps && n.comps.some((c) => /SourceMark|Mark$/.test(c.n)) && s.markup) {
+      const m = s.markup;
+      const has = (r, g, b) => m.includes(`rgb(${r}, ${g}, ${b})`);
+      social = has(66, 133, 244) || has(234, 67, 53) ? "Google" : has(8, 102, 255) || has(24, 119, 242) ? "Facebook" : has(255, 26, 26) || has(211, 35, 35) || has(212, 41, 37) ? "Yelp" : /apple/i.test(n.comps.map((c) => c.n).join()) ? "Apple" : null;
+    }
+    const sset = social ? await lib("SocialIcon") : null;
+    if (sset) {
+      const v = variantOf(sset, { Name: social, Colors: "Original" });
+      node = v.createInstance();
+      node.resize(n.box.w, n.box.h);
+      node.name = `Social Media Icon · ${social}`;
+      place(node, parent, n.box, ox, oy);
+      return node;
+    }
     if (ic) {
       node = ic.createInstance();
       node.resize(n.box.w, n.box.h);
@@ -383,11 +418,18 @@
       // carries either an empty family (stale import) or Inter with
       // variable-font axis settings, and loading the latter can wait on a
       // download that never comes back (1 Oct 2026). Same glyphs either way.
-      const st = (t.fontName && typeof t.fontName === "object" && t.fontName.style) || "Medium";
+      const st = fontSpec && fontSpec.weight ? styleFor(fontSpec.weight) : (t.fontName && typeof t.fontName === "object" && t.fontName.style) || "Medium";
       const fn = await font("Inter", st);
       t.fontName = fn;
       t.characters = value;
-      if (fontSpec && fontSpec.color) { const p = solid(fontSpec.color); if (p) t.fills = [p]; }
+      if (fontSpec) {
+        // the code's type, not the library's (the Figma library predates the
+        // DS 3.0.0 type scale in places: sm buttons are 12px there, 14 in code)
+        const k = fontSpec.scale || 1;
+        if (fontSpec.size) t.fontSize = fontSpec.size * k;
+        if (fontSpec.lh) t.lineHeight = { unit: "PIXELS", value: fontSpec.lh * k };
+        if (fontSpec.color) { const p = solid(fontSpec.color); if (p) t.fills = [p]; }
+      }
     } catch (e) {}
     return t;
   }
@@ -415,7 +457,7 @@
   }
   async function flushOverlays(parent, ox, oy) {
     const q = overlayQueue; overlayQueue = [];
-    for (const n of q) await makeSvg(n, parent, ox, oy);
+    for (const n of q) { if (n.svg) await makeSvg(n, parent, ox, oy); else await render(n, parent, ox, oy); }
   }
   async function swapIcon(slotInst, lucide, color) {
     const ic = await icon(lucide);
@@ -457,6 +499,13 @@
       const right = icons.filter((i) => i.box.x >= tx);
       crumb("btn:icons"); if (iconLayers[0]) { iconLayers[0].visible = !!left.length; if (left.length) await iconFor(iconLayers[0], left[0]); }
       if (iconLayers[1]) { iconLayers[1].visible = !!right.length && !!label; if (right.length && label) await iconFor(iconLayers[1], right[0]); }
+      // the code's shape and paint win where it restyles the button (rounded-md
+      // facet triggers, the customer page's dark button)
+      if (n.v) {
+        if (n.v.radius) { try { inst.cornerRadius = n.v.radius[0]; } catch (e) {} }
+        if (n.v.bg) { const p = solid(n.v.bg); if (p) inst.fills = [p]; }
+        if (n.v.border) { const b = n.v.border.find((x) => x.w > 0); const p = b && solid(b.c); if (p) { inst.strokes = [p]; inst.strokeWeight = b.w; } }
+      }
       crumb("btn:resize"); inst.resize(Math.max(1, n.box.w), Math.max(1, n.box.h)); crumb("btn:place");
       place(inst, parent, n.box, ox, oy);
       return inst;
@@ -494,7 +543,7 @@
     when: (n) => comp(n, ["TabsTrigger"]) && n.tag === "button",
     async make(n, parent, ox, oy) {
       const set = await lib("TabsTrigger"); if (!set) return null;
-      const active = n.state === "active";
+      const active = n.state === "active" || n.state === "on" || n.state === "checked" || n.selectedAttr === "true" || n.checked === "true";
       const v = variantOf(set, { Active: active ? "On" : "Off", State: n.disabled ? "Disabled" : "Default" });
       const inst = v.createInstance();
       // label = first text; a trailing number is the count badge
@@ -545,9 +594,12 @@
     async make(n, parent, ox, oy) {
       const set = await lib("Separator"); if (!set) return null;
       const vertical = n.box.h > n.box.w;
-      const v = variantOf(set, { Variant: vertical ? "Vertical" : "Horizontal", Spacing: "None" });
+      const v = variantOf(set, { Variant: vertical ? "Vertical" : "Horizontal", Spacing: "Default" });
       const inst = v.createInstance();
       inst.name = "Separator";
+      // the library's Separator carries its own inset; the code's rule runs edge to edge
+      for (const fr of [inst, inst.findOne((x) => x.name === "SeparatorContainer")]) { if (!fr) continue; try { fr.paddingLeft = fr.paddingRight = fr.paddingTop = fr.paddingBottom = 0; } catch (e) {} }
+      const line = inst.findOne((x) => x.type === "LINE"); if (line) { try { line.layoutSizingHorizontal = "FILL"; } catch (e) {} }
       try { inst.resize(Math.max(1, n.box.w), Math.max(1, n.box.h)); } catch {}
       place(inst, parent, n.box, ox, oy);
       return inst;
@@ -577,10 +629,11 @@
     async make(n, parent, ox, oy) {
       const set = await lib("Switch"); if (!set) return null;
       const on = n.state === "checked";
-      const v = variantOf(set, { Checked: on ? "True" : "False", "Is Checked": on ? "Yes" : "No", Status: on ? "Active" : "Inactive", State: n.disabled ? "Disabled" : "Default" });
+      const v = variantOf(set, { Active: on ? "On" : "Off", Type: "Default", Side: "Left", State: "Default" });
       const inst = v.createInstance();
       inst.name = `Switch · ${on ? "on" : "off"}`;
-      for (const t of inst.findAll((x) => x.type === "TEXT")) t.visible = false;
+      try { inst.setProperties({ "Show Text#217:26": false, "Show Description#428:18": false }); } catch {}
+      if (n.disabled) inst.opacity = 0.5;
       try { inst.resize(Math.max(1, n.box.w), Math.max(1, n.box.h)); } catch {}
       place(inst, parent, n.box, ox, oy);
       return inst;
@@ -589,7 +642,9 @@
 
   // Sidebar menu buttons (top rows and sub rows)
   MAP.push({
-    when: (n) => comp(n, ["SidebarMenuButton", "SidebarMenuSubButton"]) && /^(button|a)$/.test(n.tag),
+    // not the account row: an avatar plus two lines is the DS's dropdown
+    // trigger pattern, not a menu button, so it stays drawn (Avatar inside is DS)
+    when: (n) => comp(n, ["SidebarMenuButton", "SidebarMenuSubButton"]) && /^(button|a)$/.test(n.tag) && !JSON.stringify(n).includes('"Avatar"'),
     async make(n, parent, ox, oy) {
       const sub = !!comp(n, ["SidebarMenuSubButton"]);
       const set = await lib(sub ? "SidebarMenuSubItem" : "SidebarMenuButton"); if (!set) return null;
@@ -598,11 +653,29 @@
       const inst = v.createInstance();
       const runs = []; const w = (x) => { (x.text || []).forEach((r) => runs.push({ t: r.t.trim(), font: x.font })); (x.kids || []).forEach(w); }; w(n);
       const label = runs.map((r) => r.t).join(" ");
-      inst.name = `${sub ? "SidebarMenuSubItem" : "SidebarMenuButton"} · ${label}`;
-      await setLayerText(inst, null, label, runs[0] && runs[0].font);
-      const icons = svgs(n);
+      const icons0 = svgs(n);
+      const chevron = icons0.find((i) => /chevron/.test(i.svg.lucide || "") && i.box.x > n.box.x + n.box.w * 0.6);
+      const main = runs[0] ? runs[0].t : "";
+      const subtitle = runs.length > 1 ? runs.slice(1).map((r) => r.t).join(" ") : "";
+      inst.name = `${sub ? "SidebarMenuSubItem" : "SidebarMenuButton"} · ${main}`;
+      try {
+        if (sub) inst.setProperties({ "Text#3278:82": main, "Icon#3281:375": icons0.length > 0 });
+        else inst.setProperties({ "Text#3278:82": main, "Icon#3281:0": icons0.some((i) => i !== chevron), "Dropdown#3281:44": !!chevron, "Subtitle#3281:45": !!subtitle, ...(subtitle ? { "Subtitle Text#3281:46": subtitle } : {}) });
+      } catch (e) { await setLayerText(inst, null, main, runs[0] && runs[0].font); }
+      if (runs[0] && runs[0].font) for (const t of inst.findAll((x) => x.type === "TEXT")) { const p = solid(runs[0].font.color); if (p && t.characters === main) t.fills = [p]; }
+      // the code's labels never truncate in the nav; Figma's padding differs by a pixel or two
+      // Never truncate a nav label the code shows whole: measure it, and widen
+      // the item by the pixel or two Figma's metrics need beyond the code's box.
+      let need = 0;
+      for (const t of inst.findAll((x) => x.type === "TEXT" && x.visible)) {
+        try { const c = t.clone(); c.textAutoResize = "WIDTH_AND_HEIGHT"; figma.currentPage.appendChild(c); need = Math.max(need, c.width); c.remove(); t.textTruncation = "DISABLED"; } catch {}
+      }
+      n = Object.assign({}, n, { box: Object.assign({}, n.box, { w: Math.max(n.box.w, need + (inst.paddingLeft || 0) + (inst.paddingRight || 0) + (icons0.some((i) => i !== chevron) ? 24 : 0) + 2) }) });
+      // masters: nav labels hug, so a longer label never wraps the item
+      if (AUTO && sub) { try { inst.primaryAxisAlignItems = "MIN"; } catch (e) {} for (const t of inst.findAll((x) => x.type === "TEXT" && x.visible)) { try { t.textAutoResize = "WIDTH_AND_HEIGHT"; t.layoutSizingHorizontal = "HUG"; } catch (e) {} } }
+      const icons = icons0.filter((i) => i !== chevron);
       const iconLayer = inst.findOne((x) => x.type === "INSTANCE" && /^Icon \//.test(x.name));
-      if (iconLayer) { if (icons[0]) await iconFor(iconLayer, icons[0]); else iconLayer.visible = false; }
+      if (iconLayer && icons[0]) await iconFor(iconLayer, icons[0]);
       if (n.v && n.v.bg) { const p = solid(n.v.bg); if (p) inst.fills = [p]; }
       try { inst.resize(Math.max(1, n.box.w), Math.max(1, n.box.h)); } catch {}
       place(inst, parent, n.box, ox, oy);
@@ -689,6 +762,194 @@
     make: (n, parent, ox, oy) => textComponent(n, parent, ox, oy, "CardDescription", (set) => set.children[0]),
   });
 
+
+  // ── overlays: drawers, dialogs, alert dialogs ─────────────────────────
+  // An AlertDialog instance has no body slot: it can only carry a title, a
+  // description and its two buttons. Anything more (an Alert inside, a list)
+  // goes through the Dialog's Body slot instead, or it would be dropped.
+  const simpleAlert = (n) => {
+    const parts = [];
+    const w = (x) => { if (comp(x, ["AlertDialogTitle", "AlertDialogDescription"]) || (comp(x, ["Button", "AlertDialogCancel", "AlertDialogAction"]) && /^(button|a)$/.test(x.tag))) { parts.push(allText(x)); return; } (x.kids || []).forEach(w); };
+    w(n);
+    return allText(n).replace(/\s/g, "").length <= parts.join("").replace(/\s/g, "").length + 2;
+  };
+  // A drawer is the DS Sheet; its contents go through the Sheet Body SLOT at
+  // the code's own coordinates, with the DS header/footer off and the panel
+  // padding zeroed so slot (0,0) is the panel's (0,0). The scrim is the
+  // code's own overlay node, drawn separately.
+  async function surfaceIn(n, parent, ox, oy, renderKids, inst, slotName, zeroNames) {
+    for (const nm of zeroNames) {
+      const fr = nm === "@root" ? inst : inst.findOne((x) => x.name === nm);
+      if (!fr) continue;
+      try { fr.paddingTop = fr.paddingBottom = fr.paddingLeft = fr.paddingRight = 0; fr.itemSpacing = 0; } catch {}
+    }
+    inst.resize(Math.max(1, n.box.w), Math.max(1, n.box.h));
+    const body = figma.createFrame();
+    body.name = "content"; body.fills = []; body.clipsContent = true;
+    body.resize(Math.max(1, n.box.w), Math.max(1, n.box.h));
+    await renderKids(n, body, n.box.x, n.box.y);
+    const slot = inst.findOne((x) => x.type === "SLOT" && x.name === slotName);
+    if (!slot) { inst.remove(); body.remove(); return null; }
+    try { slot.paddingTop = slot.paddingBottom = slot.paddingLeft = slot.paddingRight = 0; } catch {}
+    slot.appendChild(body);
+    try { body.layoutSizingHorizontal = "FIXED"; body.layoutSizingVertical = "FIXED"; } catch {}
+    // the surface hugs its slot and can grow a few px once the body lands
+    try { inst.resize(Math.max(1, n.box.w), Math.max(1, n.box.h)); } catch {}
+    // a master's drawer body fills the panel and keeps the panel's height
+    if (AUTO && isAL(body)) { try { body.layoutSizingHorizontal = "FILL"; body.layoutSizingVertical = "FILL"; } catch {} }
+    place(inst, parent, n.box, ox, oy);
+    return inst;
+  }
+  MAP.push({
+    container: true,
+    when: (n) => comp(n, ["DrawerContent", "SheetContent", "Drawer.Content"]) && n.box.w > 200 && n.box.h > 200,
+    async make(n, parent, ox, oy, renderKids) {
+      const set = await lib("Sheet"); if (!set) return null;
+      const side = n.box.x > 200 ? "right" : n.box.x <= 1 && n.box.w < 900 ? "left" : n.box.y > 100 ? "bottom" : "right";
+      const v = variantOf(set, { Breakpoint: "md", Position: side });
+      const inst = v.createInstance();
+      inst.name = `Sheet · ${n.hook || "drawer"}`;
+      try { inst.setProperties({ "Show Header#27228:10": false, "Show Footer#27228:1": false, "Show icon#29064:0": false }); } catch {}
+      inst.fills = [];
+      const close = inst.findOne((x) => x.name === "Sheet / Close Icon"); if (close) close.visible = false;
+      const content = inst.findOne((x) => x.name === "_SheetContent");
+      if (content) { try { content.layoutSizingHorizontal = "FILL"; content.layoutSizingVertical = "FILL"; } catch {} if (n.v) { const p = n.v.bg && solid(n.v.bg); if (p) content.fills = [p]; } }
+      return surfaceIn(n, parent, ox, oy, renderKids, inst, "Sheet Body", ["@root", "_SheetContent"]);
+    },
+  });
+  MAP.push({
+    container: true,
+    when: (n) => comp(n, ["DialogContent", "DialogContentModal", "AlertDialogContent"]) && !(comp(n, ["AlertDialogContent"]) && simpleAlert(n)) && !comp(n, ["DrawerContent", "SheetContent", "Drawer.Content"]) && n.box.w > 200 && n.box.h > 100 && n.box.w < 1000,
+    async make(n, parent, ox, oy, renderKids) {
+      const set = await lib("Dialog"); if (!set) return null;
+      const v = variantOf(set, { Breakpoint: "lg" });
+      const inst = v.createInstance();
+      inst.name = `Dialog · ${n.hook || "dialog"}`;
+      for (const nm of ["Dialog Header", "Dialog Footer", "Dialog / Close Icon"]) { const x = inst.findOne((y) => y.name === nm); if (x) x.visible = false; }
+      if (n.v) { const p = n.v.bg && solid(n.v.bg); if (p) inst.fills = [p]; if (n.v.radius) try { inst.cornerRadius = n.v.radius[0]; } catch {} }
+      return surfaceIn(n, parent, ox, oy, renderKids, inst, "Dialog Body", ["@root"]);
+    },
+  });
+  MAP.push({
+    when: (n) => comp(n, ["AlertDialogContent"]) && n.box.w > 200 && simpleAlert(n),
+    async make(n, parent, ox, oy) {
+      const set = await lib("AlertDialog"); if (!set) return null;
+      const find = (names) => { let f = null; const w = (x) => { if (f) return; if (comp(x, names)) { f = x; return; } (x.kids || []).forEach(w); }; w(n); return f; };
+      const title = find(["AlertDialogTitle"]), desc = find(["AlertDialogDescription"]);
+      const btns = []; const wb = (x) => { if (comp(x, ["Button", "AlertDialogCancel", "AlertDialogAction"]) && /^(button|a)$/.test(x.tag)) { btns.push(x); return; } (x.kids || []).forEach(wb); }; wb(n);
+      if (!title) return null;
+      const v = variantOf(set, { Breakpoint: n.box.w > 480 ? "md" : "sm" });
+      const inst = v.createInstance();
+      inst.name = `AlertDialog · ${allText(title).slice(0, 40)}`;
+      try { inst.setProperties({ "Title Text#83:0": allText(title), "Description Text#83:3": desc ? allText(desc) : "" }); } catch {}
+      if (!desc) { const d = inst.findOne((x) => x.type === "TEXT" && x.name !== "Title Text"); if (d) d.visible = false; }
+      const slots = inst.findOne((x) => x.name === "_AlertDialogFooter");
+      const bset = await lib("Button");
+      if (slots && bset) {
+        const kids = slots.children.filter((x) => x.type === "INSTANCE");
+        btns.sort((a, b) => a.box.x - b.box.x);
+        for (let i = 0; i < kids.length; i++) {
+          const b = btns[i];
+          if (!b) { kids[i].visible = false; continue; }
+          const c = (comp(b, ["Button"]) || {}).p || {};
+          const vmap = { default: "Primary", secondary: "Secondary", outline: "Outline", ghost: "Ghost", destructive: "Destructive" };
+          const want = variantOf(bset, { Variant: vmap[c.variant] || (comp(b, ["AlertDialogCancel"]) ? "Outline" : "Primary"), State: "Default", Size: "default" });
+          try { kids[i].swapComponent(want); } catch {}
+          await setLayerText(kids[i], null, allText(b));
+          for (const ic of kids[i].children.filter((x) => x.type === "INSTANCE")) ic.visible = false;
+        }
+      }
+      try { inst.resize(Math.max(1, n.box.w), inst.height); } catch {}
+      place(inst, parent, n.box, ox, oy);
+      return inst;
+    },
+  });
+
+  // ── form controls ─────────────────────────────────────────────────────
+  MAP.push({
+    when: (n) => (comp(n, ["InputGroup"]) && n.tag === "div") || (comp(n, ["Input"]) && n.tag === "input" && !n.kids),
+    async make(n, parent, ox, oy) {
+      const set = await lib("Input"); if (!set) return null;
+      let inputNode = n.input ? n : null;
+      const w = (x) => { if (inputNode) return; if (x.input) { inputNode = x; return; } (x.kids || []).forEach(w); }; w(n);
+      if (!inputNode || inputNode.tag === "textarea") return null;
+      const filled = !!inputNode.input.value;
+      const v = variantOf(set, { "Horizontal Layout": "No", Variant: "Text", State: n.disabled ? "Disabled" : filled ? "Filled" : "Default" });
+      const inst = v.createInstance();
+      inst.name = `Input · ${inputNode.input.value || inputNode.input.placeholder}`;
+      try { inst.setProperties({ "Show Label#65:9": false, "Show Description#334:40": false, "Show Link#501:47": false, "Placeholder Text#65:12": inputNode.input.value || inputNode.input.placeholder || " " }); } catch {}
+      const ph = inst.findOne((x) => x.type === "TEXT" && /Placeholder|Input/i.test(x.parent ? x.parent.name : ""));
+      try { inst.resize(Math.max(1, n.box.w), Math.max(1, n.box.h)); } catch {}
+      place(inst, parent, n.box, ox, oy);
+      // the field's own icon layers: Icon / Search (leading, no property, so
+      // shown directly) and Secondary Icon (trailing, behind a boolean)
+      const tx = inputNode.box.x + (inputNode.input.pad ? inputNode.input.pad[3] : 0);
+      for (const ic of svgs(n)) {
+        const leading = ic.box.x < tx;
+        const layer = leading ? inst.findOne((x) => x.type === "INSTANCE" && x.name === "Icon / Search") : inst.findOne((x) => x.type === "INSTANCE" && x.name === "Secondary Icon");
+        if (!layer) { overlayQueue.push(ic); continue; }
+        if (leading) layer.visible = true; else { try { inst.setProperties({ "Secondary Icon#23060:25": true }); } catch (e) {} }
+        if (!(await swapIcon(layer, ic.svg.lucide || (ic.comps && ic.comps[0].n), ic.svg.stroke))) { if (ic.svg.lucide !== "search") { layer.opacity = 0; overlayQueue.push(ic); } }
+      }
+      // icon-to-text gap: the code's gap-2 (the library row carries 64)
+      const irow = inst.findOne((x) => x.name === "Input" && x.type === "FRAME");
+      if (irow) { try { irow.itemSpacing = 8; irow.primaryAxisAlignItems = "MIN"; } catch (e) {} }
+      // the field takes the code's height (32), not the library's 36, without clipping its border
+      const iwrap = inst.findOne((x) => x.name === "Input Wrapper");
+      try { if (iwrap) iwrap.layoutSizingVertical = "FILL"; if (irow) { irow.layoutSizingVertical = "FILL"; irow.paddingTop = irow.paddingBottom = 0; } } catch (e) {}
+      // add-ons that carry copy or paint (a "px" suffix, a colour swatch) are the
+      // code's own and sit over the field; icon-only add-ons are the icon layers above
+      const holdsInput = (k) => k === inputNode || JSON.stringify(k).includes('"input":');
+      for (const k of (n.kids || [])) {
+        if (holdsInput(k)) continue;
+        const onlySvg = !k.text && !k.v && (k.kids || []).every((x) => x.svg) || k.svg;
+        if (!onlySvg) overlayQueue.push(k);
+      }
+      const ph2 = inst.findOne((x) => x.type === "TEXT" && x.name === "PlaceholderText");
+      if (ph2 && inputNode.input.font) { try { ph2.textAlignHorizontal = "LEFT"; ph2.textTruncation = "DISABLED"; ph2.textAutoResize = "WIDTH_AND_HEIGHT"; ph2.layoutSizingHorizontal = "HUG"; } catch (e) {} try { ph2.fontSize = inputNode.input.font.size; const c = solid(inputNode.input.value ? inputNode.input.font.color : (inputNode.input.ph || inputNode.input.font.color)); if (c) ph2.fills = [c]; } catch (e) {} }
+      return inst;
+    },
+  });
+  MAP.push({
+    when: (n) => comp(n, ["Textarea"]) && n.tag === "textarea",
+    async make(n, parent, ox, oy) {
+      const set = await lib("Textarea"); if (!set) return null;
+      const filled = !!(n.input && n.input.value);
+      const v = variantOf(set, { State: n.disabled ? "Disabled" : filled ? "Filled" : "Default" });
+      const inst = v.createInstance();
+      inst.name = "Textarea";
+      try { inst.setProperties({ "Show Label#183:11": false, "Show Description#183:16": false, "Placeholder Text#183:5": (n.input && (n.input.value || n.input.placeholder)) || " " }); } catch {}
+      const inner = inst.findOne((x) => x.name === "Input");
+      try { inst.resize(Math.max(1, n.box.w), Math.max(1, n.box.h)); if (inner) { inner.layoutSizingVertical = "FILL"; } } catch {}
+      const tt = inst.findOne((x) => x.type === "TEXT" && x.name === "PlaceholderText");
+      if (tt && n.input && n.input.font) {
+        const f = n.input.font, k = f.scale || 1;
+        try { tt.fontName = await font("Inter", styleFor(f.weight || 400)); tt.fontSize = f.size * k; if (f.lh) tt.lineHeight = { unit: "PIXELS", value: f.lh * k }; const c = solid(n.input.value ? f.color : (n.input.ph || f.color)); if (c) tt.fills = [c]; } catch (e) {}
+        if (inner && n.input.pad) { try { inner.paddingTop = n.input.pad[0]; inner.paddingLeft = n.input.pad[3]; inner.paddingRight = n.input.pad[1]; } catch (e) {} }
+      }
+      place(inst, parent, n.box, ox, oy);
+      return inst;
+    },
+  });
+  MAP.push({
+    when: (n) => comp(n, ["SelectTrigger"]) && n.tag === "button",
+    async make(n, parent, ox, oy) {
+      const set = await lib("Select"); if (!set) return null;
+      const label = allText(n);
+      const v = variantOf(set, { State: n.disabled ? "Disabled" : label ? "Filled" : "Default" });
+      const inst = v.createInstance();
+      inst.name = `Select · ${label}`;
+      try { inst.setProperties({ "Show Label#345:164": false, "Show Description#345:170": false, "Placeholder#3001:0": label || " ", "Show Icon#17382:0": false }); } catch {}
+      const st = inst.findOne((x) => x.type === "TEXT" && x.name === "PlaceholderText");
+      const fr = firstText(n);
+      if (st && fr && fr.font) { try { st.fontName = await font("Inter", styleFor(fr.font.weight || 400)); st.fontSize = fr.font.size; if (fr.font.lh) st.lineHeight = { unit: "PIXELS", value: fr.font.lh }; const c = solid(fr.font.color); if (c) st.fills = [c]; } catch (e) {} }
+      if (n.v && n.v.radius) { const tr = inst.findOne((x) => x.name === "_SelectTrigger"); if (tr) try { tr.cornerRadius = n.v.radius[0]; } catch (e) {} }
+      try { inst.resize(Math.max(1, n.box.w), Math.max(1, n.box.h)); } catch {}
+      place(inst, parent, n.box, ox, oy);
+      return inst;
+    },
+  });
+
   // Logo
   MAP.push({
     when: (n) => comp(n, ["Logo"]) && (n.svg || n.kids),
@@ -697,8 +958,9 @@
       const v = variantOf(set, { Variant: "Logotype" });
       const inst = v.createInstance();
       inst.name = "Logo";
-      try { inst.resize(Math.max(1, n.box.w), Math.max(1, n.box.h)); } catch {}
-      place(inst, parent, n.box, ox, oy);
+      const art = n.svg ? n : svgs(n)[0] || n;
+      try { inst.rescale(art.box.w / inst.width); } catch {}
+      place(inst, parent, art.box, ox, oy);
       return inst;
     },
   });
@@ -737,7 +999,13 @@
       body.resize(Math.max(1, n.box.w), Math.max(1, n.box.h));
       await renderKids(n, body, n.box.x, n.box.y);
       const slot = inst.findOne((x) => x.type === "SLOT" && x.name === "Card Content");
-      if (slot) { slot.appendChild(body); try { body.layoutSizingHorizontal = "FIXED"; body.layoutSizingVertical = "FIXED"; } catch {} }
+      if (slot) {
+        slot.appendChild(body);
+        try {
+          if (AUTO && isAL(body)) { body.layoutSizingHorizontal = "FILL"; body.layoutSizingVertical = "HUG"; inst.primaryAxisSizingMode = "AUTO"; }
+          else { body.layoutSizingHorizontal = "FIXED"; body.layoutSizingVertical = "FIXED"; }
+        } catch {}
+      }
       else { inst.remove(); body.remove(); return null; }
       place(inst, parent, n.box, ox, oy);
       return inst;
@@ -749,7 +1017,83 @@
   let DEADLINE = Infinity;
   const tick = (k, t0) => { stats.t[k] = (stats.t[k] || 0) + (Date.now() - t0); };
 
+  // ── inline text: one text node per paragraph, not one per DOM text run ──
+  // "4.7 average" is a <span>4.7</span> beside " average"; placed as two
+  // runs at the browser's x, Figma's slightly different advances ate the
+  // space ("4.7average") or opened one ("Delete “ name ”"), and a wrapped
+  // sentence with a bold date in it was drawn over itself. Merged, the text
+  // flows like the browser's does and keeps each run's style as a range.
+  const inlineKid = (k) => !k.v && !k.clip && !k.svg && !k.img && !k.input && !k.pos && !k.rot && !(k.lay && k.lay.d !== "block") &&
+    ((k.text && k.text.length) || (k.kids && k.kids.length)) && (!k.kids || k.kids.every(inlineKid)) && !MAP.some((m) => m.when(k));
+  const segsOf = (n) => {
+    const out = (n.text || []).map((r) => ({ t: r.t, box: r.box, lines: r.lines || 1, font: n.font, o: r.o }));
+    for (const k of n.kids || []) if (inlineKid(k)) out.push(...segsOf(k));
+    return out;
+  };
+  async function makeMerged(segs, n, parent, ox, oy) {
+    const lineOf = (b) => Math.round(b.y / 4);
+    if (segs.every((sg) => sg.o !== undefined)) segs.sort((a, b) => a.o - b.o);
+    else segs.sort((a, b) => (Math.abs(a.box.y - b.box.y) < 6 ? a.box.x - b.box.x : a.box.y - b.box.y));
+    const f0 = segs[0].font || n.font || {};
+    const k = f0.scale || 1;
+    const lh = (f0.lh || Math.round((f0.size || 14) * 1.2)) * k;
+    const t = figma.createText();
+    t.fontName = await font(f0.family, styleFor(f0.weight || 400, f0.italic));
+    t.fontSize = (f0.size || 14) * k; t.lineHeight = { unit: "PIXELS", value: lh };
+    let chars = segs.map((sg) => sg.t).join("");
+    const lead = chars.length - chars.replace(/^\s+/, "").length;
+    chars = chars.replace(/^\s+/, "").replace(/\s+$/, "");
+    t.characters = chars || " ";
+    let pos = -lead;
+    for (const sg of segs) {
+      const a = Math.max(0, pos), b = Math.min(chars.length, pos + sg.t.length); pos += sg.t.length;
+      if (b <= a) continue;
+      const f = sg.font || f0; const kk = f.scale || 1;
+      try {
+        t.setRangeFontName(a, b, await font(f.family, styleFor(f.weight || 400, f.italic)));
+        t.setRangeFontSize(a, b, (f.size || 14) * kk);
+        const pnt = solid(f.color); if (pnt) t.setRangeFills(a, b, [pnt]);
+        if (f.decoration && /underline/.test(f.decoration)) t.setRangeTextDecoration(a, b, "UNDERLINE");
+      } catch (e) {}
+    }
+    t.name = chars.slice(0, 40);
+    const minX = Math.min(...segs.map((sg) => sg.box.x)), maxX = Math.max(...segs.map((sg) => sg.box.x + sg.box.w));
+    const minY = Math.min(...segs.map((sg) => sg.box.y));
+    const multi = new Set(segs.map((sg) => lineOf(sg.box))).size > 1 || segs.some((sg) => sg.lines > 1) || /\n/.test(chars);
+    const contentH = Math.max(1, segs[0].box.h - ((segs[0].lines || 1) - 1) * lh);
+    parent.appendChild(t);
+    if (!multi || (f0.nowrap && !/\n/.test(chars))) {
+      t.textAutoResize = "WIDTH_AND_HEIGHT";
+      t.x = minX - ox;
+      if (f0.align === "right" || f0.align === "end") t.x = maxX - t.width - ox;
+      else if (f0.align === "center") t.x = (minX + maxX) / 2 - t.width / 2 - ox;
+    } else {
+      // the browser wrapped this paragraph inside its block: give Figma the
+      // block's width (a hair more, Figma's Inter runs ~1% wider)
+      const left = Math.min(minX, n.box.x + 0.5), right = Math.max(maxX, n.box.x + n.box.w - 0.5);
+      const w = Math.max(maxX - minX, right - left) * 1.015 + 2;
+      t.textAutoResize = "HEIGHT"; t.resize(w, t.height);
+      t.textAlignHorizontal = f0.align === "center" ? "CENTER" : f0.align === "right" || f0.align === "end" ? "RIGHT" : "LEFT";
+      t.x = (f0.align === "center" ? (left + right) / 2 - w / 2 : f0.align === "right" || f0.align === "end" ? right - w : left) - ox;
+    }
+    t.y = minY - (lh - contentH) / 2 - oy;
+    return t;
+  }
+
   async function renderKids(n, frame, ox, oy) {
+    if (n.marker) {
+      const f = n.font || (firstText(n) || {}).font || { size: 14, lh: 20, color: "rgb(17, 20, 18)" };
+      const lh = f.lh || 20;
+      const mt = await makeText({ t: n.marker.t, lines: 1, box: { x: n.box.x, y: n.box.y + (lh - (f.size || 14) * 1.2) / 2, w: 20, h: (f.size || 14) * 1.2 } }, f, frame, ox, oy, "marker");
+      if (!n.marker.inside) mt.x = n.box.x - ox - mt.width - 6;
+    }
+    const inlineKids = (n.kids || []).filter(inlineKid);
+    const canMerge = (!n.lay || n.lay.d === "block") && !n.input && ((n.text && n.text.length && inlineKids.length) || (n.text && n.text.length > 1) || (!n.text && inlineKids.length > 1 && inlineKids.length === (n.kids || []).length));
+    if (canMerge) {
+      try { await makeMerged(segsOf(Object.assign({}, n, { kids: inlineKids })), n, frame, ox, oy); stats.nodes++; } catch (e) { stats.errors.push("merge:" + String(e).slice(0, 80)); }
+      for (const k of (n.kids || []).filter((k) => !inlineKids.includes(k)).sort((a, b) => (a.z || 0) - (b.z || 0))) await render(k, frame, ox, oy);
+      return;
+    }
     if (n.text && n.text.length) for (const r of n.text) { try { const tt = Date.now(); await makeText(r, n.font, frame, ox, oy); tick("text", tt); stats.nodes++; } catch (e) { stats.errors.push("text:" + String(e).slice(0, 80)); } }
     if (n.input && !n.kids) {
       const val = n.input.value || n.input.placeholder;
@@ -808,6 +1152,218 @@
     }
   }
 
+
+  // ── AUTO mode: auto-layout masters from the code's own flex structure ──
+  const near = (a, b, tol = 2) => Math.abs(a - b) <= tol;
+  const innerOf = (pn) => {
+    const pad = (pn && pn.lay && pn.lay.pad) || [0, 0, 0, 0];
+    const bw = (pn && pn.v && pn.v.border) ? pn.v.border.map((b) => b.w || 0) : [0, 0, 0, 0];
+    return { w: pn ? pn.box.w - pad[1] - pad[3] - bw[1] - bw[3] : 0, h: pn ? pn.box.h - pad[0] - pad[2] - bw[0] - bw[2] : 0 };
+  };
+  const isAL = (f) => f && f.layoutMode && f.layoutMode !== "NONE";
+  const median = (a) => { if (!a.length) return 0; const b = a.slice().sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
+
+  // Size a child inside an auto-layout parent the way the browser did:
+  // FILL where it spans the parent's content box (or flex-grows), HUG where
+  // its own layout reproduces its size, FIXED otherwise.
+  function sizeIn(node, n, parent, pn) {
+    if (!isAL(parent)) return;
+    const inner = innerOf(pn);
+    const row = parent.layoutMode === "HORIZONTAL";
+    const canHug = isAL(node) || node.type === "TEXT";
+    // flex-grow only means FILL where the parent has a size of its own on
+    // that axis; inside a hugging parent FILL collapses the child to nothing
+    const parentFixedPrimary = parent.primaryAxisSizingMode === "FIXED";
+    if (n.grow && !parentFixedPrimary) n = Object.assign({}, n, { grow: 0 });
+    try {
+      if (row) {
+        if (n.grow) node.layoutSizingHorizontal = "FILL";
+        else if (canHug) { node.layoutSizingHorizontal = "HUG"; if (!near(node.width, n.box.w, 1.5)) { node.layoutSizingHorizontal = "FIXED"; node.resize(Math.max(1, n.box.w), node.height); } }
+        else node.layoutSizingHorizontal = "FIXED";
+        if (pn && pn.lay && /stretch|normal/.test(pn.lay.ai || "") && near(n.box.h, inner.h)) node.layoutSizingVertical = "FILL";
+        else if (canHug && node.type !== "TEXT") { node.layoutSizingVertical = "HUG"; if (!near(node.height, n.box.h, 0.4)) { node.layoutSizingVertical = "FIXED"; node.resize(node.width, Math.max(1, n.box.h)); } }
+      } else {
+        if (near(n.box.w, inner.w, 2)) node.layoutSizingHorizontal = "FILL";
+        else if (canHug) { node.layoutSizingHorizontal = "HUG"; if (!near(node.width, n.box.w, 1.5)) { node.layoutSizingHorizontal = "FIXED"; node.resize(Math.max(1, n.box.w), node.height); } }
+        else node.layoutSizingHorizontal = "FIXED";
+        if (n.grow) node.layoutSizingVertical = "FILL";
+        else if (canHug && node.type !== "TEXT") { node.layoutSizingVertical = "HUG"; if (!near(node.height, n.box.h, 0.4)) { node.layoutSizingVertical = "FIXED"; node.resize(node.width, Math.max(1, n.box.h)); } }
+      }
+    } catch (e) {}
+  }
+
+  // Configure frame f as auto-layout from spec node n (its flex/grid/block
+  // layout, or the children's geometry when the code gave none).
+  function layoutFrom(f, n, kids) {
+    const lay = n.lay || {};
+    let dir = "VERTICAL";
+    if (lay.d === "flex") dir = /row/.test(lay.dir || "row") ? "HORIZONTAL" : "VERTICAL";
+    else if (lay.d === "grid") dir = (lay.cols || 1) > 1 ? "HORIZONTAL" : "VERTICAL";
+    else if (kids.length >= 2) {
+      const sideBySide = kids.every((k, i) => i === 0 || k.box.x >= kids[i - 1].box.x + kids[i - 1].box.w - 2);
+      dir = sideBySide ? "HORIZONTAL" : "VERTICAL";
+    }
+    f.layoutMode = dir;
+    const bw = n.v && n.v.border ? n.v.border.map((b) => b.w || 0) : [0, 0, 0, 0];
+    let pad = lay.pad;
+    if (!pad && kids.length) {
+      const minX = Math.min(...kids.map((k) => k.box.x)), minY = Math.min(...kids.map((k) => k.box.y));
+      const maxX = Math.max(...kids.map((k) => k.box.x + k.box.w)), maxY = Math.max(...kids.map((k) => k.box.y + k.box.h));
+      pad = [Math.max(0, minY - n.box.y - bw[0]), Math.max(0, n.box.x + n.box.w - maxX - bw[1]), Math.max(0, n.box.y + n.box.h - maxY - bw[2]), Math.max(0, minX - n.box.x - bw[3])];
+    }
+    pad = pad || [0, 0, 0, 0];
+    f.paddingTop = pad[0] + bw[0]; f.paddingRight = pad[1] + bw[1]; f.paddingBottom = pad[2] + bw[2]; f.paddingLeft = pad[3] + bw[3];
+    // spacing: the declared gap, else the gaps the margins actually made
+    const flow = kids.filter((k) => k.pos !== "absolute" && k.pos !== "fixed");
+    const gaps = [];
+    for (let i = 1; i < flow.length; i++) gaps.push(dir === "HORIZONTAL" ? flow[i].box.x - (flow[i - 1].box.x + flow[i - 1].box.w) : flow[i].box.y - (flow[i - 1].box.y + flow[i - 1].box.h));
+    const declared = lay.gap ? (dir === "HORIZONTAL" ? lay.gap[1] : lay.gap[0]) : 0;
+    f.itemSpacing = Math.max(0, Math.round(declared || median(gaps.filter((g) => g > -1)) || 0));
+    const jc = lay.jc || "normal";
+    f.primaryAxisAlignItems = /space-between|space-around|space-evenly/.test(jc) ? "SPACE_BETWEEN" : /center/.test(jc) ? "CENTER" : /end/.test(jc) ? "MAX" : "MIN";
+    const ai = lay.ai || "normal";
+    f.counterAxisAlignItems = /center/.test(ai) ? "CENTER" : /end/.test(ai) ? "MAX" : (/baseline/.test(ai) && dir === "HORIZONTAL") ? "BASELINE" : "MIN";
+    if (lay.wrap || lay.d === "grid" && (lay.cols || 1) > 1) { f.layoutWrap = "WRAP"; f.counterAxisSpacing = lay.gap ? (dir === "HORIZONTAL" ? lay.gap[0] : lay.gap[1]) : f.itemSpacing; }
+    f.primaryAxisSizingMode = "AUTO"; f.counterAxisSizingMode = "AUTO";
+  }
+
+  async function autoKids(n, frame) {
+    const kids = (n.kids || []).filter((k) => !(k.comps && k.comps.some((c) => /^(ShellTweaker|DemoTweaker|Tweaker)/.test(c.n))));
+    const mixed = (n.text && n.text.length && kids.length) || (n.text && n.text.length > 1) || (n.input && !kids.length);
+    if (mixed || !kids.length && n.text) {
+      // inline mixes (text beside a link, "7 of 60") keep the browser's
+      // geometry inside this one frame
+      const was = AUTO; AUTO = false;
+      frame.layoutMode = "NONE";
+      frame.resize(Math.max(1, n.box.w), Math.max(1, n.box.h));
+      await renderKids(n, frame, n.box.x, n.box.y);
+      AUTO = was;
+      return;
+    }
+    layoutFrom(frame, n, kids);
+    // DOM order is layout order; only out-of-flow children paint by z, last
+    const flow = kids.filter((k) => k.pos !== "absolute" && k.pos !== "fixed");
+    const out = kids.filter((k) => k.pos === "absolute" || k.pos === "fixed").sort((a, b) => (a.z || 0) - (b.z || 0));
+    // ONE big gap in a row is an auto margin (ml-auto pushing a group to the
+    // end): split the row into a start group and an end group, space-between.
+    if (frame.layoutMode === "HORIZONTAL" && flow.length >= 3 && frame.primaryAxisAlignItems !== "SPACE_BETWEEN") {
+      const gaps = flow.slice(1).map((k, i) => k.box.x - (flow[i].box.x + flow[i].box.w));
+      const base = frame.itemSpacing;
+      const big = gaps.map((g, i) => [g, i]).filter(([g]) => g > base + 16);
+      if (big.length === 1) {
+        const cut = big[0][1] + 1;
+        const groups = [flow.slice(0, cut), flow.slice(cut)];
+        const small = gaps.filter((g, i) => i !== big[0][1]);
+        frame.primaryAxisAlignItems = "SPACE_BETWEEN";
+        for (const [gi, g] of groups.entries()) {
+          const box = { x: Math.min(...g.map((k) => k.box.x)), y: Math.min(...g.map((k) => k.box.y)) };
+          box.w = Math.max(...g.map((k) => k.box.x + k.box.w)) - box.x; box.h = Math.max(...g.map((k) => k.box.y + k.box.h)) - box.y;
+          const gn = { tag: "div", box, kids: g, lay: { d: "flex", dir: "row", gap: [0, small.length ? median(small) : base], pad: [0, 0, 0, 0], jc: "normal", ai: (n.lay && n.lay.ai) || "center" } };
+          const gf = figma.createFrame(); gf.name = gi === 0 ? "start" : "end"; gf.fills = [];
+          frame.appendChild(gf);
+          await autoKids(gn, gf);
+          try { gf.layoutSizingHorizontal = "HUG"; gf.layoutSizingVertical = "HUG"; } catch (e) {}
+        }
+        for (const k of out) await renderAuto(k, frame, n);
+        return;
+      }
+    }
+    for (const k of flow.concat(out)) await renderAuto(k, frame, n);
+  }
+
+  async function renderAuto(n, parent, pn) {
+    if (n.comps && n.comps.some((c) => /^(ShellTweaker|DemoTweaker|Tweaker)/.test(c.n))) return null;
+    try {
+      let made = null;
+      for (const m of MAP) {
+        if (m.when(n)) {
+          overlayQueue = [];
+          made = await m.make(n, parent, 0, 0, (nn, body) => autoKids(nn, body));
+          if (made) { overlayQueue = []; break; }
+        }
+      }
+      if (!made && n.svg) made = await makeSvg(n, parent, 0, 0);
+      if (!made && n.img) made = await makeImg(n, parent, 0, 0);
+      if (!made && !n.v && !n.clip && n.text && n.text.length === 1 && !n.kids && !n.input) {
+        // a bare text element is just its text node
+        const t = await makeText(n.text[0], n.font, parent, 0, 0);
+        t.name = nice(n) || t.name;
+        if (isAL(parent)) {
+          if ((n.text[0].lines || 1) > 1 && !(n.font && n.font.nowrap)) { t.textAutoResize = "HEIGHT"; t.layoutSizingHorizontal = "FILL"; }
+          else if (t.textTruncation === "ENDING") { t.layoutSizingHorizontal = "FILL"; }
+          else t.textAutoResize = "WIDTH_AND_HEIGHT";
+        }
+        return t;
+      }
+      if (!made) {
+        const kids = n.kids || [];
+        // a wrapper that paints nothing and holds one child is that child
+        if (!n.v && !n.clip && !n.lay && kids.length === 1 && !n.text && !n.hook) return await renderAuto(kids[0], parent, pn);
+        const f = figma.createFrame();
+        f.name = nice(n) || n.tag;
+        f.fills = [];
+        applyVisual(f, n.v, n.box);
+        f.clipsContent = !!n.clip;
+        parent.appendChild(f);
+        await autoKids(n, f);
+        made = f;
+      }
+      if (n.pos === "absolute" || n.pos === "fixed") {
+        if (isAL(parent)) { made.layoutPositioning = "ABSOLUTE"; made.x = n.box.x - pn.box.x; made.y = n.box.y - pn.box.y; }
+        return made;
+      }
+      sizeIn(made, n, parent, pn);
+      // Margins: auto layout has none per child, so a child that sits inside
+      // its parent's content edge (an indented sub-list, mx-3) is wrapped in
+      // a frame padded by exactly that margin.
+      if (isAL(parent) && parent.layoutMode === "VERTICAL" && parent.counterAxisAlignItems === "MIN" && pn) {
+        const pad = (pn.lay && pn.lay.pad) || [0, 0, 0, 0];
+        const bw = pn.v && pn.v.border ? pn.v.border.map((b) => b.w || 0) : [0, 0, 0, 0];
+        const left = pn.box.x + pad[3] + bw[3], right = pn.box.x + pn.box.w - pad[1] - bw[1];
+        const ml = Math.round(n.box.x - left), mr = Math.round(right - (n.box.x + n.box.w));
+        if (ml > 1 && ml < pn.box.w / 2) {
+          const w = figma.createFrame(); w.name = "inset"; w.fills = []; w.layoutMode = "VERTICAL";
+          w.paddingLeft = ml; w.paddingRight = Math.max(0, mr);
+          parent.insertChild(parent.children.indexOf(made), w);
+          const wasFill = made.layoutSizingHorizontal === "FILL";
+          w.appendChild(made);
+          try { w.layoutSizingHorizontal = "FILL"; w.layoutSizingVertical = "HUG"; if (wasFill || mr <= 1) made.layoutSizingHorizontal = "FILL"; } catch (e) {}
+          return w;
+        }
+      }
+      return made;
+    } catch (e) {
+      stats.errors.push("auto " + (n.hook || n.tag) + ": " + String(e).slice(0, 100));
+      return null;
+    }
+  }
+
+  // Build ONE subtree of a spec as an auto-layout frame (the start of a
+  // master). `pick` finds the node: { hook } or { comp } or a function.
+  async function buildAuto(specPath, pick, opts = {}) {
+    const spec = typeof specPath === "string" ? await (await fetch(`${BASE}/${specPath}`)).json() : specPath;
+    let target = null;
+    const test = typeof pick === "function" ? pick : (n) => (pick.hook && n.hook === pick.hook) || (pick.comp && n.comps && n.comps.some((c) => c.n === pick.comp));
+    const w = (n) => { if (target) return; if (test(n)) { target = n; return; } (n.kids || []).forEach(w); };
+    w(spec.root);
+    if (!target) return { error: "not found" };
+    const page = await pageNamed(opts.page || "DS rebuild · scratch");
+    const host = figma.createFrame();
+    host.name = "host"; host.fills = []; host.layoutMode = "VERTICAL"; host.primaryAxisSizingMode = "AUTO"; host.counterAxisSizingMode = "AUTO";
+    page.appendChild(host);
+    AUTO = true;
+    const fake = { box: { x: target.box.x, y: target.box.y, w: target.box.w, h: target.box.h }, lay: { d: "flex", dir: "column", pad: [0, 0, 0, 0] } };
+    const made = await renderAuto(target, host, fake);
+    AUTO = false;
+    if (!made) { host.remove(); return { error: "render failed", errors: stats.errors.slice(0, 5) }; }
+    page.appendChild(made);
+    try { if (isAL(made)) { made.layoutSizingHorizontal = "FIXED"; made.resize(target.box.w, made.height); } } catch (e) {}
+    host.remove();
+    made.x = opts.x || 0; made.y = opts.y || 0;
+    if (opts.name) made.name = opts.name;
+    return { id: made.id, w: made.width, h: made.height, box: target.box, errors: stats.errors.slice(0, 8) };
+  }
+
   // ── public api ───────────────────────────────────────────────────────
   async function pageNamed(name) {
     let p = figma.root.children.find((x) => x.name === name);
@@ -846,5 +1402,5 @@
     return { status: r.status, bytes: bytes.length };
   }
 
-  return { build, exportPng, lib, icon, reg, stats, _render: render, _setLayerText: setLayerText };
+  return { build, buildAuto, exportPng, lib, icon, reg, stats, pageNamed, _render: render, _setLayerText: setLayerText };
 })

@@ -16,12 +16,12 @@ specdir = os.path.join(data, run, "specs")
 jobs, ys = [], {}
 for page, section, sx, idx, name in sorted(cards, key=lambda c: (c[0], c[2], c[3])):
     key = (page, section)
-    y = ys.get(key, 80)
+    y = ys.get(key, 140)
     f = os.path.join(specdir, name + ".json")
     h = 900
     if os.path.exists(f):
         h = json.load(open(f)).get("h", 900)
-    ys[key] = y + h + 120
+    ys[key] = y + h + 160
     if not os.path.exists(f):
         continue
     if prefixes and not any(name.startswith(p) for p in prefixes):

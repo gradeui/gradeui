@@ -217,12 +217,22 @@
       const box = rect(b);
       if (!intersect(box, clip).w) continue;
       const vis = intersect(box, clip);
-      const run = { t: s.replace(/\s+/g, " "), box, lines: rects.length };
+      // pre / pre-line / pre-wrap keep their line breaks (the email preview's
+      // "Hi Sophie,\n\nThank you..."); everything else collapses like HTML.
+      const pre = /^(pre|pre-line|pre-wrap|break-spaces)$/.test(getComputedStyle(el).whiteSpace);
+      const txt = pre ? s.replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n") : s.replace(/\s+/g, " ");
+      const run = { t: txt, box, lines: rects.length, o: seq.get(n) };
       if (vis.w < box.w - 1 || vis.h < box.h - 1) run.vis = vis;
       runs.push(run);
     }
     return runs;
   };
+
+  // document order of every text node, so a paragraph split across inline
+  // elements is reassembled in reading order, not by position (a run that
+  // wraps two lines starts at the left edge, before a bold date on line 1)
+  const seq = new Map();
+  { const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let i = 0; while (tw.nextNode()) seq.set(tw.currentNode, i++); }
 
   let count = 0;
   const walk = (el, clip) => {
@@ -277,13 +287,26 @@
       node.input = { value: el.value, placeholder: el.getAttribute("placeholder") || "", type: el.type, font: fontOf(cs), ph: rgba(getComputedStyle(el, "::placeholder").color), pad: [px(cs.paddingTop) + px(cs.borderTopWidth), px(cs.paddingRight), px(cs.paddingBottom), px(cs.paddingLeft) + px(cs.borderLeftWidth)] };
     }
     if (tag === "canvas") node.canvas = true;
+    // list markers are ::marker, which no DOM walk sees: record "1." / "•"
+    if (cs.display === "list-item" && cs.listStyleType !== "none") {
+      const sibs = [...el.parentElement.children].filter((x) => getComputedStyle(x).display === "list-item");
+      const i = sibs.indexOf(el) + 1;
+      const t = /decimal/.test(cs.listStyleType) ? `${i}.` : /disc/.test(cs.listStyleType) ? "•" : /circle/.test(cs.listStyleType) ? "◦" : "–";
+      node.marker = { t, inside: cs.listStylePosition === "inside" };
+    }
 
     const clipsHere = clips(cs);
     if (clipsHere) node.clip = true;
     const childClip = clipsHere ? intersect(clip, box) : clip;
 
     const runs = textRuns(el, childClip);
-    if (runs.length) { node.text = runs; node.font = fontOf(cs); }
+    if (runs.length) {
+      node.text = runs; node.font = fontOf(cs);
+      // Inside a CSS-scaled thumbnail (the campaign and showcase mini
+      // previews) the box is scaled but computed font sizes are not.
+      const ow = el.offsetWidth;
+      if (ow > 0) { const sc = Math.round((b.width / ow) * 1000) / 1000; if (Math.abs(sc - 1) > 0.02) node.font.scale = sc; }
+    }
 
     const kids = [];
     for (const c of el.children) {
@@ -309,7 +332,27 @@
     // A wrapper that paints nothing, clips nothing and is no component just
     // hands its children up: the Figma tree stays shallow and every kept
     // node means something.
-    const meaningful = node.v || node.comps || node.clip || node.text || node.input || node.before || node.after || node.hook || node.rot || node.pos;
+    // Layout, for the auto-layout masters (build.js ignores it in the
+    // geometric rebuild). Flex/grid containers with two or more children are
+    // kept even when they paint nothing, because they ARE the structure.
+    const disp = cs.display;
+    if (/flex|grid/.test(disp) && kids.length >= 2) {
+      node.lay = {
+        d: /grid/.test(disp) ? "grid" : "flex",
+        dir: cs.flexDirection,
+        gap: [px(cs.rowGap), px(cs.columnGap)],
+        pad: [px(cs.paddingTop), px(cs.paddingRight), px(cs.paddingBottom), px(cs.paddingLeft)],
+        jc: cs.justifyContent, ai: cs.alignItems, wrap: cs.flexWrap !== "nowrap" || undefined,
+        cols: /grid/.test(disp) ? cs.gridTemplateColumns.split(" ").length : undefined,
+      };
+    } else if (kids.length >= 2 && disp === "block") {
+      node.lay = { d: "block", pad: [px(cs.paddingTop), px(cs.paddingRight), px(cs.paddingBottom), px(cs.paddingLeft)] };
+    }
+    const grow = parseFloat(cs.flexGrow);
+    if (grow > 0) node.grow = grow;
+    if (cs.alignSelf && cs.alignSelf !== "auto") node.as = cs.alignSelf;
+    if (cs.position === "absolute") node.pos = "absolute";
+    const meaningful = node.v || node.comps || node.clip || node.text || node.input || node.before || node.after || node.hook || node.rot || node.pos || (node.lay && node.lay.d !== "block");
     if (!meaningful) return kids.length ? kids : null;
     count += 1;
     return node;
