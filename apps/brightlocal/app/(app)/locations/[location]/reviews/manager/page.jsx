@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "RM — Review Manager (DataTable)"
-// (design dmsxf5zjggd0n, version 1788892759000). Registry: lib/screens.ts;
+// (design dmsxf5zjggd0n, version 1790884971041). Registry: lib/screens.ts;
 // re-promotion workflow: apps/brightlocal/README.md.
-// source-hash: a2b814efb8d5
+// source-hash: d04cddd733cc
 
 // RM — Review Manager. Real DS throughout: DataTable, DataTableSearch,
 // DataTablePagination, Tabs, and Popover+Command for every facet menu.
