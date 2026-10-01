@@ -21,6 +21,21 @@
 //   - From md up it is AppChrome as before: the full rail, never the
 //     collapsed icon rail, and the sticky toolbar.
 //
+// LATER ON 1 OCT (Ali, on the staging chrome):
+//   - THE ACCOUNT sits at the TOP of the rail, above the nav: the person
+//     and the business (Wade Jones, Ridgeline Construction).
+//   - TWO-LINE NAV ITEMS again, a label and a muted line made from live
+//     data: the total held, how many transactions, how many bank accounts.
+//   - GLINT'S OWN ICONS for Wallets and Activity, from Primatives' "Icon /
+//     Tab" set (the iOS tab bar's), outline at rest and filled when lit.
+//     Bank accounts keeps Lucide's landmark until Glint draws one.
+//   - THE AVATAR OPENS A PROPER ACCOUNT MENU (DS DropdownMenu, 288 wide,
+//     40px rows): the person, the business and the email, then Profile,
+//     Settings, Help (a plain question mark in a circle, never a lifebuoy),
+//     then Sign out. Sign out goes back to the demo landing; Profile,
+//     Settings and Help have no screen yet, so they close the menu and do
+//     nothing else.
+//
 // Everything else is AppChrome's, and its notes still apply: the nav
 // (Wallets, Activity, Bank Accounts) keeps the lit item a link, the
 // wordmark is the way back to the demo home, identity comes from Persona,
@@ -34,7 +49,6 @@ import {
   Sidebar,
   SidebarHeader,
   SidebarContent,
-  SidebarFooter,
   SidebarSection,
   SidebarItem,
   Sheet,
@@ -48,26 +62,97 @@ import {
   Button,
   Avatar,
   AvatarFallback,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@gradeui/ui";
-import { List, Landmark, Bell, EyeOff, MessageCircle, Menu } from "lucide-react";
+import {
+  Landmark,
+  Bell,
+  EyeOff,
+  MessageCircle,
+  Menu,
+  Settings,
+  CircleHelp,
+  LogOut,
+} from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { Persona } from "@/lib/persona";
+import { Accounts } from "@/lib/accounts";
 
-function GlintMark({ className }: { className?: string }) {
-  return <Wordmark lockup="mark" tone="current" className={className ?? "size-4"} />;
+/* GLINT'S TAB ICONS, from Figma Primatives & Helpers, page "Glint icons",
+   component set "Icon / Tab" (419:4082), exported as SVG on 1 Oct 2026.
+   24 grid, 2pt round strokes, painted with currentColor so they take the
+   row's colour like any other icon; `filled` is the set's filled style,
+   used for the lit item. */
+function WalletsIcon({
+  filled = false,
+  className,
+}: {
+  filled?: boolean;
+  className?: string;
+}) {
+  const fill = filled ? "currentColor" : "none";
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={className}>
+      <path d="M2.5 19.5L4.2 14.5H8.8L10.5 19.5H2.5Z" fill={fill} />
+      <path d="M13.5 19.5L15.2 14.5H19.8L21.5 19.5H13.5Z" fill={fill} />
+      <path d="M8 11.5L9.7 6.5H14.3L16 11.5H8Z" fill={fill} />
+    </svg>
+  );
+}
+
+function ActivityIcon({
+  filled = false,
+  className,
+}: {
+  filled?: boolean;
+  className?: string;
+}) {
+  return filled ? (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={className}>
+      <path d="M7.5 4V17" strokeWidth="2.6" />
+      <path d="M3.6 15L7.5 20L11.4 15H3.6Z" fill="currentColor" strokeWidth="2" />
+      <path d="M16.5 20V7" strokeWidth="2.6" />
+      <path d="M12.6 9L16.5 4L20.4 9H12.6Z" fill="currentColor" strokeWidth="2" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={className}>
+      <path d="M7.5 4V19" />
+      <path d="M3.8 15.5L7.5 19.5L11.2 15.5" />
+      <path d="M16.5 20V5" />
+      <path d="M12.8 8.5L16.5 4.5L20.2 8.5" />
+    </svg>
+  );
+}
+
+function ProfileIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={className}>
+      <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" />
+      <path d="M4.5 20.5C4.5 18.7761 5.29018 17.1228 6.6967 15.9038C8.10322 14.6848 10.0109 14 12 14C13.9891 14 15.8968 14.6848 17.3033 15.9038C18.7098 17.1228 19.5 18.7761 19.5 20.5" />
+    </svg>
+  );
+}
+
+function LandmarkIcon({ className }: { className?: string; filled?: boolean }) {
+  return <Landmark className={className} />;
 }
 
 /* The nav targets are Studio SCREEN NAMES resolved by the goto protocol
    (and by the app's screen registry), so the long dash is part of each
-   name. */
+   name. Each item's second line is built from live data in the shell. */
 const NAV: {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  label: "Wallets" | "Activity" | "Bank Accounts";
+  icon: React.ComponentType<{ className?: string; filled?: boolean }>;
   target: string;
 }[] = [
-  { label: "Wallets", icon: GlintMark, target: "Dashboard — logged-in home v2" },
-  { label: "Activity", icon: List, target: "Activity — history v2" },
-  { label: "Bank Accounts", icon: Landmark, target: "Bank Accounts v2" },
+  { label: "Wallets", icon: WalletsIcon, target: "Dashboard — logged-in home v2" },
+  { label: "Activity", icon: ActivityIcon, target: "Activity — history v2" },
+  { label: "Bank Accounts", icon: LandmarkIcon, target: "Bank Accounts v2" },
 ];
 
 /* Rail spacing, in one place. */
@@ -96,25 +181,83 @@ function initials(name: string): string {
 }
 
 /** The business identity box, the rail's footer and the menu sheet's foot. */
-function Identity({
-  business,
-  businessMeta,
-}: {
-  business: string;
-  businessMeta: string;
-}) {
+/** The account box at the top of the rail: the person, then the business. */
+function Identity({ name, business }: { name: string; business: string }) {
   return (
     <div className="w-full rounded-lg border border-border/60 bg-muted/20 p-2">
       <Row gap="sm">
         <Avatar size="sm">
-          <AvatarFallback>{initials(business)}</AvatarFallback>
+          <AvatarFallback>{initials(name)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0">
-          <div className="truncate text-sm font-medium text-foreground">{business}</div>
-          <div className="truncate text-xs text-muted-foreground">{businessMeta}</div>
+          <div className="truncate text-sm font-medium text-foreground">{name}</div>
+          <div className="truncate text-xs text-muted-foreground">{business}</div>
         </div>
       </Row>
     </div>
+  );
+}
+
+/** The avatar's account menu. */
+function AccountMenu({
+  account,
+  name,
+  business,
+  email,
+}: {
+  account: string;
+  name: string;
+  business: string;
+  email?: string;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="Account menu"
+          className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Avatar size="sm">
+            <AvatarFallback>{account}</AvatarFallback>
+          </Avatar>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={8} className="w-72">
+        <DropdownMenuLabel className="font-normal">
+          <Row gap="sm" align="center" className="py-1">
+            <Avatar size="md">
+              <AvatarFallback>{account}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-medium text-foreground">{name}</div>
+              <div className="truncate text-xs text-muted-foreground">{business}</div>
+              {email ? (
+                <div className="truncate text-xs text-muted-foreground">{email}</div>
+              ) : null}
+            </div>
+          </Row>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="h-10">
+          <ProfileIcon className="size-4" />
+          Profile
+        </DropdownMenuItem>
+        <DropdownMenuItem className="h-10">
+          <Settings className="size-4" />
+          Settings
+        </DropdownMenuItem>
+        <DropdownMenuItem className="h-10">
+          <CircleHelp className="size-4" />
+          Help
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="h-10" data-grade-goto="US Demo Landing">
+          <LogOut className="size-4" />
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -156,6 +299,21 @@ export function AppChromeV2({
       .map(([key, v]) => <React.Fragment key={key}>{v.node}</React.Fragment>);
 
   const [menuOpen, setMenuOpen] = React.useState(false);
+
+  /* The nav's second lines, live: the total held, the transactions, the
+     linked bank accounts (the ones with a routing number). */
+  const [gold] = Persona.useBalance("gold");
+  const [silver] = Persona.useBalance("silver");
+  const [fiat] = Persona.useBalance("fiat");
+  const activityCount = Persona.useActivity().length;
+  const linked = Object.values(Accounts.ALL).filter((a) => a.routingNumber).length;
+  const describe: Record<string, string> = {
+    Wallets: `${Persona.fmtMoney(gold + silver + fiat)} total`,
+    Activity: `${activityCount} transactions`,
+    "Bank Accounts": `${linked} linked`,
+  };
+  const person = Persona.fullName();
+  const email = Persona.DEFAULT.applicant?.email;
   const leading =
     toolbarLeading || slotsIn("leading").length ? (
       <Row gap="sm">
@@ -172,9 +330,7 @@ export function AppChromeV2({
         </Button>
         <span className="pointer-events-none absolute right-1 top-1 size-2 rounded-full bg-destructive" />
       </div>
-      <Avatar size="sm">
-        <AvatarFallback>{account}</AvatarFallback>
-      </Avatar>
+      <AccountMenu account={account} name={person} business={business} email={email} />
     </>
   );
 
@@ -196,14 +352,20 @@ export function AppChromeV2({
             </button>
           </SidebarHeader>
           <SidebarContent className="flex flex-col">
+            {/* THE ACCOUNT, ABOVE THE NAV (Ali, 1 Oct). */}
+            <div className="px-3 pb-3">
+              <Identity name={person} business={business} />
+            </div>
             <SidebarSection collapsible={false}>
               {NAV.map((item) => {
                 const Icon = item.icon;
+                const lit = item.label === active;
                 return (
                   <SidebarItem
                     key={item.label}
-                    icon={<Icon />}
-                    active={item.label === active}
+                    icon={<Icon filled={lit} />}
+                    description={describe[item.label]}
+                    active={lit}
                     data-grade-goto={item.target}
                   >
                     {item.label}
@@ -234,9 +396,6 @@ export function AppChromeV2({
               </button>
             </div>
           </SidebarContent>
-          <SidebarFooter>
-            <Identity business={business} businessMeta={businessMeta} />
-          </SidebarFooter>
         </Sidebar>
       </AppShellNav>
 
@@ -272,6 +431,7 @@ export function AppChromeV2({
                     </SheetTitle>
                   </SheetHeader>
                   <Stack gap="lg" className="flex-1">
+                    <Identity name={person} business={business} />
                     <Stack gap="xs">
                       {NAV.map((item) => {
                         const Icon = item.icon;
@@ -284,15 +444,12 @@ export function AppChromeV2({
                             aria-current={item.label === active ? "page" : undefined}
                             data-grade-goto={item.target}
                           >
-                            <Icon className="size-4" />
+                            <Icon filled={item.label === active} className="size-4" />
                             {item.label}
                           </Button>
                         );
                       })}
                     </Stack>
-                    <div className="mt-auto">
-                      <Identity business={business} businessMeta={businessMeta} />
-                    </div>
                   </Stack>
                 </SheetContent>
               </Sheet>
