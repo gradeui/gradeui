@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Caveat, IBM_Plex_Mono, Inter } from "next/font/google";
+import { Caveat, IBM_Plex_Mono, Inter, Raleway } from "next/font/google";
 import { GotoBridge } from "@/components/goto-bridge";
 import glintTheme from "@/theme/glint.theme.json";
 import "./globals.css";
@@ -12,6 +12,11 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
    role in @gradeui/ui. Registered here rather than hardcoded at the call
    site so the app and Studio resolve the same face. */
 const caveat = Caveat({ subsets: ["latin"], variable: "--font-caveat" });
+/* Raleway, the App DS figure face: the metal wallet cards set their grams
+   and the vault in it (MetalWalletCardV2). Self-hosted by next/font with a
+   metric-matched fallback, so it lands with no layout shift. Exposed as
+   --font-raleway; nothing else in the theme reads it. */
+const raleway = Raleway({ subsets: ["latin"], variable: "--font-raleway" });
 const ibmPlexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
@@ -40,7 +45,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${ibmPlexMono.variable} ${caveat.variable}`}
+      className={`dark ${inter.variable} ${ibmPlexMono.variable} ${caveat.variable} ${raleway.variable}`}
       data-grade-theme={glintTheme.id}
       data-mode="dark"
       data-button-shape={glintTheme.components?.buttonShape ?? "default"}

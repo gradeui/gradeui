@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home v2"
-// (design dmuppmsu1t19c, version 1790875936526). Registry: lib/screens.ts;
+// (design dmuppmsu1t19c, version 1790876828045). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 0d49c0fd942d
+// source-hash: 865eb85456eb
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -14,17 +14,12 @@ import {
   Stack,
   Row,
   Grid,
-  Button,
   ToggleGroup,
   ToggleGroupItem,
 } from "@gradeui/ui";
-import { AppChromeV2 } from "@/components/layouts/app-chrome-v2";
 import { Persona, type AssetKey } from "@/lib/persona";
-import { TradeFlowV2 } from "@/components/trade-flow-v2";
-import { MetalButton } from "@/components/metal-button";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
 import { MetalWalletCardV2 } from "@/components/metal-wallet-card-v2";
-import { Plus } from "lucide-react";
 
 // V2 (1 Oct 2026, the business portal v2 for staging): a copy of
 // "Dashboard — logged-in home", which stays untouched because the live
@@ -34,8 +29,9 @@ import { Plus } from "lucide-react";
 //     Auto-buy and three wallet cards of one design: Gold, Silver, USD.
 //   - Buy Gold and Buy Silver open TradeFlowV2: paid from the USD
 //     wallet, one amount field, shortfall to Deposit.
-//   - Deposit goes to the USD wallet, where the Glint account details are,
-//     the same place a short buy sends you.
+//   - Deposit, on the USD card, goes to the USD wallet, where the Glint
+//     account details are, the same place a short buy sends you.
+//   - No toolbar actions: the cards carry Buy, Sell and Deposit.
 //   - THE CARDS ARE MetalWalletCardV2 (Ali, 1 Oct: "matching our new Gold
 //     and silver wallet cards"): the App DS metal face for Gold and
 //     Silver, and the same card in its own non-metal treatment for USD,
@@ -64,10 +60,8 @@ import { Plus } from "lucide-react";
 // be flipped in front of someone mid-demo.
 // TOTAL BALANCE: "Balance" + the large combined number above the asset
 // cards, summing the three reactive balances.
-// TRADE FLOW: the Buy Gold / Buy Silver pills open TradeFlowV2, the one
-// dialog that runs BOTH directions. This page offers the buy side only;
-// Sell sits on the metal wallet screens. A completed order moves the
-// Persona balances and every card here updates live.
+// TRADE FLOW: each metal card's Buy and Sell open TradeFlowV2. A completed
+// order moves the Persona balances and every card here updates live.
 
 const ASSET_ORDER: AssetKey[] = ["gold", "silver", "fiat"];
 
@@ -108,67 +102,11 @@ function TotalBalance() {
 }
 
 export default function WalletsPage() {
-  /* ORDER IS BUY GOLD, BUY SILVER, THEN DEPOSIT (Ali, 11 Aug). The
-     metals are what the product is for; funding is the thing you do so
-     you can do them, so Deposit is secondary and comes last. It led the
-     row before, which read as "fund your account" being the point.
-
-     THE ACTIONS CANNOT LIVE IN THE TOOLBAR, though Ali asked whether they
-     could and it was tried. The toolbar belongs to the CHROME, and the
-     chrome is shared: promotion strips the <AppChrome> wrapper from this
-     screen because apps/glint/app/(product)/layout.tsx supplies it, and
-     `--unwrap` takes the wrapper's PROPS with it by design. So a
-     toolbarLeading set here renders in Studio and vanishes in the app.
-     Supplying them from the route layout instead would mean authoring the
-     same three buttons twice, once in this screen and once in app-only
-     glue with no Studio twin, which is exactly the drift that has bitten
-     this project. If they should ever be sticky, the honest fix is a real
-     page-actions slot on AppChrome that the layout can forward, not a
-     second copy. */
+  /* NO TOOLBAR ACTIONS (Ali, 1 Oct): Buy Gold, Buy Silver and Deposit
+     moved onto the cards, so the toolbar keeps the title area and the
+     utilities, and nothing on this page says the same thing twice. */
   return (
     <>
-      {/* THE ACTIONS RENDER IN THE TOOLBAR, not here. AppChrome.Slot
-          registers them into the chrome and renders nothing in place, so
-          they sit up top and stay there while this page scrolls.
-          IT HAS TO BE A SLOT IN THE BODY, not a prop on AppChrome:
-          promotion strips the wrapper and its props (the route layout
-          supplies the chrome in the app), so a toolbarLeading set here
-          would render in Studio and vanish in the app. That was tried. */}
-      <AppChromeV2.Slot region="leading">
-        <Row gap="sm">
-          {/* NO variant ON A MetalButton: it sets background, color and
-              borderColor as an INLINE style, and an inline style beats a
-              variant's classes, so the pill renders the same metal face
-              whichever variant is passed. Passing one only implied it did
-              something. */}
-          <TradeFlowV2 metal="gold">
-            <MetalButton metal="gold" size="sm">
-              Buy Gold
-            </MetalButton>
-          </TradeFlowV2>
-          <TradeFlowV2 metal="silver">
-            <MetalButton metal="silver" size="sm">
-              Buy Silver
-            </MetalButton>
-          </TradeFlowV2>
-          {/* Deposit IS a real Button, so `variant` is not dead here the
-              way it is on a MetalButton: secondary demotes it behind the
-              two metal pills. V2: it goes to the USD wallet, where the
-              Glint account details a deposit is sent to are shown. There
-              is no deposit flow in the demo; the transfer happens at the
-              business's own bank. */}
-          <Button
-            variant="secondary"
-            size="sm"
-            className="rounded-full"
-            data-grade-goto="USD — wallet"
-          >
-            <Plus className="size-4" />
-            Deposit
-          </Button>
-        </Row>
-      </AppChromeV2.Slot>
-
       {/* Balance, with Auto-buy alongside it. pt-8 because this is
           the first band under the toolbar now that the actions have
           moved into the chrome. */}

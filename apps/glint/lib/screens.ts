@@ -147,8 +147,8 @@ export const SCREENS: ScreenEntry[] = [
     name: "Dashboard — logged-in home v2",
     id: "dmuppmsu1t19c",
     aliases: ["Dashboard — logged-in home"],
-    promotedAt: 1790875936526,
-    sourceHash: "0d49c0fd942d",
+    promotedAt: 1790876828045,
+    sourceHash: "865eb85456eb",
   },
   {
     slug: "/bank-accounts",

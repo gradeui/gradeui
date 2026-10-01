@@ -45,6 +45,15 @@
 //
 // `vaults` adds the per-vault table under the actions, for the metal's own
 // page. `link` makes the face the way into that page.
+//
+// RALEWAY FOR THE GRAMS AND THE PLACE (Ali, 1 Oct: as in the App DS),
+// with lining figures and no ligatures, as the iOS app sets them. The app
+// registers the face with next/font as --font-raleway (app/layout.tsx), so
+// it is self-hosted and its fallback is metric-matched: no layout shift.
+// STUDIO DIFFERS HERE: the docs app has no Raleway loader, so this copy
+// fetches the face from Google Fonts once (useRaleway below). The app twin
+// has no such hook. The permanent Studio fix is a Raleway loader beside the
+// others in apps/docs/app/layout.tsx.
 import * as React from "react";
 import {
   Card,
@@ -84,6 +93,14 @@ const FACE: Record<
 };
 const EMBOSS = "inset 0 1px 0 rgb(255 255 255 / 0.35), inset 0 -1px 0 rgb(0 0 0 / 0.2)";
 const STAMP = "0 1px 0 rgb(255 255 255 / 0.2)";
+/** The App DS figure face: Raleway, lining figures, no ligatures. */
+const RALEWAY: React.CSSProperties = {
+  fontFamily: "var(--font-raleway, Raleway), var(--font-sans), sans-serif",
+  fontVariantNumeric: "lining-nums tabular-nums",
+  fontVariantLigatures: "none",
+};
+
+/* No useRaleway here: app/layout.tsx registers Raleway with next/font. */
 
 /** "1,423" and ".9395": the grams with the fraction set smaller. */
 function splitFigure(n: number, places: number): [string, string] {
@@ -161,8 +178,8 @@ export function MetalWalletCardV2({
   const figure = (
     <Row justify="between" align="baseline" gap="sm" className="mt-1">
       <span
-        className={`font-semibold tabular-nums ${face ? "" : "text-foreground"}`}
-        style={face ? { textShadow: STAMP } : undefined}
+        className={`font-bold ${face ? "" : "text-foreground"}`}
+        style={face ? { ...RALEWAY, textShadow: STAMP } : RALEWAY}
       >
         {metal ? null : <span className="text-xl">$</span>}
         <span className="text-3xl">{whole}</span>
@@ -174,9 +191,9 @@ export function MetalWalletCardV2({
         ) : null}
       </span>
       {place ? (
-        <Row gap="xs" align="center" className="min-w-0 font-semibold">
+        <Row gap="xs" align="center" className="min-w-0 font-bold">
           <MapPin aria-hidden className="size-4 shrink-0" />
-          <span className="truncate" style={{ textShadow: STAMP }}>
+          <span className="truncate" style={{ ...RALEWAY, textShadow: STAMP }}>
             {place}
           </span>
         </Row>
