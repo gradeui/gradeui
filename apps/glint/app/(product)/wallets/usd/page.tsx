@@ -1,9 +1,9 @@
 "use client";
 
-// Promoted from Studio screen "USD — wallet"
-// (design dmsou6g4wxv0l, version 1786542122538). Registry: lib/screens.ts;
+// Promoted from Studio screen "USD — wallet v2"
+// (design dmupum94g8tuz, version 1790878369331). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 87ba6d111af4
+// source-hash: ce051a18fee6
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -21,12 +21,17 @@ import {
 } from "@gradeui/ui";
 import { Persona } from "@/lib/persona";
 import { Accounts } from "@/lib/accounts";
-import { ActivityTable } from "@/components/activity-table";
+import { ActivityTableV2 } from "@/components/activity-table-v2";
 import { Wordmark } from "@/components/wordmark";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
 import { AccountDetails } from "@/components/account-details";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 
+// V2 (1 Oct 2026, the business portal v2 for staging): a copy of
+// "USD — wallet", which stays untouched because the live demo is promoted
+// from it. Changes: AppChromeV2 (no rail on mobile), ActivityTableV2 (the
+// transaction detail is the shared SideDrawer), a page title, and Back to the v2 Wallets.
+//
 // Glint USD wallet screen (Ali, 11 Aug 2026): the cash side of the three
 // wallets, built to the shape of the Gold and Silver screens so the set
 // reads as one family. Holding card leads on the left, detail on the
@@ -86,6 +91,11 @@ export default function UsdWalletPage() {
     <>
       {/* Balance + account details, side by side */}
       <Section pad="none" className="pt-8">
+        {/* THE PAGE TITLE (Ali, 1 Oct): an h1 on every page, the style
+            Activity set, 16 above the content. */}
+        <Container maxW="xl" className="pb-4">
+          <h1 className="text-2xl font-semibold text-foreground">{Persona.DEFAULT.balances[ASSET].label}</h1>
+        </Container>
         <Container maxW="xl" grid className="gap-6">
           {/* FLEX COLUMN so the content can grow and pin the actions to
               the bottom, the same construct the metal wallet card uses.
@@ -177,7 +187,7 @@ export default function UsdWalletPage() {
             <h2 className="text-lg font-semibold text-foreground">
               {Persona.DEFAULT.balances[ASSET].label} activity
             </h2>
-            <ActivityTable rows={Persona.useActivity(ASSET)} filters />
+            <ActivityTableV2 rows={Persona.useActivity(ASSET)} filters />
           </Stack>
         </Container>
       </Section>

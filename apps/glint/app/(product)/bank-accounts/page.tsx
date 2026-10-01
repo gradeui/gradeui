@@ -1,9 +1,9 @@
 "use client";
 
-// Promoted from Studio screen "Bank Accounts"
-// (design dmsp02q871y5u, version 1786616415020). Registry: lib/screens.ts;
+// Promoted from Studio screen "Bank Accounts v2"
+// (design dmupume7sb1e7, version 1790878372467). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 56b04a5db69d
+// source-hash: 8b55963867b2
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -28,11 +28,16 @@ import {
 } from "@gradeui/ui";
 import { Persona } from "@/lib/persona";
 import { Accounts } from "@/lib/accounts";
-import { ActivityTable } from "@/components/activity-table";
+import { ActivityTableV2 } from "@/components/activity-table-v2";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
 import { AccountDetails } from "@/components/account-details";
 import { MoreHorizontal } from "lucide-react";
 
+// V2 (1 Oct 2026, the business portal v2 for staging): a copy of
+// "Bank Accounts", which stays untouched because the live demo is promoted
+// from it. Changes: AppChromeV2 (no rail on mobile), ActivityTableV2 (the
+// transaction detail is the shared SideDrawer) and a page title.
+//
 // Bank Accounts screen (Ali, 11 Aug 2026): the two accounts behind every
 // dollar that moves, side by side. His words: "this is the users personal
 // 'linked' bank account, and the glint sutton bank account".
@@ -94,6 +99,11 @@ export default function BankAccountsPage() {
   return (
     <>
       <Section pad="none" className="pt-8">
+        {/* THE PAGE TITLE (Ali, 1 Oct): an h1 on every page, the style
+            Activity set, 16 above the content. */}
+        <Container maxW="xl" className="pb-4">
+          <h1 className="text-2xl font-semibold text-foreground">Bank accounts</h1>
+        </Container>
         <Container maxW="xl" grid className="gap-6">
           {/* THE CUSTOMER'S OWN ACCOUNT, on the left because it is where
               the money starts. */}
@@ -236,7 +246,7 @@ export default function BankAccountsPage() {
         <Container maxW="xl">
           <Stack gap="md">
             <h2 className="text-lg font-semibold text-foreground">Transfers</h2>
-            <ActivityTable rows={transfers} />
+            <ActivityTableV2 rows={transfers} />
           </Stack>
         </Container>
       </Section>

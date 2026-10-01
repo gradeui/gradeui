@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home v2"
-// (design dmuppmsu1t19c, version 1790876828045). Registry: lib/screens.ts;
+// (design dmuppmsu1t19c, version 1790878365134). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 865eb85456eb
+// source-hash: 9c84f8a26944
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -32,6 +32,7 @@ import { MetalWalletCardV2 } from "@/components/metal-wallet-card-v2";
 //   - Deposit, on the USD card, goes to the USD wallet, where the Glint
 //     account details are, the same place a short buy sends you.
 //   - No toolbar actions: the cards carry Buy, Sell and Deposit.
+//   - A page title, Wallets, and 32 above like every page.
 //   - THE CARDS ARE MetalWalletCardV2 (Ali, 1 Oct: "matching our new Gold
 //     and silver wallet cards"): the App DS metal face for Gold and
 //     Silver, and the same card in its own non-metal treatment for USD,
@@ -76,7 +77,7 @@ const CARD_TARGETS = {
      Wired back alongside USD, because "no card here is inert" above is
      only true when all three lead somewhere. */
   silver: "Silver — wallet v2",
-  fiat: "USD — wallet",
+  fiat: "USD — wallet v2",
 };
 
 /* THE AUTO-INVEST CONTROL LIVES IN ITS OWN SHARED COMPONENT NOW (Ali,
@@ -118,7 +119,13 @@ export default function WalletsPage() {
           class. The top band was pad="sm" with pt-4 and the activity band
           py-10, which put a different gap above and below the cards; one
           value for both is what makes the page read as evenly spaced. */}
-      <Section pad="none" className="py-6">
+      {/* 32 ABOVE, like every page (Ali, 1 Oct), and 32 below. */}
+      <Section pad="none" className="py-8">
+        {/* THE PAGE TITLE (Ali, 1 Oct): an h1 on every page, the style
+            Activity set, 16 above the content. */}
+        <Container maxW="xl" className="pb-4">
+          <h1 className="text-2xl font-semibold text-foreground">Wallets</h1>
+        </Container>
         <Container maxW="xl">
           <Stack gap="lg">
             <Row justify="between" align="end" wrap gap="md">

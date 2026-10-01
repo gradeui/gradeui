@@ -11,7 +11,7 @@
 //
 //   <MetalWalletCardV2 asset="gold" link="Gold — wallet v2" />   Wallets
 //   <MetalWalletCardV2 asset="gold" vaults />                    Gold page
-//   <MetalWalletCardV2 asset="fiat" link="USD — wallet" />        Wallets
+//   <MetalWalletCardV2 asset="fiat" link="USD — wallet v2" />     Wallets
 //
 // THE FACE is the metal wallet card from the App DS and the iOS app
 // (Figma WalletGroupCard, Metal=Gold|Silver, Display=Metal,
@@ -262,7 +262,7 @@ export function MetalWalletCardV2({
           <Button
             size="md"
             className="flex-1 rounded-full"
-            data-grade-goto="USD — wallet"
+            data-grade-goto="USD — wallet v2"
           >
             Deposit
           </Button>

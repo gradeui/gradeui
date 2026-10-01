@@ -42,6 +42,14 @@
 //     Glint has dropped the primary vault: nothing here says default or
 //     primary.
 //
+//   - A SIDE DRAWER, NOT A CENTRED MODAL (Ali, 1 Oct, from the layout
+//     audit): SideDrawer, the one drawer spec the transaction detail
+//     shares. From the right, 448 wide from 640 up, the full screen below;
+//     the header stays put, the body scrolls, the buttons sit in a footer
+//     pinned to the bottom and spaced when they stack on mobile. The
+//     panel no longer animates its height: a full-height drawer has none
+//     to animate.
+//
 // UNCHANGED: the rate callout with the 0.9% fee inside the quoted rate;
 // the 30 second price hold on Review (QUOTE_WINDOW_MS, a Progress bar
 // above the confirm); the receipt as a frozen snapshot of the order; and
@@ -49,13 +57,6 @@
 // the live activity, so the wallet cards behind the dialog follow.
 import * as React from "react";
 import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
   Button,
   Callout,
   CalloutTitle,
@@ -90,6 +91,7 @@ import {
 } from "@/lib/market";
 import { Wordmark, metalSolid, metalRing } from "@/components/wordmark";
 import { MetalButton } from "@/components/metal-button";
+import { SideDrawer } from "@/components/side-drawer";
 
 /** The vaults a purchase can land in (Ali, 1 Oct: "both vaults, Zurich
  *  and Miami"). Ids only: labels are composed through Accounts. */
@@ -108,20 +110,11 @@ const QUOTE_DRIFT = 0.0012;
  *  Glint account details a deposit is sent to. This is a Studio SCREEN
  *  NAME resolved by the goto protocol (and by the app's screen registry),
  *  so the long dash is part of the name, not prose. */
-const DEPOSIT_TARGET = "USD — wallet";
-
-/** The panel animates its height between steps (Ali, 12 Aug), exactly as
- *  TradeFlow does. Where interpolate-size is missing it simply snaps. */
-const PANEL_MOTION =
-  "[interpolate-size:allow-keywords] [transition:height_420ms_cubic-bezier(0.32,0.72,0,1)] motion-reduce:[transition:none]";
+const DEPOSIT_TARGET = "USD — wallet v2";
 
 /** Turns a filled box into a 1px outline: the metal ring on the receipt. */
 const RING_MASK =
   "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)";
-
-/** The scrolling body of every step, with a gutter for focus rings. */
-const BODY_CLASS =
-  "sm:-mx-1 sm:min-h-0 sm:flex-1 sm:overflow-y-auto sm:px-1 pt-2";
 
 /** The Glint G in the metal's flat brand colour. */
 function MetalMark({ metal }: { metal: MetalKey }) {
@@ -373,21 +366,12 @@ export function TradeFlowV2({
 
   /* ONE HEADER FOR THE WHOLE FLOW (Ali, 12 Aug), now with the direction
      of the money under the title (Ali, 1 Oct). */
-  /* text-left at every size (Ali, 1 Oct): below sm the DS header centres
-     its text, which left "From your USD wallet" centred under a
-     left-aligned title on mobile. */
   const header = (
-    <DialogHeader className="shrink-0 text-left">
-      <DialogTitle>
-        <Row gap="sm" align="center">
-          <MetalMark metal={metal} />
-          {verb} {label}
-        </Row>
-      </DialogTitle>
-      <DialogDescription>
-        {selling ? "To your USD wallet" : "From your USD wallet"}
-      </DialogDescription>
-    </DialogHeader>
+    <SideDrawer.Header
+      icon={<MetalMark metal={metal} />}
+      title={`${verb} ${label}`}
+      description={selling ? "To your USD wallet" : "From your USD wallet"}
+    />
   );
 
   const rateCallout = (
@@ -540,7 +524,7 @@ export function TradeFlowV2({
   const completedRing = (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 rounded-xl p-px duration-700 animate-in fade-in motion-reduce:animate-none"
+      className="pointer-events-none absolute inset-0 p-px duration-700 animate-in fade-in motion-reduce:animate-none"
       style={{
         background: metalRing(metal),
         WebkitMask: RING_MASK,
@@ -569,7 +553,7 @@ export function TradeFlowV2({
   );
 
   return (
-    <Dialog
+    <SideDrawer
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
@@ -577,16 +561,13 @@ export function TradeFlowV2({
            the receipt never blanks while the panel animates out. */
         if (o) reset();
       }}
+      trigger={children}
     >
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent
-        bordered={false}
-        className={`sm:flex sm:max-w-md sm:flex-col ${PANEL_MOTION}`}
-      >
         {step === "form" && (
           <>
             {header}
-            <Stack gap="md" className={BODY_CLASS}>
+            <SideDrawer.Body>
+            <Stack gap="md" className="flex-1">
               {rateCallout}
               {selling ? (
                 <>
@@ -601,7 +582,8 @@ export function TradeFlowV2({
                 </>
               )}
             </Stack>
-            <DialogFooter className="shrink-0">
+            </SideDrawer.Body>
+            <SideDrawer.Footer>
               {shortfall > 0 ? (
                 /* ONE ACTION when short: Deposit takes the place of Review
                    and goes to the USD wallet. A goto, so it is navigation
@@ -629,14 +611,15 @@ export function TradeFlowV2({
                   <ChevronRight className="size-4" />
                 </Button>
               )}
-            </DialogFooter>
+            </SideDrawer.Footer>
           </>
         )}
 
         {step === "review" && (
           <>
             {header}
-            <Stack gap="md" className={BODY_CLASS}>
+            <SideDrawer.Body>
+            <Stack gap="md" className="flex-1">
               <span className="text-base font-medium text-foreground">
                 Review order
               </span>
@@ -693,7 +676,8 @@ export function TradeFlowV2({
                 {quoteTimer}
               </Stack>
             </Stack>
-            <DialogFooter className="shrink-0">
+            </SideDrawer.Body>
+            <SideDrawer.Footer>
               <Button
                 variant="ghost"
                 size="lg"
@@ -705,7 +689,7 @@ export function TradeFlowV2({
               <MetalButton metal={metal} size="lg" onClick={confirm}>
                 {verb} {label}
               </MetalButton>
-            </DialogFooter>
+            </SideDrawer.Footer>
           </>
         )}
 
@@ -713,9 +697,10 @@ export function TradeFlowV2({
           <>
             {completedRing}
             {header}
-            <Stack gap="md" className={BODY_CLASS}>
-              {/* The headline is a paragraph, not a second
-                  DialogDescription: the header already owns that slot. */}
+            <SideDrawer.Body>
+            <Stack gap="md" className="flex-1">
+              {/* The headline is a paragraph, not a second description:
+                  the header already owns that slot. */}
               <p className="text-lg leading-snug text-muted-foreground">
                 You {selling ? "sold" : "bought"}{" "}
                 <span className="font-medium text-foreground">
@@ -760,7 +745,8 @@ export function TradeFlowV2({
                 </p>
               )}
             </Stack>
-            <DialogFooter className="shrink-0">
+            </SideDrawer.Body>
+            <SideDrawer.Footer>
               <Button
                 size="lg"
                 className="rounded-full"
@@ -768,10 +754,9 @@ export function TradeFlowV2({
               >
                 Done
               </Button>
-            </DialogFooter>
+            </SideDrawer.Footer>
           </>
         )}
-      </DialogContent>
-    </Dialog>
+    </SideDrawer>
   );
 }

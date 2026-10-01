@@ -1,9 +1,9 @@
 "use client";
 
-// Promoted from Studio screen "Activity — history"
-// (design dmsnba2xdvnc3, version 1786536409378). Registry: lib/screens.ts;
+// Promoted from Studio screen "Activity — history v2"
+// (design dmupumb6uwgoj, version 1790878371094). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: e03c6b84092d
+// source-hash: 026903295b3d
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -11,9 +11,14 @@
 import * as React from "react";
 import { Section, Container, Stack, Row, Button } from "@gradeui/ui";
 import { Persona } from "@/lib/persona";
-import { ActivityTable } from "@/components/activity-table";
+import { ActivityTableV2 } from "@/components/activity-table-v2";
 import { Download, FileText } from "lucide-react";
 
+// V2 (1 Oct 2026, the business portal v2 for staging): a copy of
+// "Activity — history", which stays untouched because the live demo is promoted
+// from it. Changes: AppChromeV2 (no rail on mobile), ActivityTableV2 (the
+// transaction detail is the shared SideDrawer).
+//
 // Glint Activity screen (Ali, 10 Aug 2026): the full activity history
 // for the persona, inside the AppChrome shell with the Activity nav
 // item active.
@@ -87,7 +92,7 @@ export default function ActivityPage() {
             {/* pageSize, so the table stops scrolling inside a 28rem box:
                 see the note in the ActivityTable module. Ten rows is what
                 fits a laptop viewport without the page itself scrolling. */}
-            <ActivityTable rows={rows} filters pageSize={10} />
+            <ActivityTableV2 rows={rows} filters pageSize={10} />
           </Stack>
         </Container>
       </Section>

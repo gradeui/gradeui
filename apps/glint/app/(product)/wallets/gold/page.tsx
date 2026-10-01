@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Gold — wallet v2"
-// (design dmuppmu4zpn8y, version 1790875938161). Registry: lib/screens.ts;
+// (design dmuppmu4zpn8y, version 1790878366423). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 3037c7af05e2
+// source-hash: 55ea0b2f9f02
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -17,7 +17,7 @@ import {
 import { Persona } from "@/lib/persona";
 import { MetalPriceCard } from "@/components/metal-price-card";
 import { MetalWalletCardV2 } from "@/components/metal-wallet-card-v2";
-import { ActivityTable } from "@/components/activity-table";
+import { ActivityTableV2 } from "@/components/activity-table-v2";
 
 // V2 (1 Oct 2026, the business portal v2 for staging): a copy of
 // "Gold — wallet", which stays untouched because the live demo is
@@ -26,7 +26,9 @@ import { ActivityTable } from "@/components/activity-table";
 // the USD wallet, selling this wallet's metal), and Back returns to the
 // v2 Wallets screen. Later the same day (Ali, 1 Oct): the card is the
 // App DS metal face with Buy and Sell under it and the vault table below,
-// and the chrome is AppChromeV2, with no rail on mobile.
+// and the chrome is AppChromeV2, with no rail on mobile. Then: a page
+// title, and ActivityTableV2 (the transaction detail is the shared
+// SideDrawer).
 //
 // Glint Gold wallet screen (Ali, 10 Aug 2026; componentised 11 Aug):
 // the desktop gold view. Holding card and price card side by side, then
@@ -67,6 +69,11 @@ export default function GoldWalletPage() {
     <>
       {/* Holding + price, side by side */}
       <Section pad="none" className="pt-8">
+        {/* THE PAGE TITLE (Ali, 1 Oct): an h1 on every page, the style
+            Activity set, 16 above the content. */}
+        <Container maxW="xl" className="pb-4">
+          <h1 className="text-2xl font-semibold text-foreground">{label}</h1>
+        </Container>
         <Container maxW="xl" grid className="gap-6">
           <MetalWalletCardV2 asset={METAL} vaults className="col-span-12 lg:col-span-5" />
           <MetalPriceCard metal={METAL} className="col-span-12 lg:col-span-7" />
@@ -80,7 +87,7 @@ export default function GoldWalletPage() {
             <h2 className="text-lg font-semibold text-foreground">
               {label} activity
             </h2>
-            <ActivityTable rows={Persona.useActivity(METAL)} />
+            <ActivityTableV2 rows={Persona.useActivity(METAL)} />
           </Stack>
         </Container>
       </Section>

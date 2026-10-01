@@ -109,6 +109,8 @@ const TWINS: Record<string, string> = {
   Wordmark: "components/wordmark.tsx",
   MetalButton: "components/metal-button.tsx",
   ActivityTable: "components/activity-table.tsx",
+  ActivityTableV2: "components/activity-table-v2.tsx",
+  SideDrawer: "components/side-drawer.tsx",
   TradeFlow: "components/trade-flow.tsx",
   TradeFlowV2: "components/trade-flow-v2.tsx",
   MetalPriceCard: "components/metal-price-card.tsx",

@@ -103,6 +103,8 @@ COMPONENT_MODULES = {
     "TradeFlowV2": "@/components/trade-flow-v2",
     "MetalWalletCardV2": "@/components/metal-wallet-card-v2",
     "AppChromeV2": "@/components/layouts/app-chrome-v2",
+    "SideDrawer": "@/components/side-drawer",
+    "ActivityTableV2": "@/components/activity-table-v2",
     "PhoneField": "@/components/phone-field",
     "AutoInvestToggle": "@/components/auto-invest-toggle",
     "AccountDetails": "@/components/account-details",

@@ -62,6 +62,8 @@ const ALLOWED = new Set([
   "Wordmark",
   "MetalButton",
   "ActivityTable",
+  "ActivityTableV2",
+  "SideDrawer",
   "TradeFlow",
   "TradeFlowV2",
   "MetalPriceCard",

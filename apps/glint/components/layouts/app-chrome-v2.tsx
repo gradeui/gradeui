@@ -66,8 +66,8 @@ const NAV: {
   target: string;
 }[] = [
   { label: "Wallets", icon: GlintMark, target: "Dashboard — logged-in home v2" },
-  { label: "Activity", icon: List, target: "Activity — history" },
-  { label: "Bank Accounts", icon: Landmark, target: "Bank Accounts" },
+  { label: "Activity", icon: List, target: "Activity — history v2" },
+  { label: "Bank Accounts", icon: Landmark, target: "Bank Accounts v2" },
 ];
 
 /* Rail spacing, in one place. */
