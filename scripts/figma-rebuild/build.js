@@ -277,6 +277,9 @@
     const p = solid(fs.color);
     t.fills = p ? [p] : [];
     let txt = run.t.replace(/^\s+|\s+$/g, "");
+    // the browser's own line breaks, in the geometric rebuild: no re-wrap
+    const hardBreaks = !AUTO && run.lt && run.lt.length > 1 && !(fs.clamp && run.lines > fs.clamp);
+    if (hardBreaks) txt = run.lt.join("\n");
     // nowrap text is one line whatever getClientRects said
     if (fs.nowrap && !/\n/.test(txt)) run = Object.assign({}, run, { lines: 1 });
     t.characters = txt || " ";
@@ -287,7 +290,12 @@
     const lines = Math.max(1, run.lines || 1);
     const contentH = Math.max(1, box.h - (lines - 1) * lh);
     const dy = (lh - contentH) / 2;
-    if (lines <= 1) {
+    if (hardBreaks) {
+      t.textAutoResize = "WIDTH_AND_HEIGHT";
+      t.textAlignHorizontal = fs.align === "center" ? "CENTER" : fs.align === "right" || fs.align === "end" ? "RIGHT" : "LEFT";
+      parent.appendChild(t);
+      t.x = (fs.align === "center" ? box.x + box.w / 2 - t.width / 2 : fs.align === "right" || fs.align === "end" ? box.x + box.w - t.width : box.x) - ox;
+    } else if (lines <= 1) {
       t.textAutoResize = "WIDTH_AND_HEIGHT";
       parent.appendChild(t);
       t.x = box.x - ox;
@@ -397,7 +405,9 @@
     const out = [];
     const w = (x) => { (x.text || []).forEach((r) => out.push(r.t)); if (x.input) out.push(x.input.value || x.input.placeholder); (x.kids || []).forEach(w); };
     w(n);
-    return out.join(" ").replace(/\s+/g, " ").trim();
+    // the runs carry their own spaces ("Delete “" + name + "”?"); joining
+    // with a space put stray ones inside quotes
+    return out.join("").replace(/\s+/g, " ").trim();
   };
   const firstText = (n) => { let f = null; const w = (x) => { if (f) return; if (x.text && x.text.length) { f = x; return; } (x.kids || []).forEach(w); }; w(n); return f; };
   const svgs = (n) => { const out = []; const w = (x) => { if (x.svg) out.push(x); (x.kids || []).forEach(w); }; w(n); return out; };
@@ -608,7 +618,7 @@
 
   // Checkbox (the box only; its label is the app's own text)
   MAP.push({
-    when: (n) => comp(n, ["Checkbox"]) && n.tag === "button",
+    when: (n) => comp(n, ["Checkbox"]) && n.tag === "button" && n.box.w >= 12,
     async make(n, parent, ox, oy) {
       const set = await lib("Checkbox"); if (!set) return null;
       const on = n.state === "checked" || n.checked === "true";
@@ -880,6 +890,7 @@
       let inputNode = n.input ? n : null;
       const w = (x) => { if (inputNode) return; if (x.input) { inputNode = x; return; } (x.kids || []).forEach(w); }; w(n);
       if (!inputNode || inputNode.tag === "textarea") return null;
+      if (inputNode.input.font && inputNode.input.font.scale) return null; // inside a scaled thumbnail: draw it
       const filled = !!inputNode.input.value;
       const v = variantOf(set, { "Horizontal Layout": "No", Variant: "Text", State: n.disabled ? "Disabled" : filled ? "Filled" : "Default" });
       const inst = v.createInstance();
@@ -918,7 +929,7 @@
     },
   });
   MAP.push({
-    when: (n) => comp(n, ["Textarea"]) && n.tag === "textarea",
+    when: (n) => comp(n, ["Textarea"]) && n.tag === "textarea" && !(n.input && n.input.font && n.input.font.scale),
     async make(n, parent, ox, oy) {
       const set = await lib("Textarea"); if (!set) return null;
       const filled = !!(n.input && n.input.value);
@@ -1034,20 +1045,30 @@
   const inlineKid = (k) => INLINE_TAGS.test(k.tag) && !k.v && !k.clip && !k.svg && !k.img && !k.input && !k.pos && !k.rot && !(k.lay && k.lay.d !== "block") &&
     ((k.text && k.text.length) || (k.kids && k.kids.length)) && (!k.kids || k.kids.every(inlineKid)) && !MAP.some((m) => m.when(k));
   const segsOf = (n) => {
-    const out = (n.text || []).map((r) => ({ t: r.t, box: r.box, lines: r.lines || 1, font: n.font, o: r.o }));
+    const out = (n.text || []).map((r) => ({ t: r.t, box: r.box, lines: r.lines || 1, font: n.font, o: r.o, lt: r.lt }));
     for (const k of n.kids || []) if (inlineKid(k)) out.push(...segsOf(k));
     return out;
   };
-  async function makeMerged(segs, n, parent, ox, oy) {
+  async function makeMerged(segs0, n, parent, ox, oy) {
+    let segs = segs0;
     const lineOf = (b) => Math.round(b.y / 4);
     if (segs.every((sg) => sg.o !== undefined)) segs.sort((a, b) => a.o - b.o);
     else segs.sort((a, b) => (Math.abs(a.box.y - b.box.y) < 6 ? a.box.x - b.box.x : a.box.y - b.box.y));
     // a gap the code made with a margin (ml-2 between "Ratings" and "4.7
     // average") has no space character: put one in where the runs sit apart
+    const hard = !AUTO && segs.some((sg) => sg.lt && sg.lt.length > 1);
+    // each segment's own browser line breaks (geometric rebuild only)
+    if (!AUTO) segs = segs.map((sg) => (sg.lt && sg.lt.length > 1 ? Object.assign({}, sg, { t: (/^\s/.test(sg.t) ? " " : "") + sg.lt.join("\n") + (/\s$/.test(sg.t) ? " " : "") }) : sg));
+    const lastLineTop = (sg) => sg.box.y + sg.box.h - Math.max(1, sg.box.h / Math.max(1, sg.lines || 1));
     for (let i = 1; i < segs.length; i++) {
       const a = segs[i - 1], b = segs[i];
-      const sameLine = Math.abs(a.box.y - b.box.y) < 6 && (a.lines || 1) === 1;
+      const sameLine = Math.abs(lastLineTop(a) - b.box.y) < 6;
       if (sameLine && !/\s$/.test(a.t) && !/^\s/.test(b.t) && b.box.x - (a.box.x + a.box.w) > 2) segs[i] = Object.assign({}, b, { t: " " + b.t });
+      // the browser started b on a new line: a break here (or at least a space)
+      if (!sameLine && b.box.y > lastLineTop(a) + 4) {
+        if (!AUTO && (hard || segs.length > 1)) segs[i - 1] = Object.assign({}, a, { t: a.t.replace(/\s+$/, "") + "\n" });
+        else if (!/\s$/.test(a.t) && !/^\s/.test(b.t)) segs[i] = Object.assign({}, b, { t: " " + b.t });
+      }
     }
     const f0 = segs[0].font || n.font || {};
     const k = f0.scale || 1;
@@ -1077,8 +1098,9 @@
     const multi = new Set(segs.map((sg) => lineOf(sg.box))).size > 1 || segs.some((sg) => sg.lines > 1) || /\n/.test(chars);
     const contentH = Math.max(1, segs[0].box.h - ((segs[0].lines || 1) - 1) * lh);
     parent.appendChild(t);
-    if (!multi || (f0.nowrap && !/\n/.test(chars))) {
+    if (!multi || (f0.nowrap && !/\n/.test(chars)) || (!AUTO && /\n/.test(chars))) {
       t.textAutoResize = "WIDTH_AND_HEIGHT";
+      t.textAlignHorizontal = f0.align === "center" ? "CENTER" : f0.align === "right" || f0.align === "end" ? "RIGHT" : "LEFT";
       t.x = minX - ox;
       if (f0.align === "right" || f0.align === "end") t.x = maxX - t.width - ox;
       else if (f0.align === "center") t.x = (minX + maxX) / 2 - t.width / 2 - ox;

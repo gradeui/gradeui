@@ -222,6 +222,25 @@
       const pre = /^(pre|pre-line|pre-wrap|break-spaces)$/.test(getComputedStyle(el).whiteSpace);
       const txt = pre ? s.replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n") : s.replace(/\s+/g, " ");
       const run = { t: txt, box, lines: rects.length, o: seq.get(n) };
+      // Where the browser broke the lines: the text of each line. Figma's Inter
+      // breaks a word earlier or later than Chrome's, so the geometric rebuild
+      // writes these breaks in rather than re-wrapping.
+      if (rects.length > 1 && !/^(pre|pre-wrap|break-spaces)$/.test(getComputedStyle(el).whiteSpace)) {
+        const data = n.data, lines = [];
+        let start = 0, lastTop = null;
+        const r1 = document.createRange();
+        for (let i = 0; i < data.length; i++) {
+          if (/\s/.test(data[i])) continue;
+          r1.setStart(n, i); r1.setEnd(n, i + 1);
+          const rr = r1.getClientRects()[0];
+          if (!rr) continue;
+          if (lastTop !== null && rr.top > lastTop + rr.height / 2) { lines.push(data.slice(start, i)); start = i; }
+          lastTop = rr.top;
+        }
+        lines.push(data.slice(start));
+        const clean = lines.map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
+        if (clean.length > 1) run.lt = clean;
+      }
       if (vis.w < box.w - 1 || vis.h < box.h - 1) run.vis = vis;
       runs.push(run);
     }
