@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Activity — history v2"
-// (design dmupumb6uwgoj, version 1790878371094). Registry: lib/screens.ts;
+// (design dmupumb6uwgoj, version 1790888612974). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 026903295b3d
+// source-hash: 52746391ebcb
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -54,7 +54,8 @@ export default function ActivityPage() {
     <>
       <Section pad="none" className="py-8">
         <Container maxW="xl">
-          <Stack gap="md">
+          {/* 24 between the title row and the table (Figma wins, 1 Oct). */}
+          <Stack gap="lg">
             {/* THE TWO REPORTS, top right of the content (Ali, 12 Aug:
                 "we also need to add some other buttons in there to do with
                 Download Statement and Tax Report - they can be in the top
@@ -66,7 +67,7 @@ export default function ActivityPage() {
                 Outline rather than filled, because a history is for reading;
                 downloading it is a secondary errand. */}
             <Row justify="between" align="center" wrap gap="md">
-              <h1 className="text-2xl font-semibold text-foreground">Activity</h1>
+              <h1 className="text-2xl text-foreground">Activity</h1>
               <Row gap="sm" wrap>
                 <Button variant="outline" size="sm" className="rounded-full">
                   <Download className="size-4" />

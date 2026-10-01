@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Caveat, IBM_Plex_Mono, Inter, Raleway } from "next/font/google";
+import { Caveat, Chivo, IBM_Plex_Mono, Inter, Raleway } from "next/font/google";
 import { GotoBridge } from "@/components/goto-bridge";
 import glintTheme from "@/theme/glint.theme.json";
 import "./globals.css";
@@ -17,6 +17,11 @@ const caveat = Caveat({ subsets: ["latin"], variable: "--font-caveat" });
    metric-matched fallback, so it lands with no layout shift. Exposed as
    --font-raleway; nothing else in the theme reads it. */
 const raleway = Raleway({ subsets: ["latin"], variable: "--font-raleway" });
+/* Chivo, the Web DS text face (Ali, 1 Oct: Figma wins over this code).
+   Bound to the theme's --font-sans in app/globals.css, with Raleway as
+   --font-display for titles, so every surface picks them up through the
+   tokens rather than per element. */
+const chivo = Chivo({ subsets: ["latin"], variable: "--font-chivo" });
 const ibmPlexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
@@ -45,7 +50,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${inter.variable} ${ibmPlexMono.variable} ${caveat.variable} ${raleway.variable}`}
+      className={`dark ${inter.variable} ${ibmPlexMono.variable} ${caveat.variable} ${raleway.variable} ${chivo.variable}`}
       data-grade-theme={glintTheme.id}
       data-mode="dark"
       data-button-shape={glintTheme.components?.buttonShape ?? "default"}

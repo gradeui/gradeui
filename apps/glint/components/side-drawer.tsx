@@ -18,6 +18,11 @@
 //     centres below 640). An optional 20px icon sits 8 before the title,
 //     centred on the title's 28px line, and the description starts under
 //     the title TEXT, not under the icon (Ali, 1 Oct: line them up).
+//   - FIGMA WINS (Ali, 1 Oct, Web DS over this code): the title is 30/36
+//     Raleway 700 (the family through the theme's display token), the
+//     close is square (the DS button radius, not a circle), and the
+//     footer buttons are full width and 48 tall, stacked with the primary
+//     on top at every size.
 //   - Close: a 40 by 40 ghost button with a 20px X (Ali, 1 Oct: the DS
 //     Sheet's 16px X read small on desktop), centred on the title's line,
 //     at the header's right. The Sheet's own close is hidden for it, so
@@ -26,9 +31,9 @@
 //     footer leave. 24 under the header (gap-6 on the panel). Its content
 //     fills at least the body's height, so a group can be pushed to the
 //     bottom with mt-auto, next to the footer it belongs to.
-//   - Footer: pinned to the bottom edge. SheetFooter: from 640 the
-//     buttons sit right-aligned, primary rightmost; below 640 they stack
-//     full width, primary on top, 8 APART. The DS footer only spaces them
+//   - Footer: pinned to the bottom edge. The buttons stack full width at
+//     every size, primary on top (the last in source order), 8 APART.
+//     Before Figma won, from 640 they sat right-aligned in a row. The DS footer only spaces them
 //     from 640 (sm:space-x-2), so stacked buttons touched; gap-2 here,
 //     with the margin dropped from 640 so the gap is not doubled. The
 //     permanent fix is gap-2 in the DS SheetFooter and DialogFooter.
@@ -92,22 +97,23 @@ SideDrawer.Header = function SideDrawerHeader({
     <SheetHeader className="shrink-0 text-left">
       <Row justify="between" align="start" gap="sm">
         <Row gap="sm" align="start" className="min-w-0">
-          {/* mt-1: a 20px icon centred on the title's 28px line. */}
-          {icon ? <span className="mt-1 flex shrink-0">{icon}</span> : null}
+          {/* mt-2: a 20px icon centred on the title's 36px line. */}
+          {icon ? <span className="mt-2 flex shrink-0">{icon}</span> : null}
           <Stack gap="sm" className="min-w-0">
-            <SheetTitle>{title}</SheetTitle>
+            <SheetTitle className="text-3xl font-bold">{title}</SheetTitle>
             {description ? <SheetDescription>{description}</SheetDescription> : null}
           </Stack>
         </Row>
-        {/* -mt-1.5 centres the 40px button on the title's 28px line;
-            -mr-2 keeps the X where the panel's padding puts it. */}
+        {/* -mt-0.5 centres the 40px button on the title's 36px line;
+            -mr-2 keeps the X where the panel's padding puts it. Square:
+            the DS button radius, as the Web DS draws it. */}
         <SheetClose asChild>
           <Button
             variant="ghost"
             size="lg"
             iconOnly
             aria-label="Close"
-            className="-mr-2 -mt-1.5 shrink-0 rounded-full"
+            className="-mr-2 -mt-0.5 shrink-0"
           >
             <X />
           </Button>
@@ -136,5 +142,9 @@ SideDrawer.Footer = function SideDrawerFooter({
 }: {
   children: React.ReactNode;
 }) {
-  return <SheetFooter className="shrink-0 gap-2 sm:space-x-0">{children}</SheetFooter>;
+  return (
+    <SheetFooter className="shrink-0 gap-2 sm:flex-col-reverse sm:justify-start sm:space-x-0">
+      {children}
+    </SheetFooter>
+  );
 };

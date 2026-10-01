@@ -15,6 +15,21 @@
 @import "@gradeui/ui/styles/globals.css";
 @import "./theme.css";
 
+/* ── Web DS type (Ali, 1 Oct 2026: Figma wins over this code) ──────
+   Chivo for text and Raleway 700 for titles, set through the theme's own
+   tokens so body copy, headings and every component pick them up without
+   a class per element. After theme.css so these win at equal specificity;
+   both the light :root block and the .dark block set the same tokens, so
+   both are matched here. The faces load with next/font in app/layout.tsx.
+   Studio cannot change the project theme (the original screens share it),
+   so its AppChromeV2 copy sets the same three tokens while it is mounted. */
+:root,
+.dark {
+  --font-sans: var(--font-chivo), system-ui, sans-serif;
+  --font-display: var(--font-raleway), system-ui, sans-serif;
+  --font-heading-weight: 700;
+}
+
 /* ── Source scanning ────────────────────────────────────────────────
    v4 auto-detection covers this app's own tree; the explicit lines are
    kept for determinism (mirrors apps/docs). Out-of-package paths MUST

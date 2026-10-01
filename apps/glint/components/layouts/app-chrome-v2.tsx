@@ -36,6 +36,17 @@
 //     Settings and Help have no screen yet, so they close the menu and do
 //     nothing else.
 //
+// FIGMA WINS (Ali, 1 Oct, Web DS over this code): the header is 56 tall
+// (the rail header too, so their rules still meet), the account menu is
+// 280 wide, and the type is the Web DS's: Chivo for text, Raleway 700 for
+// titles, set through the theme's own tokens (--font-sans, --font-display,
+// --font-heading-weight). In the app those tokens come from
+// app/globals.css and the faces from next/font. STUDIO DIFFERS HERE: the
+// Studio theme is the project's, shared with the original screens, so this
+// copy sets the three tokens on the document while it is mounted and
+// fetches the faces from Google Fonts (useWebDsType). The app twin has no
+// such hook.
+//
 // Everything else is AppChrome's, and its notes still apply: the nav
 // (Wallets, Activity, Bank Accounts) keeps the lit item a link, the
 // wordmark is the way back to the demo home, identity comes from Persona,
@@ -157,13 +168,16 @@ const NAV: {
 
 /* Rail spacing, in one place. */
 const RAIL = {
-  "--gds-sidebar-header-height": "3rem",
+  "--gds-sidebar-header-height": "3.5rem",
   "--gds-sidebar-section-px": "0.75rem",
   "--gds-sidebar-section-gap": "0.375rem",
   "--gds-sidebar-content-py": "1rem",
   "--gds-sidebar-footer-px": "0.75rem",
   "--gds-sidebar-footer-py": "1rem",
 } as React.CSSProperties;
+
+/* No useWebDsType here: app/globals.css sets the Web DS type tokens and
+   app/layout.tsx loads Chivo and Raleway with next/font. */
 
 type SlotRegion = "leading" | "center" | "trailing";
 
@@ -223,7 +237,7 @@ function AccountMenu({
           </Avatar>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8} className="w-72">
+      <DropdownMenuContent align="end" sideOffset={8} style={{ width: "17.5rem" }}>
         <DropdownMenuLabel className="font-normal">
           <Row gap="sm" align="center" className="py-1">
             <Avatar size="md">
@@ -478,6 +492,7 @@ export function AppChromeV2({
         {/* DESKTOP TOOLBAR, md and up: AppChrome's, unchanged. */}
         <Toolbar
           sticky
+          size="lg"
           aria-label="Page toolbar"
           className="hidden px-4 md:grid md:px-6 lg:px-8"
           leading={leading}

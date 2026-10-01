@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "USD — wallet v2"
-// (design dmupum94g8tuz, version 1790879095023). Registry: lib/screens.ts;
+// (design dmupum94g8tuz, version 1790888611592). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 2ae2df5ccadb
+// source-hash: e94b4e27b6c6
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -96,9 +96,11 @@ export default function UsdWalletPage() {
       {/* Balance + account details, side by side */}
       <Section pad="none" className="pt-8">
         {/* THE PAGE TITLE (Ali, 1 Oct): an h1 on every page, the style
-            Activity set, 16 above the content. */}
-        <Container maxW="xl" className="pb-4">
-          <h1 className="text-2xl font-semibold text-foreground">{Persona.DEFAULT.balances[ASSET].label}</h1>
+            Activity set, 24 above the content
+            (Figma wins, 1 Oct). Raleway 700 through the theme's heading
+            tokens, so no weight class here. */}
+        <Container maxW="xl" className="pb-6">
+          <h1 className="text-2xl text-foreground">{Persona.DEFAULT.balances[ASSET].label}</h1>
         </Container>
         <Container maxW="xl" grid className="gap-6">
           {/* FLEX COLUMN so the content can grow and pin the actions to

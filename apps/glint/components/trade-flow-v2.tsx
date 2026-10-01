@@ -95,7 +95,6 @@ import {
   type TradeDirection,
 } from "@/lib/market";
 import { Wordmark, METALS, metalSolid } from "@/components/wordmark";
-import { MetalButton } from "@/components/metal-button";
 import { SideDrawer } from "@/components/side-drawer";
 
 /** The vaults a purchase can land in (Ali, 1 Oct: "both vaults, Zurich
@@ -577,7 +576,7 @@ export function TradeFlowV2({
             <SideDrawer.Footer>
               <Button
                 size="lg"
-                className="rounded-full"
+                className="h-12"
                 disabled={!valid}
                 onClick={() => {
                   setLocked({ qty: formQty, cash: formCash });
@@ -654,17 +653,20 @@ export function TradeFlowV2({
             </Stack>
             </SideDrawer.Body>
             <SideDrawer.Footer>
+              {/* Secondary, as the Web DS Sheet's second action: a full-width
+                  ghost read as an empty bar. */}
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="lg"
-                className="rounded-full"
+                className="h-12"
                 onClick={() => setStep("form")}
               >
                 Back
               </Button>
-              <MetalButton metal={metal} size="lg" onClick={confirm}>
+              {/* The DS primary, as every Web DS drawer action is. */}
+              <Button size="lg" className="h-12" onClick={confirm}>
                 {verb} {label}
-              </MetalButton>
+              </Button>
             </SideDrawer.Footer>
           </>
         )}
@@ -724,7 +726,7 @@ export function TradeFlowV2({
             <SideDrawer.Footer>
               <Button
                 size="lg"
-                className="rounded-full"
+                className="h-12"
                 onClick={() => setOpen(false)}
               >
                 Done

@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Bank Accounts v2"
-// (design dmupume7sb1e7, version 1790878372467). Registry: lib/screens.ts;
+// (design dmupume7sb1e7, version 1790888614511). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 8b55963867b2
+// source-hash: 97994bc820ee
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -100,9 +100,11 @@ export default function BankAccountsPage() {
     <>
       <Section pad="none" className="pt-8">
         {/* THE PAGE TITLE (Ali, 1 Oct): an h1 on every page, the style
-            Activity set, 16 above the content. */}
-        <Container maxW="xl" className="pb-4">
-          <h1 className="text-2xl font-semibold text-foreground">Bank accounts</h1>
+            Activity set, 24 above the content
+            (Figma wins, 1 Oct). Raleway 700 through the theme's heading
+            tokens, so no weight class here. */}
+        <Container maxW="xl" className="pb-6">
+          <h1 className="text-2xl text-foreground">Bank accounts</h1>
         </Container>
         <Container maxW="xl" grid className="gap-6">
           {/* THE CUSTOMER'S OWN ACCOUNT, on the left because it is where

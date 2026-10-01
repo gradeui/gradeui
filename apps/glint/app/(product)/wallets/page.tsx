@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home v2"
-// (design dmuppmsu1t19c, version 1790878365134). Registry: lib/screens.ts;
+// (design dmuppmsu1t19c, version 1790888606534). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 9c84f8a26944
+// source-hash: 5964b1f0afa0
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -122,9 +122,11 @@ export default function WalletsPage() {
       {/* 32 ABOVE, like every page (Ali, 1 Oct), and 32 below. */}
       <Section pad="none" className="py-8">
         {/* THE PAGE TITLE (Ali, 1 Oct): an h1 on every page, the style
-            Activity set, 16 above the content. */}
-        <Container maxW="xl" className="pb-4">
-          <h1 className="text-2xl font-semibold text-foreground">Wallets</h1>
+            Activity set, 24 above the content
+            (Figma wins, 1 Oct). Raleway 700 through the theme's heading
+            tokens, so no weight class here. */}
+        <Container maxW="xl" className="pb-6">
+          <h1 className="text-2xl text-foreground">Wallets</h1>
         </Container>
         <Container maxW="xl">
           <Stack gap="lg">

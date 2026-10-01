@@ -268,7 +268,7 @@ function TxSheet({
           </Stack>
           </SideDrawer.Body>
           <SideDrawer.Footer>
-            <Button size="lg" className="rounded-full" onClick={onClose}>
+            <Button size="lg" className="h-12" onClick={onClose}>
               Done
             </Button>
           </SideDrawer.Footer>

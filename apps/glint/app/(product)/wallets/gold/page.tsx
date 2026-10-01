@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Gold — wallet v2"
-// (design dmuppmu4zpn8y, version 1790879475503). Registry: lib/screens.ts;
+// (design dmuppmu4zpn8y, version 1790888608354). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: a905f37d6c40
+// source-hash: 593546f326f7
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -71,9 +71,11 @@ export default function GoldWalletPage() {
       {/* Holding + price, side by side */}
       <Section pad="none" className="pt-8">
         {/* THE PAGE TITLE (Ali, 1 Oct): an h1 on every page, the style
-            Activity set, 16 above the content. */}
-        <Container maxW="xl" className="pb-4">
-          <h1 className="text-2xl font-semibold text-foreground">{label}</h1>
+            Activity set, 24 above the content
+            (Figma wins, 1 Oct). Raleway 700 through the theme's heading
+            tokens, so no weight class here. */}
+        <Container maxW="xl" className="pb-6">
+          <h1 className="text-2xl text-foreground">{label}</h1>
         </Container>
         <Container maxW="xl" grid className="gap-6">
           <MetalWalletCardV2 asset={METAL} vaults className="col-span-12 lg:col-span-7" />
