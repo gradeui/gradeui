@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home v2"
-// (design dmuppmsu1t19c, version 1790870293684). Registry: lib/screens.ts;
+// (design dmuppmsu1t19c, version 1790875936526). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 79b68846abf7
+// source-hash: 0d49c0fd942d
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -14,27 +14,17 @@ import {
   Stack,
   Row,
   Grid,
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
   Button,
   ToggleGroup,
   ToggleGroupItem,
 } from "@gradeui/ui";
-import { AppChrome } from "@/components/layouts/app-chrome";
-import {
-  Persona,
-  type AssetKey,
-  type PersonaPreferences,
-} from "@/lib/persona";
-import { Market, type MetalUnit } from "@/lib/market";
-import { Wordmark } from "@/components/wordmark";
+import { AppChromeV2 } from "@/components/layouts/app-chrome-v2";
+import { Persona, type AssetKey } from "@/lib/persona";
 import { TradeFlowV2 } from "@/components/trade-flow-v2";
-import { Accounts } from "@/lib/accounts";
 import { MetalButton } from "@/components/metal-button";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
-import { Plus, ChevronRight } from "lucide-react";
+import { MetalWalletCardV2 } from "@/components/metal-wallet-card-v2";
+import { Plus } from "lucide-react";
 
 // V2 (1 Oct 2026, the business portal v2 for staging): a copy of
 // "Dashboard — logged-in home", which stays untouched because the live
@@ -46,9 +36,13 @@ import { Plus, ChevronRight } from "lucide-react";
 //     wallet, one amount field, shortfall to Deposit.
 //   - Deposit goes to the USD wallet, where the Glint account details are,
 //     the same place a short buy sends you.
-//   - A metal card says WHERE it is held: the vault's name for one vault,
-//     both names for two, a count beyond that. No primary vault anywhere.
+//   - THE CARDS ARE MetalWalletCardV2 (Ali, 1 Oct: "matching our new Gold
+//     and silver wallet cards"): the App DS metal face for Gold and
+//     Silver, and the same card in its own non-metal treatment for USD,
+//     each with its actions under it (Buy and Sell; Deposit for USD). The
+//     card component owns all of that, including where the metal is held.
 //   - The Gold and Silver cards lead to the v2 wallet screens.
+//   - The chrome is AppChromeV2: no rail on mobile, a top bar instead.
 //
 // Mercury-pattern logged-in home, Glint-flavoured, for BUSINESS accounts.
 // Routed at /wallets in the app; the nav item is WALLETS (Ali, 11 Aug).
@@ -70,17 +64,6 @@ import { Plus, ChevronRight } from "lucide-react";
 // be flipped in front of someone mid-demo.
 // TOTAL BALANCE: "Balance" + the large combined number above the asset
 // cards, summing the three reactive balances.
-// CARD MARKS (Ali, 11 Aug): every card leads its title with the Glint
-// G at a larger title size, including USD, because that card is the
-// customer's Glint wallet for fiat, not a foreign account. The metals
-// wear the G in their FLAT brand colour (Wordmark tone="current" plus
-// Wordmark.metalSolid). USD takes the action blue for now; a custom
-// dollar mark drawn to match the G is coming.
-// WHOLE CARD IS THE TARGET: Card `interactive` carries the goto, so the
-// click target is the tile and not a 40px chevron. All three wallets
-// have a screen now (see CARD_TARGETS), so no card here is inert. The
-// chevron is DECORATION: aria-hidden, no handler of its own, and the DS
-// lights it on card hover so the two read as one affordance.
 // TRADE FLOW: the Buy Gold / Buy Silver pills open TradeFlowV2, the one
 // dialog that runs BOTH directions. This page offers the buy side only;
 // Sell sits on the metal wallet screens. A completed order moves the
@@ -102,16 +85,6 @@ const CARD_TARGETS = {
   fiat: "USD — wallet",
 };
 
-/** The Glint G in front of a card title, in the wallet's own colour:
- *  the flat metal for gold and silver, the action blue for fiat. */
-function AssetMark({ asset }: { asset: AssetKey }) {
-  const color =
-    asset === "fiat" ? "oklch(var(--primary))" : Wordmark.metalSolid(asset);
-  return (
-    <Wordmark lockup="mark" tone="current" className="size-5" style={{ color }} />
-  );
-}
-
 /* THE AUTO-INVEST CONTROL LIVES IN ITS OWN SHARED COMPONENT NOW (Ali,
    11 Aug: "I'd extract the toggle group as a shared component on its
    own"). It was defined here, and the Glint USD wallet card needed the
@@ -131,100 +104,6 @@ function TotalBalance() {
         {Persona.fmtMoney(gold + silver + fiat)}
       </span>
     </Stack>
-  );
-}
-
-function BalanceCard({ asset }: { asset: AssetKey }) {
-  const [amount] = Persona.useBalance(asset);
-  const unitKey = (asset === "fiat"
-    ? "unit.gold"
-    : `unit.${asset}`) as keyof PersonaPreferences;
-  const [unit] = Persona.usePreference(unitKey);
-  const meta = Persona.DEFAULT.balances[asset];
-  /* Metals show the holding in the persona's preferred unit.
-     THE CASH CARD SHOWS THE AUTO-BUY SETTING (Ali, 11 Aug: "rather
-     than displaying the routing number and account, lets display what the
-     auto-invest setting is as this seems to be a big thing"). It is the
-     one line on this card a customer would act on: the routing and
-     account numbers are reference data, they belong on the USD wallet
-     screen where you go to set up a transfer, and they are still there.
-     Composed from the control's own labelFor, so the card and the toggle
-     can never disagree about what "gold" is called. */
-  const [autoInvest] = Persona.usePreference("autoInvest");
-  const autoLabel = AutoInvestToggle.labelFor(autoInvest);
-  /* WHERE IT IS STORED, after the quantity (Ali, 12 Aug: "our home cards
-     need to reflect where the Gold or Silver is stored... an interpunct
-     next to the amount, followed by the amount of vaults"). Reactive, so
-     a purchase into a vault the persona never used takes the count from
-     one to two in front of you. Cash has no vaults and says nothing:
-     its line carries the auto-buy setting instead.
-     AUTO-BUY, WAS AUTO-INVEST (Glint's CEO, 12 Aug, via Ali). The stored
-     preference key is still `autoInvest`: it is session state, and
-     renaming it would orphan every demo run already holding a value. The
-     AutoInvestToggle header carries the full name history. */
-  const vaults = Persona.useVaults(asset);
-  /* V2: THE PLACE, NOT A COUNT (Ali, 1 Oct: the pin shows where the metal
-     is actually held, one vault by name, several as "Zurich, Miami" or a
-     count). Two names still fit the card's line; three would not. A metal
-     sold down to nothing is held nowhere, so it says nothing, rather than
-     leaving an interpunct with no place after it. */
-  const heldIn =
-    vaults.length === 0
-      ? ""
-      : vaults.length > 2
-        ? ` · ${vaults.length} vaults`
-        : ` · ${vaults.map((v) => Accounts.vaultLabel(v.vault)).join(", ")}`;
-  const detail =
-    asset === "fiat"
-      ? autoInvest === "none"
-        ? "Auto-buy off"
-        : `Auto-buy to ${autoLabel}`
-      : `${Market.fmtQty(
-          Market.toQty(amount, asset, unit as MetalUnit),
-          unit as MetalUnit,
-        )}${heldIn}`;
-  const target = CARD_TARGETS[asset];
-  return (
-    <Card
-      interactive={Boolean(target)}
-      data-grade-goto={target}
-      aria-label={target ? `Open ${meta.label}` : undefined}
-    >
-      {/* pt-4 not the default pt-6 (Ali, 11 Aug): the title sits
-          closer to the card top so the figure below has the room. */}
-      <CardHeader className="pb-2 pl-6 pt-4">
-        <Row justify="between" align="center">
-          <Row gap="sm" align="center">
-            <AssetMark asset={asset} />
-            <CardTitle className="text-lg">{meta.label}</CardTitle>
-          </Row>
-          {target && (
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              iconOnly
-              raised={false}
-              className="rounded-full"
-            >
-              <span aria-hidden="true">
-                {/* Optical centring: a chevron's mass sits left of its
-                    box, so nudge it back at rest. 1px, not 2 (Ali,
-                    11 Aug): 2px overshot and read as off-centre the
-                    other way. */}
-                <ChevronRight className="size-4 translate-x-[1px]" />
-              </span>
-            </Button>
-          )}
-        </Row>
-      </CardHeader>
-      <CardContent>
-        <Stack gap="xs">
-          <span className="text-2xl font-semibold text-foreground">{Persona.fmtMoney(amount)}</span>
-          <span className="text-sm text-muted-foreground">{detail}</span>
-        </Stack>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -255,7 +134,7 @@ export default function WalletsPage() {
           promotion strips the wrapper and its props (the route layout
           supplies the chrome in the app), so a toolbarLeading set here
           would render in Studio and vanish in the app. That was tried. */}
-      <AppChrome.Slot region="leading">
+      <AppChromeV2.Slot region="leading">
         <Row gap="sm">
           {/* NO variant ON A MetalButton: it sets background, color and
               borderColor as an INLINE style, and an inline style beats a
@@ -288,7 +167,7 @@ export default function WalletsPage() {
             Deposit
           </Button>
         </Row>
-      </AppChrome.Slot>
+      </AppChromeV2.Slot>
 
       {/* Balance, with Auto-buy alongside it. pt-8 because this is
           the first band under the toolbar now that the actions have
@@ -310,7 +189,11 @@ export default function WalletsPage() {
             </Row>
             <Grid cols="3" gap="lg">
               {ASSET_ORDER.map((asset) => (
-                <BalanceCard key={asset} asset={asset} />
+                <MetalWalletCardV2
+                  key={asset}
+                  asset={asset}
+                  link={CARD_TARGETS[asset]}
+                />
               ))}
             </Grid>
           </Stack>

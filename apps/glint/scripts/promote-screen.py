@@ -102,6 +102,7 @@ COMPONENT_MODULES = {
     # demo's screens keep TradeFlow and MetalWalletCard untouched.
     "TradeFlowV2": "@/components/trade-flow-v2",
     "MetalWalletCardV2": "@/components/metal-wallet-card-v2",
+    "AppChromeV2": "@/components/layouts/app-chrome-v2",
     "PhoneField": "@/components/phone-field",
     "AutoInvestToggle": "@/components/auto-invest-toggle",
     "AccountDetails": "@/components/account-details",

@@ -22,39 +22,14 @@
   ],
   "app/(product)/wallets/page.tsx": [
     {
-      "why": "AssetKey/PersonaPreferences/MetalUnit types for the card components",
+      "why": "AssetKey for the asset order",
       "find": "import { Persona } from \"@/lib/persona\";",
-      "replace": "import {\n  Persona,\n  type AssetKey,\n  type PersonaPreferences,\n} from \"@/lib/persona\";"
-    },
-    {
-      "why": "MetalUnit for the quantity formatting casts below",
-      "find": "import { Market } from \"@/lib/market\";",
-      "replace": "import { Market, type MetalUnit } from \"@/lib/market\";"
+      "replace": "import { Persona, type AssetKey } from \"@/lib/persona\";"
     },
     {
       "why": "the asset order is a list of keys, not strings",
       "find": "const ASSET_ORDER = [\"gold\", \"silver\", \"fiat\"];",
       "replace": "const ASSET_ORDER: AssetKey[] = [\"gold\", \"silver\", \"fiat\"];"
-    },
-    {
-      "why": "both card helpers take an asset key",
-      "find": "function AssetMark({ asset }) {",
-      "replace": "function AssetMark({ asset }: { asset: AssetKey }) {"
-    },
-    {
-      "why": "both card helpers take an asset key",
-      "find": "function BalanceCard({ asset }) {",
-      "replace": "function BalanceCard({ asset }: { asset: AssetKey }) {"
-    },
-    {
-      "why": "fiat borrows unit.gold and never reads it: the key needs the cast",
-      "find": "  const [unit] = Persona.usePreference(`unit.${asset}`);",
-      "replace": "  const unitKey = (asset === \"fiat\"\n    ? \"unit.gold\"\n    : `unit.${asset}`) as keyof PersonaPreferences;\n  const [unit] = Persona.usePreference(unitKey);"
-    },
-    {
-      "why": "the unit is a preference value, narrowed for the formatter",
-      "find": "      : `${Market.fmtQty(Market.toQty(amount, asset, unit), unit)}${heldIn}`;",
-      "replace": "      : `${Market.fmtQty(\n          Market.toQty(amount, asset, unit as MetalUnit),\n          unit as MetalUnit,\n        )}${heldIn}`;"
     }
   ],
   "app/onboarding/step2/page.tsx": [

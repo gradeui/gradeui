@@ -373,8 +373,11 @@ export function TradeFlowV2({
 
   /* ONE HEADER FOR THE WHOLE FLOW (Ali, 12 Aug), now with the direction
      of the money under the title (Ali, 1 Oct). */
+  /* text-left at every size (Ali, 1 Oct): below sm the DS header centres
+     its text, which left "From your USD wallet" centred under a
+     left-aligned title on mobile. */
   const header = (
-    <DialogHeader className="shrink-0">
+    <DialogHeader className="shrink-0 text-left">
       <DialogTitle>
         <Row gap="sm" align="center">
           <MetalMark metal={metal} />

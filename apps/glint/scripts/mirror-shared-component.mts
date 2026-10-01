@@ -69,6 +69,7 @@ const ALLOWED = new Set([
   "MetalWalletCardV2",
   "PhoneField",
   "AppChrome",
+  "AppChromeV2",
   "OnboardingLayout",
 ]);
 

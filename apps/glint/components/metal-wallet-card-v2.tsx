@@ -1,237 +1,288 @@
 "use client";
 
+// MetalWalletCardV2 (1 Oct 2026): the wallet card for the Glint business
+// portal v2, one design for all three wallets (Ali, 1 Oct: the Gold and
+// Silver cards "matching our new Gold and silver wallet cards", and all
+// three Wallets cards the same design). A fork of MetalWalletCard, which
+// the live demo still uses.
+//
+// TWIN: the Studio shared component "MetalWalletCardV2" (cmuppmnb1qa09h).
+// Editing one does not touch the other. Keep the pair in sync.
+//
+//   <MetalWalletCardV2 asset="gold" link="Gold — wallet v2" />   Wallets
+//   <MetalWalletCardV2 asset="gold" vaults />                    Gold page
+//   <MetalWalletCardV2 asset="fiat" link="USD — wallet" />        Wallets
+//
+// THE FACE is the metal wallet card from the App DS and the iOS app
+// (Figma WalletGroupCard, Metal=Gold|Silver, Display=Metal,
+// Surface=Metal; MetalFace and MetalCardContent in the iOS sample):
+//   - the base gradient, Figma's exact stops in the face's own unit space
+//     from (0.1528, 0.1528) to (0.8472, 0.8472). In CSS that is a "to
+//     bottom right" gradient with the stops at 15.28% to 84.72%;
+//   - BARE METAL: no G-unit ring lattice. Ali took the pattern off the
+//     cards on 30 Sep ("remove remove remove"; the iOS default, Pattern
+//     Subtle, "leaves the metal bare"). The lattice stays a band
+//     treatment;
+//   - the emboss: a white hairline along the top edge, a dark one along
+//     the bottom, and type stamped with a 1px white shadow at 20%;
+//   - the G and the metal's name, Auto-buy as an outline chip on the
+//     metal it buys, the grams with a smaller fraction and the unit in
+//     the accent, the pin with where it is held ("Zurich, Miami"), a
+//     rule, then the value in USD.
+// Every colour is the App DS's own: metal/on-metal #141B3D for the type,
+// gold/700 or silver/700 for the G, the unit and the chip, gold/300 or
+// silver/200 for the rule (Glint-Styleguide brand/colours.ts).
+//
+// USD, NOT METAL: the same card in its own treatment. The DS card surface
+// instead of a metal face, the G in the action blue as before, the balance
+// where the grams go, the same rule, and the Auto-buy setting where the
+// value goes. It holds no vaults, so there is no pin.
+//
+// THE ACTIONS sit under the face (Ali, 1 Oct: "we are also losing the buy
+// and sell buttons entirely, no CTAs"): Buy as the metal button, Sell as an
+// outline button, both opening TradeFlowV2 with this card's metal. USD has
+// one, Deposit, which goes to the USD wallet and its account details.
+//
+// `vaults` adds the per-vault table under the actions, for the metal's own
+// page. `link` makes the face the way into that page.
 import * as React from "react";
-
-/**
- * Glint metal wallet card (Ali, 11 Aug 2026). EXTRACTED alongside
- * MetalPriceCard: the gold and silver screens each carried a copy, and
- * the silver copy was a paste, so every metal-specific string here is
- * composed from the `metal` prop instead of typed.
- *
- * V2 (1 Oct 2026, the business portal v2 on glint-staging): identical to
- * MetalWalletCard except that Buy and Sell open TradeFlowV2 (from and to
- * the USD wallet, one amount field, the metal passed from this card). A fork
- * rather than an edit, because the live demo uses MetalWalletCard.
- *
- * TWIN: this mirrors the Studio shared component "MetalWalletCardV2"
- * (id cmuppmnb1qa09h). Editing one does not touch the other, so a
- * change here needs the same change there. Keep the pair in sync.
- *
- * EVERY LABEL IS COMPOSED, NOT WRITTEN. The card title is the account's
- * own label ("Gold wallet") and the buy action is built from the asset
- * label ("Buy Gold"), both read from lib/accounts.ts and lib/persona.ts.
- * That is the point of the extraction: there is no longer a place where
- * a screen can say "Silver" in three headings and "Gold" in the fourth.
- *
- * NO ACCOUNT NUMBER (Ali, 11 Aug: "on the gold wallet page we can lose
- * the account number"). The card title already names the wallet, and a
- * custody position's number is not something anyone acts on from a
- * detail page. The USD wallet is the opposite case, and keeps its
- * routing and account numbers called out, because that is how money
- * actually gets into it.
- * This replaces a note that argued for exactly ONE account line, which
- * was fixing a doubled "Gold wallet ··5679 · Account ··5679". The line
- * is gone entirely now, so that argument no longer applies.
- *
- * TRADE FLOW: Buy and Sell both open TradeFlowV2 (direction buy / sell);
- * a completed order moves the Persona balances and this card follows,
- * because the balance is a reactive read. Buy wears the MetalButton,
- * the shared polished face with the hover glint; Sell is a quiet ghost,
- * because selling your treasury should not be the loud button.
- *
- * CUSTODY, NOT DEPOSIT: metal wallets carry no routing number by design.
- * They are custody positions, so lib/accounts.ts holds no routing value
- * for them at all. Nothing on this card reads it now, but the
- * distinction is why: a vault, not a bank.
- */
-
 import {
   Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
+  Badge,
+  Separator,
   Stack,
   Row,
   Button,
 } from "@gradeui/ui";
-import {
-  useBalance,
-  usePreference,
-  fmtMoney,
-  useVaults,
-  DEFAULT_PERSONA,
-} from "@/lib/persona";
-import { toQty, fmtQty, type MetalKey } from "@/lib/market";
-import { ACCOUNTS, vaultLabel } from "@/lib/accounts";
-import { Wordmark, metalSolid } from "@/components/wordmark";
-import { MetalButton } from "@/components/metal-button";
+import { ChevronRight, MapPin } from "lucide-react";
+import { Persona, type AssetKey, type VaultBalance } from "@/lib/persona";
+import { Market, type MetalKey, type MetalUnit } from "@/lib/market";
+import { Accounts } from "@/lib/accounts";
+import { Wordmark } from "@/components/wordmark";
 import { TradeFlowV2 } from "@/components/trade-flow-v2";
+import { MetalButton } from "@/components/metal-button";
+import { AutoInvestToggle } from "@/components/auto-invest-toggle";
+
+/** The App DS metal tokens for the face. */
+const INK = "#141B3D";
+const FACE: Record<
+  MetalKey,
+  { base: string; accent: string; rule: string; unit: string }
+> = {
+  gold: {
+    base: "linear-gradient(to bottom right, #E3E5BC 15.28%, #D0B26D 38.43%, #A48544 61.57%, #7F6124 84.72%)",
+    accent: "#533C00",
+    rule: "#ECD19C",
+    unit: "#533C00",
+  },
+  silver: {
+    base: "linear-gradient(to bottom right, #FFFFFF 15.28%, #F0F0F0 38.43%, #D1D1D1 61.57%, #B1B1B1 84.72%)",
+    accent: "#404040",
+    rule: "#E7E7E7",
+    unit: "rgb(20 27 61 / 0.66)",
+  },
+};
+const EMBOSS = "inset 0 1px 0 rgb(255 255 255 / 0.35), inset 0 -1px 0 rgb(0 0 0 / 0.2)";
+const STAMP = "0 1px 0 rgb(255 255 255 / 0.2)";
+
+/** "1,423" and ".9395": the grams with the fraction set smaller. */
+function splitFigure(n: number, places: number): [string, string] {
+  const text = n.toLocaleString("en-US", {
+    minimumFractionDigits: places,
+    maximumFractionDigits: places,
+  });
+  const at = text.indexOf(".");
+  return at === -1 ? [text, ""] : [text.slice(0, at), text.slice(at)];
+}
+
+/** Where the metal is held: one vault by name, two as "Zurich, Miami",
+ *  more as a count, as the iOS card's pin does. */
+function heldIn(vaults: VaultBalance[]): string {
+  if (vaults.length === 0) return "";
+  if (vaults.length > 2) return `${vaults.length} vaults`;
+  return vaults.map((v) => Accounts.vaultLabel(v.vault)).join(", ");
+}
 
 export function MetalWalletCardV2({
-  metal = "gold",
+  asset = "gold",
+  link,
+  vaults: showVaults = false,
   className,
 }: {
-  metal?: MetalKey;
-  /** The screen owns the layout: it sets the grid span. */
+  asset?: AssetKey;
+  /** A Studio screen name: the face becomes the way into that screen. */
+  link?: string;
+  /** Show the per-vault table, for the metal's own page. */
+  vaults?: boolean;
   className?: string;
 }) {
-  const [amount] = useBalance(metal);
-  /* The ternary, not a template literal: usePreference is keyed on the
-     flat PersonaPreferences union, and the two literals keep the key
-     typed rather than widening to string. */
-  const [unit] = usePreference(metal === "gold" ? "unit.gold" : "unit.silver");
-  const label = DEFAULT_PERSONA.balances[metal].label;
-  /* REACTIVE, not the persona seed (Ali, 12 Aug: "buying and doing
-     transactions should reflect in the UI", and "totals should always be
-     computed"). These rows and the headline figure above them are made
-     from the same three per-vault balances, so a purchase moves both and
-     they cannot disagree. It used to read vaultsFor(metal), the static
-     seed, which is how the card came to show 51.2991 g held above three
-     rows adding to 47.7350. */
-  const vaults = useVaults(metal);
-  /* Share of the holding per vault. Computed from the USD slices against
-     the metal's own total, NOT from the displayed gram figures, so the
-     column sums to 100% instead of drifting with display rounding. */
+  const metal: MetalKey | null = asset === "fiat" ? null : asset;
+  const [amount] = Persona.useBalance(asset);
+  const [unit] = Persona.usePreference(asset === "silver" ? "unit.silver" : "unit.gold");
+  const [autoInvest] = Persona.usePreference("autoInvest");
+  const vaults = Persona.useVaults(asset);
   const vaultTotal = vaults.reduce((sum, v) => sum + v.amount, 0);
+  const label = Persona.DEFAULT.balances[asset].label;
+  const face = metal ? FACE[metal] : null;
+
+  const [whole, fraction] = metal
+    ? splitFigure(Market.toQty(amount, metal, unit as MetalUnit), 4)
+    : splitFigure(amount, 2);
+  const place = metal ? heldIn(vaults) : "";
+
+  const title = (
+    <Row justify="between" align="center" gap="sm">
+      <Row gap="sm" align="center">
+        <Wordmark
+          lockup="mark"
+          tone="current"
+          className="size-6"
+          style={{ color: face ? face.accent : "oklch(var(--primary))" }}
+        />
+        <span
+          className={`text-xl font-semibold ${face ? "" : "text-foreground"}`}
+          style={face ? { textShadow: STAMP } : undefined}
+        >
+          {label}
+        </span>
+        {metal && autoInvest === metal ? (
+          <Badge
+            variant="outline"
+            style={{ color: face!.accent, borderColor: face!.accent }}
+          >
+            Auto-buy
+          </Badge>
+        ) : null}
+      </Row>
+      {link ? <ChevronRight aria-hidden className="size-5 shrink-0" /> : null}
+    </Row>
+  );
+
+  const figure = (
+    <Row justify="between" align="baseline" gap="sm" className="mt-1">
+      <span
+        className={`font-semibold tabular-nums ${face ? "" : "text-foreground"}`}
+        style={face ? { textShadow: STAMP } : undefined}
+      >
+        {metal ? null : <span className="text-xl">$</span>}
+        <span className="text-3xl">{whole}</span>
+        <span className="text-xl">{fraction}</span>
+        {metal ? (
+          <span className="text-xl" style={{ color: face!.unit }}>
+            {` ${unit}`}
+          </span>
+        ) : null}
+      </span>
+      {place ? (
+        <Row gap="xs" align="center" className="min-w-0 font-semibold">
+          <MapPin aria-hidden className="size-4 shrink-0" />
+          <span className="truncate" style={{ textShadow: STAMP }}>
+            {place}
+          </span>
+        </Row>
+      ) : null}
+    </Row>
+  );
+
+  const footer = (
+    <span
+      className={`text-base tabular-nums ${face ? "" : "text-muted-foreground"}`}
+      style={face ? { textShadow: STAMP } : undefined}
+    >
+      {metal
+        ? Persona.fmtMoney(amount)
+        : autoInvest === "none"
+          ? "Auto-buy off"
+          : `Auto-buy to ${AutoInvestToggle.labelFor(autoInvest)}`}
+    </span>
+  );
+
+  const body = (
+    <Stack gap="sm">
+      {title}
+      {figure}
+      <Separator style={face ? { backgroundColor: face.rule } : undefined} />
+      {footer}
+    </Stack>
+  );
 
   return (
-    /* FLEX COLUMN so CardContent can grow and pin the actions to the
-       bottom (Ali, 11 Aug). The card's height is set by the price card
-       beside it via the grid, so without this the buttons floated
-       directly under the vault list and left dead space below them. */
-    <Card className={`flex flex-col ${className ?? ""}`}>
-      <CardHeader>
-        {/* THE GLINT MARK LEADS THE TITLE (Ali, 11 Aug), the same treatment
-            the dashboard tiles use: the G in the wallet's own flat metal
-            colour. Rendered from Wordmark rather than an asset file so the
-            mark cannot drift from the brand, and tone="current" with the
-            colour set here so one component serves both metals. */}
-        {/* HEADER HEIGHT IS A CONTRACT BETWEEN THE TWO CARDS (Ali, 11 Aug:
-            "could do with the card titles and the big numbers lining up
-            visually"). These two sit side by side, so whichever header is
-            taller pushes its whole card down and the pair stops reading as
-            a row. The price card's header holds a size="sm" ToggleGroup, and
-            that control measures 36px, not the 28px of its items: the
-            segmented track wraps them in p-0.5. Taller than this card's 20px mark, which left the titles
-            8px apart and the big figures 16px apart. min-h-9 is that 36px,
-            floored in BOTH headers so neither can drift. Change one, change
-            the other. */}
-        <Row gap="sm" align="center" className="min-h-9">
-          <Wordmark
-            lockup="mark"
-            tone="current"
-            className="size-5"
-            style={{ color: metalSolid(metal) }}
-          />
-          <CardTitle>{ACCOUNTS[metal].label}</CardTitle>
-        </Row>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col">
-        <Stack gap="md" justify="between" className="flex-1">
-          <Stack gap="xs">
-            {/* HEADLINE SIZE IS DELIBERATE AND SHARED (Ali, 11 Aug: "on
-                the cards we need the numbers to be bigger"). text-4xl is
-                the figure size on all three wallet screens, Gold, Silver
-                and USD, and the USD screen sets it inline because it does
-                not use this component. Change one, change all three, or
-                the set stops reading as one family. The secondary lines
-                below stay at text-sm: they are the context, not the
-                number. */}
-            <span className="text-4xl font-semibold tabular-nums text-foreground">
-              {fmtMoney(amount)}
-            </span>
-            <span className="text-sm tabular-nums text-muted-foreground">
-              {fmtQty(toQty(amount, metal, unit), unit)} held
-            </span>
-          </Stack>
-          {/* 4dp ON BOTH THE TOTAL AND THE SLICES (Ali, 11 Aug: "do 4dp
-              grams, thats what the app does"). At the 2dp default the three
-              slices rounded independently to 23.87 + 14.32 + 9.55 against a
-              47.73 total, so the breakdown visibly failed to add up. Moving
-              only one of the two would put the contradiction straight back,
-              which is why they are changed together and noted here. */}
-          {vaults.length > 0 && (
-            <Stack gap="xs">
-              {/* A real sub-heading, not a caption (Ali, 11 Aug: "the header
-                  Vaults is too small"). text-sm on the foreground reads as
-                  a heading for the table under it; at text-xs and muted it
-                  sat below the row labels it was meant to head. */}
-              <span className="text-sm font-medium text-foreground">
-                Vaults
-              </span>
-              {/* City alone: the fuller "Zurich, Switzerland" is for the
-                  transaction sheet, which has the width for it. Each
-                  slice is stored in USD, the unit a balance is stored in,
-                  and converts here because "how much gold is in Zurich"
-                  is the question this answers. */}
-              {/* FULL-WIDTH ROWS, VALUE HARD RIGHT (Ali, 11 Aug: "we want
-                  those key values to run right across the page, values
-                  anchored to the right"). Deliberately not the DS property
-                  list here: its label column is a fixed width, so the value
-                  sits beside the label rather than at the card's edge, which
-                  is the opposite of what is wanted. */}
-              {/* A THREE-COLUMN TABLE (Ali, 11 Aug: "in the vaults this is
-                  kind of a table"), so the shares and the quantities each
-                  line up in their own column rather than ragging against
-                  variable-length city names. An explicit grid template
-                  rather than the Grid primitive, which spreads equal
-                  columns: here the name should take the slack and the two
-                  figures should hug their content on the right. */}
-              {/* HAIRLINES BETWEEN ROWS (Ali, 11 Aug: without them it
-                  "kind of looks unfinished"). The border lives on every
-                  CELL rather than on a row wrapper, because the alignment
-                  depends on all three rows sharing ONE grid: wrap each row
-                  in its own element and the auto columns size per row, so
-                  the figures stop lining up. Adjacent cells touch, so the
-                  per-cell borders read as one continuous rule, which is
-                  why the column spacing is padding here and not gap-x.
-                  No rule under the last row: it would read as a footer
-                  edge rather than a separator. */}
-              <div className="grid grid-cols-[1fr_auto_auto]">
-                {vaults.map((v, i) => {
-                  const rule =
-                    i === vaults.length - 1 ? "" : "border-b border-border";
-                  return (
-                    <React.Fragment key={v.vault}>
-                      <span
-                        className={`py-1.5 pr-4 text-sm text-muted-foreground ${rule}`}
-                      >
-                        {vaultLabel(v.vault)}
-                      </span>
-                      <span
-                        className={`py-1.5 pr-4 text-right text-sm tabular-nums text-muted-foreground ${rule}`}
-                      >
-                        {vaultTotal
-                          ? ((v.amount / vaultTotal) * 100).toFixed(1)
-                          : "0.0"}
-                        %
-                      </span>
-                      <span
-                        className={`py-1.5 text-right text-sm tabular-nums text-foreground ${rule}`}
-                      >
-                        {fmtQty(toQty(v.amount, metal, unit), unit)}
-                      </span>
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-            </Stack>
-          )}
+    <Stack gap="md" className={className}>
+      <Card
+        interactive={Boolean(link)}
+        data-grade-goto={link}
+        aria-label={link ? `Open ${label}` : undefined}
+        className="rounded-2xl p-5"
+        style={
+          face
+            ? { background: face.base, color: INK, borderColor: "transparent", boxShadow: EMBOSS }
+            : undefined
+        }
+      >
+        {body}
+      </Card>
 
-          <Row gap="sm">
-            <TradeFlowV2 metal={metal}>
-              <MetalButton metal={metal} size="md">
-                Buy {label}
-              </MetalButton>
-            </TradeFlowV2>
-            <TradeFlowV2 metal={metal} direction="sell">
-              <Button variant="ghost" size="md" className="rounded-full">
-                Sell
-              </Button>
-            </TradeFlowV2>
-          </Row>
-        </Stack>
-      </CardContent>
-    </Card>
+      {metal ? (
+        <Row gap="sm">
+          <TradeFlowV2 metal={metal}>
+            <MetalButton metal={metal} size="md" className="flex-1" aria-label={`Buy ${label}`}>
+              Buy
+            </MetalButton>
+          </TradeFlowV2>
+          <TradeFlowV2 metal={metal} direction="sell">
+            <Button
+              variant="outline"
+              size="md"
+              className="flex-1 rounded-full"
+              aria-label={`Sell ${label}`}
+            >
+              Sell
+            </Button>
+          </TradeFlowV2>
+        </Row>
+      ) : (
+        <Row gap="sm">
+          <Button
+            size="md"
+            className="flex-1 rounded-full"
+            data-grade-goto="USD — wallet"
+          >
+            Deposit
+          </Button>
+        </Row>
+      )}
+
+      {metal && showVaults && vaults.length > 0 ? (
+        <Card className="p-5">
+          <Stack gap="xs">
+            <span className="text-sm font-medium text-foreground">Vaults</span>
+            {/* The per-vault table from MetalWalletCard: shares from the USD
+                slices so the column sums to 100%, 4dp grams, hairlines
+                between rows, none under the last. */}
+            <div className="grid grid-cols-[1fr_auto_auto]">
+              {vaults.map((v, i) => {
+                const rule = i === vaults.length - 1 ? "" : "border-b border-border";
+                return (
+                  <React.Fragment key={v.vault}>
+                    <span className={`py-1.5 pr-4 text-sm text-muted-foreground ${rule}`}>
+                      {Accounts.vaultLabel(v.vault)}
+                    </span>
+                    <span className={`py-1.5 pr-4 text-right text-sm tabular-nums text-muted-foreground ${rule}`}>
+                      {vaultTotal ? ((v.amount / vaultTotal) * 100).toFixed(1) : "0.0"}%
+                    </span>
+                    <span className={`py-1.5 text-right text-sm tabular-nums text-foreground ${rule}`}>
+                      {Market.fmtQty(
+                        Market.toQty(v.amount, metal, unit as MetalUnit),
+                        unit as MetalUnit,
+                      )}
+                    </span>
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </Stack>
+        </Card>
+      ) : null}
+    </Stack>
   );
 }

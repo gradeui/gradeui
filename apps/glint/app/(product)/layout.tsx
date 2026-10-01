@@ -2,7 +2,7 @@
 
 /**
  * Route layout for the logged-in product area: mounts the AppChrome
- * shell ONCE so the sidebar rail and toolbar persist across product
+ * shell ONCE (AppChromeV2 on glint-staging: no rail on mobile) so the sidebar rail and toolbar persist across product
  * navigations. The route group keeps URLs clean (/wallets, /activity,
  * /wallets/gold, ...) while sharing one chrome, mirroring the onboarding
  * wizard's layout pattern. The active nav item and the toolbar's
@@ -12,7 +12,7 @@
 import { usePathname } from "next/navigation";
 import { Button } from "@gradeui/ui";
 import { ChevronLeft } from "lucide-react";
-import { AppChrome } from "@/components/layouts/app-chrome";
+import { AppChromeV2 } from "@/components/layouts/app-chrome-v2";
 
 /* Pathname -> sidebar nav label. Grows a row per promoted product
    screen (keep in step with lib/screens.ts and AppChrome's NAV). */
@@ -32,7 +32,7 @@ function BackToWallets() {
       variant="ghost"
       size="sm"
       className="rounded-full text-muted-foreground hover:text-foreground"
-      data-grade-goto="Dashboard — logged-in home"
+      data-grade-goto="Dashboard — logged-in home v2"
     >
       {/* CHEVRON, not an arrow (Ali, 11 Aug: "back arrows on the wallet
           screens should also use chevrons"), matching the onboarding back
@@ -61,8 +61,8 @@ export default function ProductChrome({
   const pathname = usePathname();
   const active = ACTIVE_BY_PATH[pathname] ?? "Wallets";
   return (
-    <AppChrome active={active} toolbarLeading={LEADING_BY_PATH[pathname] ?? null}>
+    <AppChromeV2 active={active} toolbarLeading={LEADING_BY_PATH[pathname] ?? null}>
       {children}
-    </AppChrome>
+    </AppChromeV2>
   );
 }

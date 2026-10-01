@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Gold — wallet v2"
-// (design dmuppmu4zpn8y, version 1790871293379). Registry: lib/screens.ts;
+// (design dmuppmu4zpn8y, version 1790875938161). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 28f20177d667
+// source-hash: 3037c7af05e2
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -24,7 +24,9 @@ import { ActivityTable } from "@/components/activity-table";
 // promoted from it. The only changes: the wallet card is
 // MetalWalletCardV2, so Buy and Sell open TradeFlowV2 (from and to
 // the USD wallet, selling this wallet's metal), and Back returns to the
-// v2 Wallets screen.
+// v2 Wallets screen. Later the same day (Ali, 1 Oct): the card is the
+// App DS metal face with Buy and Sell under it and the vault table below,
+// and the chrome is AppChromeV2, with no rail on mobile.
 //
 // Glint Gold wallet screen (Ali, 10 Aug 2026; componentised 11 Aug):
 // the desktop gold view. Holding card and price card side by side, then
@@ -66,7 +68,7 @@ export default function GoldWalletPage() {
       {/* Holding + price, side by side */}
       <Section pad="none" className="pt-8">
         <Container maxW="xl" grid className="gap-6">
-          <MetalWalletCardV2 metal={METAL} className="col-span-12 lg:col-span-5" />
+          <MetalWalletCardV2 asset={METAL} vaults className="col-span-12 lg:col-span-5" />
           <MetalPriceCard metal={METAL} className="col-span-12 lg:col-span-7" />
         </Container>
       </Section>

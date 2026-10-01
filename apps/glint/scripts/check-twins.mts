@@ -118,6 +118,7 @@ const TWINS: Record<string, string> = {
   AutoInvestToggle: "components/auto-invest-toggle.tsx",
   AccountDetails: "components/account-details.tsx",
   AppChrome: "components/layouts/app-chrome.tsx",
+  AppChromeV2: "components/layouts/app-chrome-v2.tsx",
   OnboardingLayout: "components/layouts/onboarding.tsx",
 };
 
