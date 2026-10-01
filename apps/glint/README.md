@@ -247,6 +247,18 @@ This app is designed to be its own Vercel project on its own domain:
 Pages ship `robots: noindex` (see `app/layout.tsx`); drop that if this
 ever becomes a public surface.
 
+### Staging: the business portal v2 (`glint-staging`)
+
+The `glint-staging` branch serves staging-glintpay-demo.gradeui.com from
+the same Vercel project; `main` keeps serving glintpay-demo.gradeui.com.
+On this branch `/wallets`, `/wallets/gold` and `/wallets/silver` are
+promoted from the Studio copies named "… v2", which use the forked shared
+components TradeFlowV2 and MetalWalletCardV2 (twins in `components/`).
+The originals in Studio are untouched, so `main` still promotes cleanly.
+Each v2 registry entry lists its original name under `aliases`, so the
+chrome and the unchanged screens, which link by the original names, land
+on the v2 pages.
+
 ## Extracting from the monorepo later
 
 The app's runtime depends only on published packages, so lifting it

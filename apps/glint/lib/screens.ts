@@ -25,6 +25,14 @@ export interface ScreenEntry {
   slug: string;
   /** Studio screen name, the `data-grade-goto` target. */
   name: string;
+  /** Other screen names that resolve to this route. The business portal
+   *  v2 (glint-staging, 1 Oct 2026) promotes "… v2" copies of Studio
+   *  screens onto the routes their originals held, while the chrome, the
+   *  product layout and every unchanged screen still link by the ORIGINAL
+   *  name. Listing that name here keeps those links landing on the v2
+   *  page instead of falling through as inert. Navigation only: the drift
+   *  guard matches pages by design id and never reads this. */
+  aliases?: string[];
   /** Studio design id (designs.id), powers /s/<id> stable links. */
   id: string;
   /** 1-based wizard step for /onboarding screens (rail + progress). */
@@ -136,10 +144,11 @@ export const SCREENS: ScreenEntry[] = [
   },
   {
     slug: "/wallets",
-    name: "Dashboard — logged-in home",
-    id: "dmskex612bcy1",
-    promotedAt: 1786541900663,
-    sourceHash: "bd4757c8c3aa",
+    name: "Dashboard — logged-in home v2",
+    id: "dmuppmsu1t19c",
+    aliases: ["Dashboard — logged-in home"],
+    promotedAt: 1790870293684,
+    sourceHash: "79b68846abf7",
   },
   {
     slug: "/bank-accounts",
@@ -157,17 +166,19 @@ export const SCREENS: ScreenEntry[] = [
   },
   {
     slug: "/wallets/gold",
-    name: "Gold — wallet",
-    id: "dmsnbpdvrz1qa",
-    promotedAt: 1786532787867,
-    sourceHash: "47760c612cf0",
+    name: "Gold — wallet v2",
+    id: "dmuppmu4zpn8y",
+    aliases: ["Gold — wallet"],
+    promotedAt: 1790869888154,
+    sourceHash: "cf91841522b1",
   },
   {
     slug: "/wallets/silver",
-    name: "Silver — wallet",
-    id: "dmsoj5uvz94l3",
-    promotedAt: 1786532788454,
-    sourceHash: "dc036fa15c70",
+    name: "Silver — wallet v2",
+    id: "dmuppmv1xj9ju",
+    aliases: ["Silver — wallet"],
+    promotedAt: 1790869889993,
+    sourceHash: "29e8a9135027",
   },
   {
     slug: "/wallets/usd",
@@ -180,7 +191,11 @@ export const SCREENS: ScreenEntry[] = [
 
 const norm = (s: string) => s.trim().toLowerCase();
 
-const byName = new Map(SCREENS.map((s) => [norm(s.name), s]));
+const byName = new Map(
+  SCREENS.flatMap((s) =>
+    [s.name, ...(s.aliases ?? [])].map((n) => [norm(n), s] as const),
+  ),
+);
 const byId = new Map(SCREENS.map((s) => [s.id, s]));
 const bySlug = new Map(SCREENS.map((s) => [s.slug, s]));
 

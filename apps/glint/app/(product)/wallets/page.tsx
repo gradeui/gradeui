@@ -1,9 +1,9 @@
 "use client";
 
-// Promoted from Studio screen "Dashboard — logged-in home"
-// (design dmskex612bcy1, version 1786541900663). Registry: lib/screens.ts;
+// Promoted from Studio screen "Dashboard — logged-in home v2"
+// (design dmuppmsu1t19c, version 1790870293684). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: bd4757c8c3aa
+// source-hash: 79b68846abf7
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -30,13 +30,26 @@ import {
 } from "@/lib/persona";
 import { Market, type MetalUnit } from "@/lib/market";
 import { Wordmark } from "@/components/wordmark";
-import { TradeFlow } from "@/components/trade-flow";
+import { TradeFlowV2 } from "@/components/trade-flow-v2";
 import { Accounts } from "@/lib/accounts";
 import { MetalButton } from "@/components/metal-button";
-import { ActivityTable } from "@/components/activity-table";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
 import { Plus, ChevronRight } from "lucide-react";
 
+// V2 (1 Oct 2026, the business portal v2 for staging): a copy of
+// "Dashboard — logged-in home", which stays untouched because the live
+// demo is promoted from it. What changed here, and only here:
+//   - NO ACTIVITY TABLE and no transactions on this screen (Ali, 1 Oct):
+//     the Activity page is where history lives. The page is the balance,
+//     Auto-buy and three wallet cards of one design: Gold, Silver, USD.
+//   - Buy Gold and Buy Silver open TradeFlowV2: paid from the USD
+//     wallet, one amount field, shortfall to Deposit.
+//   - Deposit goes to the USD wallet, where the Glint account details are,
+//     the same place a short buy sends you.
+//   - A metal card says WHERE it is held: the vault's name for one vault,
+//     both names for two, a count beyond that. No primary vault anywhere.
+//   - The Gold and Silver cards lead to the v2 wallet screens.
+//
 // Mercury-pattern logged-in home, Glint-flavoured, for BUSINESS accounts.
 // Routed at /wallets in the app; the nav item is WALLETS (Ali, 11 Aug).
 // CHROME EXTRACTED (10 Aug 2026): the sidebar rail + sticky toolbar live
@@ -51,7 +64,7 @@ import { Plus, ChevronRight } from "lucide-react";
 // AUTO-INVEST sits BESIDE THE BALANCE (Ali, 11 Aug: "this is apparently
 // the number one feature"), not buried in a settings screen. It is the
 // autoInvest preference: money landing in the USD wallet converts to
-// metal automatically, which is why the activity list shows a deposit
+// metal automatically, which is why Activity shows a deposit
 // followed a minute later by a purchase nobody placed by hand. The
 // control is live: it writes the preference through Persona, so it can
 // be flipped in front of someone mid-demo.
@@ -68,13 +81,10 @@ import { Plus, ChevronRight } from "lucide-react";
 // have a screen now (see CARD_TARGETS), so no card here is inert. The
 // chevron is DECORATION: aria-hidden, no handler of its own, and the DS
 // lights it on card hover so the two read as one affordance.
-// TRADE FLOW: the Buy Gold / Buy Silver pills open TradeFlow, the one
-// modal that runs BOTH directions (buy by default, direction="sell"
-// inverts the field order). There is no BuyFlow any more. This page
-// offers the buy side only; the Sell action sits on the wallet screens.
-// A completed order moves the Persona balances and every card here
-// updates live.
-// ACTIVITY: the SHARED ActivityTable, trimmed to a recent list.
+// TRADE FLOW: the Buy Gold / Buy Silver pills open TradeFlowV2, the one
+// dialog that runs BOTH directions. This page offers the buy side only;
+// Sell sits on the metal wallet screens. A completed order moves the
+// Persona balances and every card here updates live.
 
 const ASSET_ORDER: AssetKey[] = ["gold", "silver", "fiat"];
 
@@ -83,12 +93,12 @@ const ASSET_ORDER: AssetKey[] = ["gold", "silver", "fiat"];
    the long dash in each string is part of a name and has to match the
    screen character for character. It is not prose. */
 const CARD_TARGETS = {
-  gold: "Gold — wallet",
+  gold: "Gold — wallet v2",
   /* ASSUMPTION (11 Aug): silver was missing here while the promoted app
      copy already wired it, so the silver tile was dead in Studio alone.
      Wired back alongside USD, because "no card here is inert" above is
      only true when all three lead somewhere. */
-  silver: "Silver — wallet",
+  silver: "Silver — wallet v2",
   fiat: "USD — wallet",
 };
 
@@ -153,8 +163,17 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
      renaming it would orphan every demo run already holding a value. The
      AutoInvestToggle header carries the full name history. */
   const vaults = Persona.useVaults(asset);
-  const vaultCount =
-    vaults.length === 1 ? "1 vault" : `${vaults.length} vaults`;
+  /* V2: THE PLACE, NOT A COUNT (Ali, 1 Oct: the pin shows where the metal
+     is actually held, one vault by name, several as "Zurich, Miami" or a
+     count). Two names still fit the card's line; three would not. A metal
+     sold down to nothing is held nowhere, so it says nothing, rather than
+     leaving an interpunct with no place after it. */
+  const heldIn =
+    vaults.length === 0
+      ? ""
+      : vaults.length > 2
+        ? ` · ${vaults.length} vaults`
+        : ` · ${vaults.map((v) => Accounts.vaultLabel(v.vault)).join(", ")}`;
   const detail =
     asset === "fiat"
       ? autoInvest === "none"
@@ -163,7 +182,7 @@ function BalanceCard({ asset }: { asset: AssetKey }) {
       : `${Market.fmtQty(
           Market.toQty(amount, asset, unit as MetalUnit),
           unit as MetalUnit,
-        )} · ${vaultCount}`;
+        )}${heldIn}`;
   const target = CARD_TARGETS[asset];
   return (
     <Card
@@ -227,10 +246,6 @@ export default function WalletsPage() {
      this project. If they should ever be sticky, the honest fix is a real
      page-actions slot on AppChrome that the layout can forward, not a
      second copy. */
-  /* LIVE (Ali, 12 Aug: "let's make things appear in activity").
-     Persona.useActivity: this session's trades ahead of the seeded
-     history, so a purchase shows up here the moment it completes. */
-  const activity = Persona.useActivity();
   return (
     <>
       {/* THE ACTIONS RENDER IN THE TOOLBAR, not here. AppChrome.Slot
@@ -247,20 +262,28 @@ export default function WalletsPage() {
               variant's classes, so the pill renders the same metal face
               whichever variant is passed. Passing one only implied it did
               something. */}
-          <TradeFlow metal="gold">
+          <TradeFlowV2 metal="gold">
             <MetalButton metal="gold" size="sm">
               Buy Gold
             </MetalButton>
-          </TradeFlow>
-          <TradeFlow metal="silver">
+          </TradeFlowV2>
+          <TradeFlowV2 metal="silver">
             <MetalButton metal="silver" size="sm">
               Buy Silver
             </MetalButton>
-          </TradeFlow>
+          </TradeFlowV2>
           {/* Deposit IS a real Button, so `variant` is not dead here the
               way it is on a MetalButton: secondary demotes it behind the
-              two metal pills. Inert, no deposit flow in the demo. */}
-          <Button variant="secondary" size="sm" className="rounded-full">
+              two metal pills. V2: it goes to the USD wallet, where the
+              Glint account details a deposit is sent to are shown. There
+              is no deposit flow in the demo; the transfer happens at the
+              business's own bank. */}
+          <Button
+            variant="secondary"
+            size="sm"
+            className="rounded-full"
+            data-grade-goto="USD — wallet"
+          >
             <Plus className="size-4" />
             Deposit
           </Button>
@@ -290,33 +313,6 @@ export default function WalletsPage() {
                 <BalanceCard key={asset} asset={asset} />
               ))}
             </Grid>
-          </Stack>
-        </Container>
-      </Section>
-
-      {/* Activity: recent only; filters live on the Activity screen */}
-      <Section pad="none" className="py-6">
-        <Container maxW="xl">
-          <Stack gap="md">
-            <Row gap="sm" align="baseline">
-              <h2 className="text-lg font-semibold text-foreground">Activity</h2>
-              <Button
-                variant="link"
-                size="sm"
-                data-grade-goto="Activity — history"
-              >
-                View all
-                <ChevronRight className="size-4" />
-              </Button>
-            </Row>
-            {/* hide takes REAL column keys, and only these: fiatAmount,
-                status, timestamp (description is not hideable). "type"
-                is NOT one of them. The method renders inside the
-                description cell, so there has never been a column by
-                that key and hiding it did nothing at all. Status goes
-                because a recent list under a dashboard is a glance, not
-                a ledger. */}
-            <ActivityTable rows={activity} limit={5} hide={["status"]} />
           </Stack>
         </Container>
       </Section>

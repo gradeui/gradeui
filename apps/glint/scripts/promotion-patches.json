@@ -53,8 +53,8 @@
     },
     {
       "why": "the unit is a preference value, narrowed for the formatter",
-      "find": "      : `${Market.fmtQty(Market.toQty(amount, asset, unit), unit)} · ${vaultCount}`;",
-      "replace": "      : `${Market.fmtQty(\n          Market.toQty(amount, asset, unit as MetalUnit),\n          unit as MetalUnit,\n        )} · ${vaultCount}`;"
+      "find": "      : `${Market.fmtQty(Market.toQty(amount, asset, unit), unit)}${heldIn}`;",
+      "replace": "      : `${Market.fmtQty(\n          Market.toQty(amount, asset, unit as MetalUnit),\n          unit as MetalUnit,\n        )}${heldIn}`;"
     }
   ],
   "app/onboarding/step2/page.tsx": [

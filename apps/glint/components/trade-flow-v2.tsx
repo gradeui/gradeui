@@ -1,0 +1,785 @@
+"use client";
+
+// TradeFlowV2 (1 Oct 2026): the Buy / Sell dialog for the Glint business
+// portal v2. A FORK of TradeFlow, not an edit of it: the live demo
+// (glintpay-demo.gradeui.com) is promoted from screens that import
+// TradeFlow, so the original stays exactly as it was and only the v2
+// screens import this. Wrap the trigger:
+//
+//   <TradeFlowV2 metal="gold">                  // buy gold
+//   <TradeFlowV2 metal="gold" direction="sell"> // sell, gold preselected
+//
+// TWIN: the Studio shared component "TradeFlowV2" (cmuppmluj1r1r5).
+// Editing one does not touch the other. Keep the pair in sync. The
+// spellings differ where the modules do: Studio reads metalSolid and
+// metalRing off Wordmark, this app imports them by name.
+//
+// THE BUSINESS MODEL (Ali, 1 Oct). A business account has exactly three
+// wallets: Gold, Silver and USD. A buy is always paid FROM the USD wallet
+// and a sale always pays INTO it. Both are moves between the customer's
+// own Glint wallets, so there is no wallet, currency or payment picker and
+// no routing or bank detail anywhere in here. The header says which way
+// the money goes, on every step.
+//
+// WHAT CHANGED FROM TradeFlow:
+//   - ONE amount field, labelled and left-aligned at the form's size (Ali:
+//     "these centralised numbers in the drawer look bloody awful"). The
+//     balance sits UNDER it, the converted figure on the same line at the
+//     right. Buy is entered in USD. Sell takes USD or grams, switched on
+//     the label line, with Sell all for the most that can be sold.
+//   - OVER THE BALANCE a buy shows the shortfall and ONE action, Deposit,
+//     which replaces Review in the footer and goes to the USD wallet, where
+//     the Glint account details are. There is no deposit flow in here.
+//   - SELL CHOOSES THE METAL FIRST, Gold or Silver, preselected from the
+//     wallet it was opened from.
+//   - NO DEFAULT VAULT WORDING. Glint has dropped the primary vault, so
+//     the buy form no longer says "Your default stays Salt Lake City".
+//
+// UNCHANGED: the rate callout with the 0.9% fee inside the quoted rate;
+// the 30 second price hold on Review (QUOTE_WINDOW_MS, a Progress bar
+// above the confirm); the receipt as a frozen snapshot of the order; and
+// a completed order moving the Persona balances, the vault it touched and
+// the live activity, so the wallet cards behind the dialog follow.
+import * as React from "react";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  Button,
+  Callout,
+  CalloutTitle,
+  CalloutDescription,
+  Field,
+  FieldLabel,
+  FieldDescription,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupText,
+  InputGroupInput,
+  InputGroupButton,
+  Progress,
+  PropertyList,
+  RadioGroup,
+  RadioCard,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  ToggleGroup,
+  ToggleGroupItem,
+  Stack,
+  Row,
+} from "@gradeui/ui";
+import { ChevronRight } from "lucide-react";
+import { Persona, type ActivityRow } from "@/lib/persona";
+import { Accounts, type VaultId } from "@/lib/accounts";
+import {
+  Market,
+  type MetalKey,
+  type MetalUnit,
+  type TradeDirection,
+} from "@/lib/market";
+import { Wordmark, metalSolid, metalRing } from "@/components/wordmark";
+import { MetalButton } from "@/components/metal-button";
+
+/** The vaults a purchase can land in, in the order Ali named them. Ids
+ *  only: labels are composed through Accounts. */
+const VAULT_CHOICES: VaultId[] = ["saltlake", "miami", "zurich"];
+
+const METALS: MetalKey[] = ["gold", "silver"];
+const METAL_LABEL: Record<MetalKey, string> = { gold: "Gold", silver: "Silver" };
+
+/** How long a quoted price is held on Review before it refreshes. */
+const QUOTE_WINDOW_MS = 30000;
+/** Fine enough that the bar drains smoothly rather than in steps. */
+const QUOTE_TICK_MS = 250;
+/** How far a refresh may move the rate: plus or minus 0.12%. */
+const QUOTE_DRIFT = 0.0012;
+
+/** WHERE A SHORT BUY SENDS YOU: the USD wallet screen, which carries the
+ *  Glint account details a deposit is sent to. This is a Studio SCREEN
+ *  NAME resolved by the goto protocol (and by the app's screen registry),
+ *  so the long dash is part of the name, not prose. */
+const DEPOSIT_TARGET = "USD — wallet";
+
+/** The panel animates its height between steps (Ali, 12 Aug), exactly as
+ *  TradeFlow does. Where interpolate-size is missing it simply snaps. */
+const PANEL_MOTION =
+  "[interpolate-size:allow-keywords] [transition:height_420ms_cubic-bezier(0.32,0.72,0,1)] motion-reduce:[transition:none]";
+
+/** Turns a filled box into a 1px outline: the metal ring on the receipt. */
+const RING_MASK =
+  "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)";
+
+/** The scrolling body of every step, with a gutter for focus rings. */
+const BODY_CLASS =
+  "sm:-mx-1 sm:min-h-0 sm:flex-1 sm:overflow-y-auto sm:px-1 pt-2";
+
+/** The Glint G in the metal's flat brand colour. */
+function MetalMark({ metal }: { metal: MetalKey }) {
+  return (
+    <Wordmark
+      lockup="mark"
+      tone="current"
+      className="size-5"
+      style={{ color: metalSolid(metal) }}
+    />
+  );
+}
+
+/** A figure written back into the field: cents for USD, 4dp for metal.
+ *  Empty in, empty out. */
+function fmtField(n: number, places: number): string {
+  if (!Number.isFinite(n) || n <= 0) return "";
+  return n.toFixed(places);
+}
+
+export function TradeFlowV2({
+  metal = "gold",
+  direction = "buy",
+  children,
+}: {
+  metal?: MetalKey;
+  direction?: TradeDirection;
+  children: React.ReactNode;
+}) {
+  const selling = direction === "sell";
+  const [open, setOpen] = React.useState(false);
+  const [step, setStep] = React.useState<"form" | "review" | "done">("form");
+  /* The metal this trade is in. A buy is fixed by where it was opened
+     (Buy Gold, Buy Silver). A sale starts there and can switch. */
+  const [chosen, setChosen] = React.useState<MetalKey>(metal);
+  /* What the amount field is entered in: "usd" or "qty". A buy is always
+     USD; only a sale offers the switch. */
+  const [entry, setEntry] = React.useState<"usd" | "qty">("usd");
+  const [raw, setRaw] = React.useState("");
+  /* THE ORDER AS REVIEWED, fixed when Review is pressed: the QUANTITY for
+     a sale (what you hand over is metal) and the CASH for a buy (what you
+     spend is dollars). A price refresh on Review then moves only the other
+     side, as TradeFlow does, and can never push a sale over what is held
+     or blank the total mid-review. */
+  const [locked, setLocked] = React.useState<{ qty: number; cash: number } | null>(
+    null,
+  );
+  /** The executed order, frozen at confirm. The receipt reads only this. */
+  const [order, setOrder] = React.useState<{
+    metal: MetalKey;
+    unit: MetalUnit;
+    qty: number;
+    cash: number;
+    fee: number;
+    vault: VaultId;
+  } | null>(null);
+  const [vaultChoice, setVaultChoice] = React.useState<VaultId | null>(null);
+
+  /* BOTH METALS ARE READ, ALWAYS. These hooks sit on fixed store keys,
+     and a FlowStore field pins its default to the first key it saw, so
+     calling them with a metal that changes under them would read silver
+     against gold's seed. Reading both and picking one keeps every hook on
+     the same key for the life of the dialog. */
+  const [fiat, setFiat] = Persona.useBalance("fiat");
+  const [goldBal] = Persona.useBalance("gold");
+  const [silverBal] = Persona.useBalance("silver");
+  const [goldUnit] = Persona.usePreference("unit.gold");
+  const [silverUnit] = Persona.usePreference("unit.silver");
+  const goldVaults = Persona.useMetalVaults("gold");
+  const silverVaults = Persona.useMetalVaults("silver");
+  const { add: addActivity } = Persona.useLiveActivity();
+  /* ASSUMPTION (1 Oct): with the primary vault gone, a buy still has to
+     land somewhere, so the vault select starts on the persona's stored
+     `vault` preference and says nothing about it being a default. The
+     choice is per purchase and never writes the preference. If Glint
+     assigns the vault itself, the select goes and Review shows the vault
+     it picked. */
+  const [prefVault] = Persona.usePreference("vault");
+
+  const m = selling ? chosen : metal;
+  const unitOf = (k: MetalKey): MetalUnit => (k === "silver" ? silverUnit : goldUnit);
+  const unit = unitOf(m);
+  const metalBal = m === "silver" ? silverBal : goldBal;
+  const vaults = m === "silver" ? silverVaults : goldVaults;
+  const label = METAL_LABEL[m] ?? m;
+  const verb = selling ? "Sell" : "Buy";
+  const feePct = ((selling ? Market.SELL_FEE : Market.BUY_FEE) * 100).toFixed(1);
+
+  /* WHICH VAULT. Buy: where the metal lands, any of the three. Sell: where
+     it comes out of (Ali, 12 Aug), offered only when more than one vault
+     holds this metal, and starting on the largest holding. */
+  const sellRows = vaults.rows;
+  const vault: VaultId | undefined =
+    vaultChoice ?? (selling ? sellRows[0]?.vault : prefVault);
+  const vaultChoices = selling ? sellRows.map((row) => row.vault) : VAULT_CHOICES;
+  const showVaultField = selling ? sellRows.length > 1 : true;
+  const vaultUsd = sellRows.find((row) => row.vault === vault)?.amount ?? 0;
+  /** The most that can be sold: the chosen vault's holding. */
+  const held = Market.toQty(selling ? vaultUsd : metalBal, m, unit);
+
+  /* The settled dealing rate and the live quote everything converts at.
+     Seeded from the settled rate so server and client agree on the first
+     render; the only randomness is the refresh, after mount. */
+  const baseRate = Market.rateFor(direction, m, unit);
+  const [quote, setQuote] = React.useState(baseRate);
+  const [quoteMsLeft, setQuoteMsLeft] = React.useState(QUOTE_WINDOW_MS);
+  const [quoteWindow, setQuoteWindow] = React.useState(0);
+
+  React.useEffect(() => {
+    setQuote(baseRate);
+    setQuoteMsLeft(QUOTE_WINDOW_MS);
+  }, [baseRate]);
+
+  /* ONE FIELD, TWO READINGS. The typed figure is either dollars or metal,
+     and the other side comes through the quote. */
+  const typed = Number.parseFloat(raw);
+  const hasAmount = Number.isFinite(typed) && typed > 0;
+  const inQty = selling && entry === "qty";
+  const qtyWanted = !hasAmount ? 0 : inQty ? typed : typed / quote;
+  const cashWanted = !hasAmount ? 0 : inQty ? typed * quote : typed;
+  /* ROUNDING SLACK. The field holds cents or 4dp metal, so Sell all can
+     land a hair over the exact holding, and a balance moved by earlier
+     orders can sit a hair under its displayed cents. Within the slack it
+     IS the balance. */
+  const slackQty = inQty ? 0.0001 : 0.01 / quote;
+  const overBalance = selling
+    ? hasAmount && qtyWanted > held + slackQty
+    : hasAmount && cashWanted > fiat + 0.005;
+  const formValid = hasAmount && !overBalance;
+  const shortfall = !selling && overBalance ? cashWanted - fiat : 0;
+  /* A sale within the slack of the holding sells exactly the holding, so
+     Sell all in dollars leaves no dust behind. */
+  const sellsAll =
+    selling && hasAmount && Math.abs(qtyWanted - held) <= slackQty;
+  const formQty = !formValid ? 0 : sellsAll ? held : qtyWanted;
+  const formCash = !formValid ? 0 : sellsAll ? held * quote : cashWanted;
+  const reviewing = step === "review" && locked;
+  const valid = reviewing ? true : formValid;
+  const qty = reviewing
+    ? selling
+      ? locked.qty
+      : locked.cash / quote
+    : formQty;
+  const cash = reviewing
+    ? selling
+      ? locked.qty * quote
+      : locked.cash
+    : formCash;
+  /* The fee lives inside the quoted rate. A buy's fee is a share of the
+     cash; a sale's is charged on the gross, so it follows the quote. */
+  const fee = !valid
+    ? 0
+    : selling
+      ? (cash * Market.SELL_FEE) / (1 - Market.SELL_FEE)
+      : Market.buyFee(cash);
+  /** The other side of the typed figure, shown under the field. */
+  const converted = !hasAmount
+    ? null
+    : inQty
+      ? Persona.fmtMoney(sellsAll ? formCash : cashWanted)
+      : Market.fmtQty(sellsAll ? formQty : qtyWanted, unit);
+
+  /* THE COUNTDOWN: a deadline, not a tally of ticks, so a throttled
+     background tab still holds the price for 30 seconds and no longer. It
+     runs only while an unplaced order is on Review. */
+  React.useEffect(() => {
+    if (step !== "review" || order) return;
+    const endsAt = Date.now() + QUOTE_WINDOW_MS;
+    setQuoteMsLeft(QUOTE_WINDOW_MS);
+    const id = window.setInterval(() => {
+      setQuoteMsLeft(Math.max(0, endsAt - Date.now()));
+    }, QUOTE_TICK_MS);
+    return () => window.clearInterval(id);
+  }, [step, order, quoteWindow]);
+
+  /* THE REFRESH, jittered off the settled rate so a dialog left open does
+     not random-walk away from the market. One field means nothing needs
+     rewriting: the converted side is computed from the quote. */
+  React.useEffect(() => {
+    if (quoteMsLeft > 0 || step !== "review" || order) return;
+    setQuote(baseRate * (1 + (Math.random() * 2 - 1) * QUOTE_DRIFT));
+    setQuoteWindow((n) => n + 1);
+  }, [quoteMsLeft, step, order, baseRate]);
+
+  const reset = () => {
+    setStep("form");
+    setRaw("");
+    setLocked(null);
+    setOrder(null);
+    setVaultChoice(null);
+    setChosen(metal);
+    setEntry("usd");
+    setQuote(Market.rateFor(direction, metal, unitOf(metal)));
+    setQuoteMsLeft(QUOTE_WINDOW_MS);
+  };
+
+  /* Switching metal on a sale: the vault list is that metal's, and the
+     quote moves to its rate straight away rather than a render later. */
+  const chooseMetal = (value: string) => {
+    const next = value as MetalKey;
+    if (!next || next === chosen) return;
+    setChosen(next);
+    setVaultChoice(null);
+    setQuote(Market.rateFor(direction, next, unitOf(next)));
+  };
+
+  /* Switching what the field is in keeps the order the same size: the
+     figure is rewritten in the new unit. */
+  const switchEntry = (value: string) => {
+    const next = value as "usd" | "qty";
+    if (!next || next === entry) return;
+    setRaw(next === "qty" ? fmtField(qtyWanted, 4) : fmtField(cashWanted, 2));
+    setEntry(next);
+  };
+
+  const sellAll = () =>
+    setRaw(inQty ? held.toFixed(4) : (held * quote).toFixed(2));
+
+  const confirm = () => {
+    /* A valid order always has a vault: a buy starts on one, and a sale
+       is only valid when some vault holds the metal. */
+    if (!vault) return;
+    /* The metal moves at MARKET value (the fee is Glint's and never lands
+       in a wallet); the USD wallet moves by the cash. Rounded to cents so
+       the balance stays a figure that looks like money. Freeze the receipt
+       BEFORE the balances move. */
+    const moved = Market.toUsd(qty, m, unit);
+    const nextFiat = Math.max(
+      0,
+      Math.round((selling ? fiat + cash : fiat - cash) * 100) / 100,
+    );
+    setOrder({ metal: m, unit, qty, cash, fee, vault });
+    vaults.credit(vault, selling ? -moved : moved);
+    setFiat(nextFiat);
+    /* Into the history as a full ActivityRow, with the seeded signs and
+       grams at 4dp whatever unit the field was in. */
+    const at = Date.now();
+    const stamped = new Date(at - new Date(at).getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 19);
+    const grams = Math.round(Market.toQty(moved, m, "g") * 1e4) / 1e4;
+    const row: ActivityRow = {
+      id: `tx-live-${at}`,
+      kind: selling ? "exchange-sell" : "exchange-buy",
+      description: selling
+        ? `Exchange ${label} to USD`
+        : `Exchange USD to ${label}`,
+      timestamp: stamped,
+      metalAmount: selling ? -grams : grams,
+      metal: m,
+      fiatAmount: selling ? cash : -cash,
+      rate: quote,
+      type: "exchange",
+      status: "completed",
+      account: m,
+      counterAccount: "fiat",
+      vault,
+      method: "market-order",
+      fee: Math.round(fee * 100) / 100,
+      reference: `GX-${String(at).slice(-8, -4)}-${String(at).slice(-4)}`,
+    };
+    addActivity(row);
+    setStep("done");
+  };
+
+  /* ONE HEADER FOR THE WHOLE FLOW (Ali, 12 Aug), now with the direction
+     of the money under the title (Ali, 1 Oct). */
+  const header = (
+    <DialogHeader className="shrink-0">
+      <DialogTitle>
+        <Row gap="sm" align="center">
+          <MetalMark metal={m} />
+          {verb} {label}
+        </Row>
+      </DialogTitle>
+      <DialogDescription>
+        {selling ? "To your USD wallet" : "From your USD wallet"}
+      </DialogDescription>
+    </DialogHeader>
+  );
+
+  const rateCallout = (
+    <Callout>
+      <CalloutTitle>Current rate</CalloutTitle>
+      <CalloutDescription>
+        1 {unit} = {Persona.fmtMoney(quote)}
+        <span className="text-muted-foreground"> incl. {feePct}% fee</span>
+      </CalloutDescription>
+    </Callout>
+  );
+
+  /* SELL: GOLD OR SILVER, as whole-card choices, each stating what is
+     held so the choice is made against the number that limits it. No
+     visible legend: the cards name themselves, and a heading over them sat
+     a size larger than every field label in the dialog. */
+  const metalField = (
+    <RadioGroup
+      value={chosen}
+      onValueChange={chooseMetal}
+      aria-label="Metal"
+      className="grid grid-cols-2 gap-3"
+    >
+      {METALS.map((k) => (
+        <RadioCard
+          key={k}
+          value={k}
+          label={METAL_LABEL[k]}
+          description={`${Market.fmtQty(
+            Market.toQty(k === "silver" ? silverBal : goldBal, k, unitOf(k)),
+            unitOf(k),
+          )} held`}
+        />
+      ))}
+    </RadioGroup>
+  );
+
+  const vaultField = (
+    <Field>
+      <FieldLabel>{selling ? "Sell from" : "Vault"}</FieldLabel>
+      <Select
+        value={vault}
+        onValueChange={(v) => v && setVaultChoice(v as VaultId)}
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {vaultChoices.map((id) => (
+            <SelectItem key={id} value={id}>
+              {Accounts.vaultLocation(id)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Field>
+  );
+
+  /* What sits under the field, left: the balance that limits the order.
+     A sale names the vault when there is a choice of vault. */
+  const heldQty = Market.fmtQty(held, unit);
+  const vaultName = vault ? Accounts.vaultLabel(vault) : "";
+  const heldWhere = showVaultField
+    ? `in ${vaultName}`
+    : overBalance
+      ? "you hold"
+      : "held";
+  const balanceLine = !selling
+    ? `${Persona.fmtMoney(fiat)} in your USD wallet`
+    : overBalance
+      ? `More than the ${heldQty} ${heldWhere}`
+      : `${heldQty} ${heldWhere}`;
+
+  const amountField = (
+    <Field data-invalid={(selling && overBalance) || undefined}>
+      {selling ? (
+        <Row justify="between" align="center" gap="sm">
+          <FieldLabel>Amount</FieldLabel>
+          <ToggleGroup
+            type="single"
+            variant="segmented"
+            size="xs"
+            value={entry}
+            onValueChange={switchEntry}
+            aria-label="Amount in"
+          >
+            <ToggleGroupItem value="usd" className="min-w-12">
+              USD
+            </ToggleGroupItem>
+            <ToggleGroupItem value="qty" className="min-w-12">
+              {unit}
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </Row>
+      ) : (
+        <FieldLabel>Amount</FieldLabel>
+      )}
+      <InputGroup size="lg">
+        {inQty ? null : (
+          <InputGroupAddon align="inline-start">
+            <InputGroupText>$</InputGroupText>
+          </InputGroupAddon>
+        )}
+        <InputGroupInput
+          placeholder={inQty ? "0.0000" : "0.00"}
+          inputMode="decimal"
+          value={raw}
+          onChange={(e) => setRaw(e.target.value)}
+          aria-invalid={(selling && overBalance) || undefined}
+        />
+        {inQty || (selling && held > 0) ? (
+          <InputGroupAddon align="inline-end">
+            {inQty ? <InputGroupText>{unit}</InputGroupText> : null}
+            {selling && held > 0 ? (
+              /* Secondary at the addon's own size (Ali, 12 Aug): a
+                 convenience, quieter than the Sell button. */
+              <InputGroupButton variant="secondary" onClick={sellAll}>
+                Sell all
+              </InputGroupButton>
+            ) : null}
+          </InputGroupAddon>
+        ) : null}
+      </InputGroup>
+      <Row justify="between" align="baseline" gap="sm">
+        <FieldDescription>{balanceLine}</FieldDescription>
+        {converted ? (
+          <span className="text-sm tabular-nums text-muted-foreground">
+            {converted}
+          </span>
+        ) : null}
+      </Row>
+    </Field>
+  );
+
+  /* THE SHORTFALL (Ali, 1 Oct): what is missing, and the one thing to do
+     about it, which is the footer's Deposit. */
+  const shortfallCallout =
+    shortfall > 0 ? (
+      <Callout variant="warning">
+        <CalloutTitle>{`You need ${Persona.fmtMoney(shortfall)} more`}</CalloutTitle>
+        <CalloutDescription>
+          Deposit it into your USD wallet by bank transfer.
+        </CalloutDescription>
+      </Callout>
+    ) : null;
+
+  const completedRing = (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 rounded-xl p-px duration-700 animate-in fade-in motion-reduce:animate-none"
+      style={{
+        background: metalRing(m),
+        WebkitMask: RING_MASK,
+        mask: RING_MASK,
+        WebkitMaskComposite: "xor",
+        maskComposite: "exclude",
+      }}
+    />
+  );
+
+  const quoteTimer = (
+    <Stack gap="xs">
+      <Row justify="between" align="center">
+        <span className="text-xs text-muted-foreground">Rate held for</span>
+        <span className="text-xs font-medium text-foreground">
+          {Math.ceil(quoteMsLeft / 1000)}s
+        </span>
+      </Row>
+      <Progress
+        value={(quoteMsLeft / QUOTE_WINDOW_MS) * 100}
+        tone="accent"
+        className="h-1"
+        aria-label="Time left on this rate"
+      />
+    </Stack>
+  );
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        /* Reset on OPEN, not close, so every entry starts at the form and
+           the receipt never blanks while the panel animates out. */
+        if (o) reset();
+      }}
+    >
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent
+        bordered={false}
+        className={`sm:flex sm:max-w-md sm:flex-col ${PANEL_MOTION}`}
+      >
+        {step === "form" && (
+          <>
+            {header}
+            <Stack gap="md" className={BODY_CLASS}>
+              {rateCallout}
+              {selling ? (
+                <>
+                  {metalField}
+                  {showVaultField ? vaultField : null}
+                  {amountField}
+                </>
+              ) : (
+                <>
+                  {amountField}
+                  {shortfallCallout}
+                  {vaultField}
+                </>
+              )}
+            </Stack>
+            <DialogFooter className="shrink-0">
+              {shortfall > 0 ? (
+                /* ONE ACTION when short: Deposit takes the place of Review
+                   and goes to the USD wallet. A goto, so it is navigation
+                   in Studio and in the app alike. */
+                <Button
+                  size="lg"
+                  className="rounded-full"
+                  data-grade-goto={DEPOSIT_TARGET}
+                  onClick={() => setOpen(false)}
+                >
+                  Deposit
+                  <ChevronRight className="size-4" />
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  className="rounded-full"
+                  disabled={!valid}
+                  onClick={() => {
+                    setLocked({ qty: formQty, cash: formCash });
+                    setStep("review");
+                  }}
+                >
+                  Review
+                  <ChevronRight className="size-4" />
+                </Button>
+              )}
+            </DialogFooter>
+          </>
+        )}
+
+        {step === "review" && (
+          <>
+            {header}
+            <Stack gap="md" className={BODY_CLASS}>
+              <span className="text-base font-medium text-foreground">
+                Review order
+              </span>
+              <PropertyList labelWidth="8.5rem">
+                <PropertyList.Row
+                  label={selling ? "Chosen quantity" : "Chosen amount"}
+                >
+                  <span className="font-medium text-foreground">
+                    {selling ? Market.fmtQty(qty, unit) : Persona.fmtMoney(cash)}
+                  </span>{" "}
+                  <span className="text-muted-foreground">
+                    {`(${selling ? Persona.fmtMoney(cash) : Market.fmtQty(qty, unit)})`}
+                  </span>
+                </PropertyList.Row>
+                <PropertyList.Row
+                  className="-mt-1.5"
+                  label={<span className="text-xs">Fee included</span>}
+                  value={
+                    <span className="text-xs text-muted-foreground">
+                      {`${Persona.fmtMoney(fee)} (${feePct}%)`}
+                    </span>
+                  }
+                />
+                {vault ? (
+                  <PropertyList.Row
+                    label={selling ? "Sold from" : "Vault"}
+                    value={Accounts.vaultLabel(vault)}
+                  />
+                ) : null}
+                <PropertyList.Row
+                  label="Rate"
+                  value={`${Persona.fmtMoney(quote)}/${unit}`}
+                />
+                <PropertyList.Row
+                  label="Total"
+                  value={
+                    <span className="font-medium text-foreground">
+                      {Persona.fmtMoney(cash)}
+                    </span>
+                  }
+                />
+              </PropertyList>
+              <Stack gap="md" className="mt-auto">
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  By clicking &ldquo;{verb} {label}&rdquo;, you authorise Glint
+                  to execute the market order detailed above.
+                </p>
+                {selling && (
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    It can take up to three working days for funds to clear in
+                    your wallet when you sell.
+                  </p>
+                )}
+                {quoteTimer}
+              </Stack>
+            </Stack>
+            <DialogFooter className="shrink-0">
+              <Button
+                variant="ghost"
+                size="lg"
+                className="rounded-full"
+                onClick={() => setStep("form")}
+              >
+                Back
+              </Button>
+              <MetalButton metal={m} size="lg" onClick={confirm}>
+                {verb} {label}
+              </MetalButton>
+            </DialogFooter>
+          </>
+        )}
+
+        {step === "done" && order && (
+          <>
+            {completedRing}
+            {header}
+            <Stack gap="md" className={BODY_CLASS}>
+              {/* The headline is a paragraph, not a second
+                  DialogDescription: the header already owns that slot. */}
+              <p className="text-lg leading-snug text-muted-foreground">
+                You {selling ? "sold" : "bought"}{" "}
+                <span className="font-medium text-foreground">
+                  {Market.fmtQty(order.qty, order.unit)}
+                </span>{" "}
+                of{" "}
+                <span
+                  className="font-medium"
+                  style={{ color: metalSolid(order.metal) }}
+                >
+                  {METAL_LABEL[order.metal]}
+                </span>{" "}
+                {selling && order.vault ? (
+                  <>
+                    from{" "}
+                    <span className="font-medium text-foreground">
+                      {Accounts.vaultLabel(order.vault)}
+                    </span>{" "}
+                  </>
+                ) : null}
+                for{" "}
+                <span className="font-medium text-foreground">
+                  {Persona.fmtMoney(order.cash)}
+                </span>
+                {selling ? (
+                  <>, paid into your USD wallet.</>
+                ) : order.vault ? (
+                  <>
+                    . It will be vaulted in{" "}
+                    <span className="font-medium text-foreground">
+                      {Accounts.vaultLabel(order.vault)}
+                    </span>
+                    .
+                  </>
+                ) : (
+                  "."
+                )}
+              </p>
+              {selling && (
+                <p className="mt-auto text-sm leading-relaxed text-muted-foreground">
+                  Funds can take up to three working days to clear.
+                </p>
+              )}
+            </Stack>
+            <DialogFooter className="shrink-0">
+              <Button
+                size="lg"
+                className="rounded-full"
+                onClick={() => setOpen(false)}
+              >
+                Done
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,9 +1,9 @@
 "use client";
 
-// Promoted from Studio screen "Gold — wallet"
-// (design dmsnbpdvrz1qa, version 1786532787867). Registry: lib/screens.ts;
+// Promoted from Studio screen "Gold — wallet v2"
+// (design dmuppmu4zpn8y, version 1790869888154). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 47760c612cf0
+// source-hash: cf91841522b1
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -16,9 +16,16 @@ import {
 } from "@gradeui/ui";
 import { Persona } from "@/lib/persona";
 import { MetalPriceCard } from "@/components/metal-price-card";
-import { MetalWalletCard } from "@/components/metal-wallet-card";
+import { MetalWalletCardV2 } from "@/components/metal-wallet-card-v2";
 import { ActivityTable } from "@/components/activity-table";
 
+// V2 (1 Oct 2026, the business portal v2 for staging): a copy of
+// "Gold — wallet", which stays untouched because the live demo is
+// promoted from it. The only changes: the wallet card is
+// MetalWalletCardV2, so Buy and Sell open TradeFlowV2 (from and to
+// the USD wallet, Sell picks Gold or Silver), and Back returns to the
+// v2 Wallets screen.
+//
 // Glint Gold wallet screen (Ali, 10 Aug 2026; componentised 11 Aug):
 // the desktop gold view. Holding card and price card side by side, then
 // all gold activity.
@@ -59,7 +66,7 @@ export default function GoldWalletPage() {
       {/* Holding + price, side by side */}
       <Section pad="none" className="pt-8">
         <Container maxW="xl" grid className="gap-6">
-          <MetalWalletCard metal={METAL} className="col-span-12 lg:col-span-5" />
+          <MetalWalletCardV2 metal={METAL} className="col-span-12 lg:col-span-5" />
           <MetalPriceCard metal={METAL} className="col-span-12 lg:col-span-7" />
         </Container>
       </Section>

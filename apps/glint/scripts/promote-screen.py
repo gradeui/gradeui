@@ -98,6 +98,10 @@ COMPONENT_MODULES = {
     "MetalPriceCard": "@/components/metal-price-card",
     "MetalWalletCard": "@/components/metal-wallet-card",
     "TradeFlow": "@/components/trade-flow",
+    # Business portal v2 (glint-staging, 1 Oct 2026): forks, so the live
+    # demo's screens keep TradeFlow and MetalWalletCard untouched.
+    "TradeFlowV2": "@/components/trade-flow-v2",
+    "MetalWalletCardV2": "@/components/metal-wallet-card-v2",
     "PhoneField": "@/components/phone-field",
     "AutoInvestToggle": "@/components/auto-invest-toggle",
     "AccountDetails": "@/components/account-details",
