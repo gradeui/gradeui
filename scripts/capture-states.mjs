@@ -110,6 +110,13 @@ const MAX_FULL_HEIGHT = 12000;
 // get it wrong" — inbox-04 had gone missing from three consecutive drags out
 // of one 36-file folder.
 const BY_PAGE = process.argv.includes("--by-page");
+// --spec (1 Oct 2026): also write a layout spec per state, the DOM walked by
+// scripts/figma-rebuild/extract.js at the moment of the shot, for the
+// Figma DS rebuild (scripts/figma-rebuild/README.md). --app only: the
+// extractor reads component names off React's dev fiber tree, which the
+// Studio /e/ sandbox does not expose to the host page.
+const SPEC = process.argv.includes("--spec");
+const EXTRACT_SRC = SPEC ? fs.readFileSync(new URL("./figma-rebuild/extract.js", import.meta.url), "utf8") : null;
 // Section prefix -> Figma page name, VERBATIM. If a page is renamed in Figma,
 // rename it here too: a folder that does not match a page is the one thing
 // this flag exists to prevent.
@@ -2098,6 +2105,12 @@ for (const [name, screen, drive, expect, , opts] of wanted) {
     const file = path.join(dirFor(name), `${name}.png`);
     await page.screenshot({ path: file, type: "png" });
     try { setPngRetinaDpi(file); } catch {}
+    if (SPEC) {
+      const spec = await page.evaluate(EXTRACT_SRC);
+      const specDir = path.join(DIR, "specs");
+      fs.mkdirSync(specDir, { recursive: true });
+      fs.writeFileSync(path.join(specDir, `${name}.json`), JSON.stringify({ name, ...spec }));
+    }
     // `{ tall: true }` already shot the whole thing as the state's own frame,
     // so a full/ copy of it would be the same picture under a second name.
     if (FULL && !tall) {
