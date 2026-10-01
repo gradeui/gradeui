@@ -354,9 +354,12 @@
       node = ic.createInstance();
       node.resize(n.box.w, n.box.h);
       const paint = solid(color);
-      if (paint) for (const v of node.findAll((x) => x.type === "VECTOR" || x.type === "BOOLEAN_OPERATION")) {
-        if (v.strokes && v.strokes.length) v.strokes = [paint];
-        if (v.fills && v.fills.length && v.fills.some((f) => f.visible !== false)) v.fills = [paint];
+      // Lucide strokes live on a 24px grid: 2 units at 16px render 1.33px
+      const sw = (s.strokeWidth || 2) * (n.box.w / 24);
+      for (const v of node.findAll((x) => x.type === "VECTOR" || x.type === "BOOLEAN_OPERATION")) {
+        if (paint && v.strokes && v.strokes.length) v.strokes = [paint];
+        if (paint && v.fills && v.fills.length && v.fills.some((f) => f.visible !== false)) v.fills = [paint];
+        if (v.strokes && v.strokes.length) { try { v.strokeWeight = sw; } catch (e) {} }
       }
       // a filled icon (a star the code fills) carries fill as well as stroke
       if (s.fill) { const fp = solid(s.fill); if (fp) for (const v of node.findAll((x) => x.type === "VECTOR")) v.fills = [fp]; }
@@ -474,7 +477,7 @@
     if (!ic || !slotInst) return false;
     try { slotInst.swapComponent(ic); } catch (e) { return false; }
     const paint = solid(color);
-    if (paint) for (const v of slotInst.findAll((x) => x.type === "VECTOR")) if (v.strokes && v.strokes.length) v.strokes = [paint];
+    for (const v of slotInst.findAll((x) => x.type === "VECTOR")) if (v.strokes && v.strokes.length) { if (paint) v.strokes = [paint]; try { v.strokeWeight = 2 * (slotInst.width / 24); } catch (e) {} }
     return true;
   }
 
