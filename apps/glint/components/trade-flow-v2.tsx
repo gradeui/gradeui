@@ -34,8 +34,13 @@
 //     1 Oct: "Web sell, we don't need a toggle for gold and silver"). Sell
 //     on the Gold wallet sells gold; the header says which. There is no
 //     metal choice inside the dialog, so every trigger passes `metal`.
-//   - NO DEFAULT VAULT WORDING. Glint has dropped the primary vault, so
-//     the buy form no longer says "Your default stays Salt Lake City".
+//   - THE VAULT IS A SET OF RADIOS, all on screen (Ali, 1 Oct). Buy shows
+//     both vaults, Zurich and Miami, with what the business holds in each.
+//     The one its most recent trade in this metal used is tagged Latest
+//     and preselected. Sell uses the same radios when more than one vault
+//     holds the metal, and names the one vault as text when only one does.
+//     Glint has dropped the primary vault: nothing here says default or
+//     primary.
 //
 // UNCHANGED: the rate callout with the 0.9% fee inside the quoted rate;
 // the 30 second price hold on Review (QUOTE_WINDOW_MS, a Progress bar
@@ -65,11 +70,10 @@ import {
   InputGroupButton,
   Progress,
   PropertyList,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
+  RadioGroup,
+  RadioCard,
+  Badge,
+  FieldTitle,
   ToggleGroup,
   ToggleGroupItem,
   Stack,
@@ -87,9 +91,9 @@ import {
 import { Wordmark, metalSolid, metalRing } from "@/components/wordmark";
 import { MetalButton } from "@/components/metal-button";
 
-/** The vaults a purchase can land in, in the order Ali named them. Ids
- *  only: labels are composed through Accounts. */
-const VAULT_CHOICES: VaultId[] = ["saltlake", "miami", "zurich"];
+/** The vaults a purchase can land in (Ali, 1 Oct: "both vaults, Zurich
+ *  and Miami"). Ids only: labels are composed through Accounts. */
+const VAULT_CHOICES: VaultId[] = ["zurich", "miami"];
 
 const METAL_LABEL: Record<MetalKey, string> = { gold: "Gold", silver: "Silver" };
 
@@ -182,26 +186,33 @@ export function TradeFlowV2({
   );
   const vaults = Persona.useMetalVaults(metal);
   const { add: addActivity } = Persona.useLiveActivity();
-  /* ASSUMPTION (1 Oct): with the primary vault gone, a buy still has to
-     land somewhere, so the vault select starts on the persona's stored
-     `vault` preference and says nothing about it being a default. The
-     choice is per purchase and never writes the preference. If Glint
-     assigns the vault itself, the select goes and Review shows the vault
-     it picked. */
-  const [prefVault] = Persona.usePreference("vault");
+  /* This metal's history, live trades first, for the Latest tag. */
+  const history = Persona.useActivity(metal);
 
   const label = METAL_LABEL[metal] ?? metal;
   const verb = selling ? "Sell" : "Buy";
   const feePct = ((selling ? Market.SELL_FEE : Market.BUY_FEE) * 100).toFixed(1);
 
-  /* WHICH VAULT. Buy: where the metal lands, any of the three. Sell: where
-     it comes out of (Ali, 12 Aug), offered only when more than one vault
-     holds this metal, and starting on the largest holding. */
+  /* WHICH VAULT. Buy: where the metal lands, Zurich or Miami. Sell: where
+     it comes out of (Ali, 12 Aug), only the vaults that hold this metal.
+     LATEST (Ali, 1 Oct) is the vault of the most recent trade in this
+     metal among the ones on offer. It is preselected; with no such trade
+     the first vault on offer is. */
   const sellRows = vaults.rows;
+  const vaultChoices: VaultId[] = selling
+    ? sellRows.map((row) => row.vault)
+    : VAULT_CHOICES;
+  let latestRow: ActivityRow | null = null;
+  for (const row of history) {
+    if (!row.vault || !vaultChoices.includes(row.vault)) continue;
+    if (!latestRow || row.timestamp > latestRow.timestamp) latestRow = row;
+  }
+  const latestVault: VaultId | undefined = latestRow?.vault ?? undefined;
   const vault: VaultId | undefined =
-    vaultChoice ?? (selling ? sellRows[0]?.vault : prefVault);
-  const vaultChoices = selling ? sellRows.map((row) => row.vault) : VAULT_CHOICES;
-  const showVaultField = selling ? sellRows.length > 1 : true;
+    vaultChoice ?? latestVault ?? vaultChoices[0];
+  const vaultName = vault ? Accounts.vaultLabel(vault) : "";
+  /* Radios only when there is a choice to make. */
+  const showVaultField = vaultChoices.length > 1;
   const vaultUsd = sellRows.find((row) => row.vault === vault)?.amount ?? 0;
   /** The most that can be sold: the chosen vault's holding. */
   const held = Market.toQty(selling ? vaultUsd : metalBal, metal, unit);
@@ -386,31 +397,59 @@ export function TradeFlowV2({
     </Callout>
   );
 
+  /* THE VAULT RADIOS: every vault on screen as a whole-card choice, the
+     place and what is held there on one line ("Zurich · 17.1054 g"), and
+     the Latest tag where it applies. A vault holding none of this metal
+     shows its place alone. */
+  const vaultTitle = selling ? "Sell from" : "Vault";
   const vaultField = (
-    <Field>
-      <FieldLabel>{selling ? "Sell from" : "Vault"}</FieldLabel>
-      <Select
+    <Stack gap="sm">
+      <FieldTitle>{vaultTitle}</FieldTitle>
+      <RadioGroup
         value={vault}
         onValueChange={(v) => v && setVaultChoice(v as VaultId)}
+        aria-label={vaultTitle}
+        className="grid gap-2"
       >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {vaultChoices.map((id) => (
-            <SelectItem key={id} value={id}>
-              {Accounts.vaultLocation(id)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </Field>
+        {vaultChoices.map((id) => {
+          const usd = sellRows.find((row) => row.vault === id)?.amount ?? 0;
+          return (
+            <RadioCard
+              key={id}
+              value={id}
+              indicatorPosition="leading"
+              label={
+                usd > 0
+                  ? `${Accounts.vaultLabel(id)} · ${Market.fmtQty(
+                      Market.toQty(usd, metal, unit),
+                      unit,
+                    )}`
+                  : Accounts.vaultLabel(id)
+              }
+              aside={
+                id === latestVault ? (
+                  <Badge variant="secondary">Latest</Badge>
+                ) : null
+              }
+            />
+          );
+        })}
+      </RadioGroup>
+    </Stack>
+  );
+
+  /* ONE VAULT, NO CHOICE: a sale from a metal held in a single vault
+     names it as text. */
+  const vaultText = (
+    <Stack gap="xs">
+      <FieldTitle>Sell from</FieldTitle>
+      <span className="text-sm text-foreground">{vaultName}</span>
+    </Stack>
   );
 
   /* What sits under the field, left: the balance that limits the order.
      A sale names the vault when there is a choice of vault. */
   const heldQty = Market.fmtQty(held, unit);
-  const vaultName = vault ? Accounts.vaultLabel(vault) : "";
   const heldWhere = showVaultField
     ? `in ${vaultName}`
     : overBalance
@@ -548,7 +587,7 @@ export function TradeFlowV2({
               {rateCallout}
               {selling ? (
                 <>
-                  {showVaultField ? vaultField : null}
+                  {showVaultField ? vaultField : vault ? vaultText : null}
                   {amountField}
                 </>
               ) : (
