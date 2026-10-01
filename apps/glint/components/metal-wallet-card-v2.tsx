@@ -10,7 +10,7 @@ import * as React from "react";
  *
  * V2 (1 Oct 2026, the business portal v2 on glint-staging): identical to
  * MetalWalletCard except that Buy and Sell open TradeFlowV2 (from and to
- * the USD wallet, one amount field, Sell picks Gold or Silver). A fork
+ * the USD wallet, one amount field, the metal passed from this card). A fork
  * rather than an edit, because the live demo uses MetalWalletCard.
  *
  * TWIN: this mirrors the Studio shared component "MetalWalletCardV2"

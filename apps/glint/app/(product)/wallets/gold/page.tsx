@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Gold — wallet v2"
-// (design dmuppmu4zpn8y, version 1790869888154). Registry: lib/screens.ts;
+// (design dmuppmu4zpn8y, version 1790871293379). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: cf91841522b1
+// source-hash: 28f20177d667
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -23,7 +23,7 @@ import { ActivityTable } from "@/components/activity-table";
 // "Gold — wallet", which stays untouched because the live demo is
 // promoted from it. The only changes: the wallet card is
 // MetalWalletCardV2, so Buy and Sell open TradeFlowV2 (from and to
-// the USD wallet, Sell picks Gold or Silver), and Back returns to the
+// the USD wallet, selling this wallet's metal), and Back returns to the
 // v2 Wallets screen.
 //
 // Glint Gold wallet screen (Ali, 10 Aug 2026; componentised 11 Aug):

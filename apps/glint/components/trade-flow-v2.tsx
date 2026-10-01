@@ -30,8 +30,10 @@
 //   - OVER THE BALANCE a buy shows the shortfall and ONE action, Deposit,
 //     which replaces Review in the footer and goes to the USD wallet, where
 //     the Glint account details are. There is no deposit flow in here.
-//   - SELL CHOOSES THE METAL FIRST, Gold or Silver, preselected from the
-//     wallet it was opened from.
+//   - THE METAL COMES FROM WHERE IT WAS OPENED, for both directions (Ali,
+//     1 Oct: "Web sell, we don't need a toggle for gold and silver"). Sell
+//     on the Gold wallet sells gold; the header says which. There is no
+//     metal choice inside the dialog, so every trigger passes `metal`.
 //   - NO DEFAULT VAULT WORDING. Glint has dropped the primary vault, so
 //     the buy form no longer says "Your default stays Salt Lake City".
 //
@@ -63,8 +65,6 @@ import {
   InputGroupButton,
   Progress,
   PropertyList,
-  RadioGroup,
-  RadioCard,
   Select,
   SelectTrigger,
   SelectValue,
@@ -91,7 +91,6 @@ import { MetalButton } from "@/components/metal-button";
  *  only: labels are composed through Accounts. */
 const VAULT_CHOICES: VaultId[] = ["saltlake", "miami", "zurich"];
 
-const METALS: MetalKey[] = ["gold", "silver"];
 const METAL_LABEL: Record<MetalKey, string> = { gold: "Gold", silver: "Silver" };
 
 /** How long a quoted price is held on Review before it refreshes. */
@@ -151,9 +150,6 @@ export function TradeFlowV2({
   const selling = direction === "sell";
   const [open, setOpen] = React.useState(false);
   const [step, setStep] = React.useState<"form" | "review" | "done">("form");
-  /* The metal this trade is in. A buy is fixed by where it was opened
-     (Buy Gold, Buy Silver). A sale starts there and can switch. */
-  const [chosen, setChosen] = React.useState<MetalKey>(metal);
   /* What the amount field is entered in: "usd" or "qty". A buy is always
      USD; only a sale offers the switch. */
   const [entry, setEntry] = React.useState<"usd" | "qty">("usd");
@@ -177,18 +173,14 @@ export function TradeFlowV2({
   } | null>(null);
   const [vaultChoice, setVaultChoice] = React.useState<VaultId | null>(null);
 
-  /* BOTH METALS ARE READ, ALWAYS. These hooks sit on fixed store keys,
-     and a FlowStore field pins its default to the first key it saw, so
-     calling them with a metal that changes under them would read silver
-     against gold's seed. Reading both and picking one keeps every hook on
-     the same key for the life of the dialog. */
+  /* The metal is fixed for the life of the dialog (its trigger passes
+     it), so these hooks sit on one store key each and never move. */
   const [fiat, setFiat] = Persona.useBalance("fiat");
-  const [goldBal] = Persona.useBalance("gold");
-  const [silverBal] = Persona.useBalance("silver");
-  const [goldUnit] = Persona.usePreference("unit.gold");
-  const [silverUnit] = Persona.usePreference("unit.silver");
-  const goldVaults = Persona.useMetalVaults("gold");
-  const silverVaults = Persona.useMetalVaults("silver");
+  const [metalBal] = Persona.useBalance(metal);
+  const [unit] = Persona.usePreference(
+    metal === "silver" ? "unit.silver" : "unit.gold",
+  );
+  const vaults = Persona.useMetalVaults(metal);
   const { add: addActivity } = Persona.useLiveActivity();
   /* ASSUMPTION (1 Oct): with the primary vault gone, a buy still has to
      land somewhere, so the vault select starts on the persona's stored
@@ -198,12 +190,7 @@ export function TradeFlowV2({
      it picked. */
   const [prefVault] = Persona.usePreference("vault");
 
-  const m = selling ? chosen : metal;
-  const unitOf = (k: MetalKey): MetalUnit => (k === "silver" ? silverUnit : goldUnit);
-  const unit = unitOf(m);
-  const metalBal = m === "silver" ? silverBal : goldBal;
-  const vaults = m === "silver" ? silverVaults : goldVaults;
-  const label = METAL_LABEL[m] ?? m;
+  const label = METAL_LABEL[metal] ?? metal;
   const verb = selling ? "Sell" : "Buy";
   const feePct = ((selling ? Market.SELL_FEE : Market.BUY_FEE) * 100).toFixed(1);
 
@@ -217,12 +204,12 @@ export function TradeFlowV2({
   const showVaultField = selling ? sellRows.length > 1 : true;
   const vaultUsd = sellRows.find((row) => row.vault === vault)?.amount ?? 0;
   /** The most that can be sold: the chosen vault's holding. */
-  const held = Market.toQty(selling ? vaultUsd : metalBal, m, unit);
+  const held = Market.toQty(selling ? vaultUsd : metalBal, metal, unit);
 
   /* The settled dealing rate and the live quote everything converts at.
      Seeded from the settled rate so server and client agree on the first
      render; the only randomness is the refresh, after mount. */
-  const baseRate = Market.rateFor(direction, m, unit);
+  const baseRate = Market.rateFor(direction, metal, unit);
   const [quote, setQuote] = React.useState(baseRate);
   const [quoteMsLeft, setQuoteMsLeft] = React.useState(QUOTE_WINDOW_MS);
   const [quoteWindow, setQuoteWindow] = React.useState(0);
@@ -309,20 +296,9 @@ export function TradeFlowV2({
     setLocked(null);
     setOrder(null);
     setVaultChoice(null);
-    setChosen(metal);
     setEntry("usd");
-    setQuote(Market.rateFor(direction, metal, unitOf(metal)));
+    setQuote(baseRate);
     setQuoteMsLeft(QUOTE_WINDOW_MS);
-  };
-
-  /* Switching metal on a sale: the vault list is that metal's, and the
-     quote moves to its rate straight away rather than a render later. */
-  const chooseMetal = (value: string) => {
-    const next = value as MetalKey;
-    if (!next || next === chosen) return;
-    setChosen(next);
-    setVaultChoice(null);
-    setQuote(Market.rateFor(direction, next, unitOf(next)));
   };
 
   /* Switching what the field is in keeps the order the same size: the
@@ -345,12 +321,12 @@ export function TradeFlowV2({
        in a wallet); the USD wallet moves by the cash. Rounded to cents so
        the balance stays a figure that looks like money. Freeze the receipt
        BEFORE the balances move. */
-    const moved = Market.toUsd(qty, m, unit);
+    const moved = Market.toUsd(qty, metal, unit);
     const nextFiat = Math.max(
       0,
       Math.round((selling ? fiat + cash : fiat - cash) * 100) / 100,
     );
-    setOrder({ metal: m, unit, qty, cash, fee, vault });
+    setOrder({ metal, unit, qty, cash, fee, vault });
     vaults.credit(vault, selling ? -moved : moved);
     setFiat(nextFiat);
     /* Into the history as a full ActivityRow, with the seeded signs and
@@ -359,7 +335,7 @@ export function TradeFlowV2({
     const stamped = new Date(at - new Date(at).getTimezoneOffset() * 60000)
       .toISOString()
       .slice(0, 19);
-    const grams = Math.round(Market.toQty(moved, m, "g") * 1e4) / 1e4;
+    const grams = Math.round(Market.toQty(moved, metal, "g") * 1e4) / 1e4;
     const row: ActivityRow = {
       id: `tx-live-${at}`,
       kind: selling ? "exchange-sell" : "exchange-buy",
@@ -368,12 +344,12 @@ export function TradeFlowV2({
         : `Exchange USD to ${label}`,
       timestamp: stamped,
       metalAmount: selling ? -grams : grams,
-      metal: m,
+      metal,
       fiatAmount: selling ? cash : -cash,
       rate: quote,
       type: "exchange",
       status: "completed",
-      account: m,
+      account: metal,
       counterAccount: "fiat",
       vault,
       method: "market-order",
@@ -390,7 +366,7 @@ export function TradeFlowV2({
     <DialogHeader className="shrink-0">
       <DialogTitle>
         <Row gap="sm" align="center">
-          <MetalMark metal={m} />
+          <MetalMark metal={metal} />
           {verb} {label}
         </Row>
       </DialogTitle>
@@ -408,31 +384,6 @@ export function TradeFlowV2({
         <span className="text-muted-foreground"> incl. {feePct}% fee</span>
       </CalloutDescription>
     </Callout>
-  );
-
-  /* SELL: GOLD OR SILVER, as whole-card choices, each stating what is
-     held so the choice is made against the number that limits it. No
-     visible legend: the cards name themselves, and a heading over them sat
-     a size larger than every field label in the dialog. */
-  const metalField = (
-    <RadioGroup
-      value={chosen}
-      onValueChange={chooseMetal}
-      aria-label="Metal"
-      className="grid grid-cols-2 gap-3"
-    >
-      {METALS.map((k) => (
-        <RadioCard
-          key={k}
-          value={k}
-          label={METAL_LABEL[k]}
-          description={`${Market.fmtQty(
-            Market.toQty(k === "silver" ? silverBal : goldBal, k, unitOf(k)),
-            unitOf(k),
-          )} held`}
-        />
-      ))}
-    </RadioGroup>
   );
 
   const vaultField = (
@@ -549,7 +500,7 @@ export function TradeFlowV2({
       aria-hidden
       className="pointer-events-none absolute inset-0 rounded-xl p-px duration-700 animate-in fade-in motion-reduce:animate-none"
       style={{
-        background: metalRing(m),
+        background: metalRing(metal),
         WebkitMask: RING_MASK,
         mask: RING_MASK,
         WebkitMaskComposite: "xor",
@@ -597,7 +548,6 @@ export function TradeFlowV2({
               {rateCallout}
               {selling ? (
                 <>
-                  {metalField}
                   {showVaultField ? vaultField : null}
                   {amountField}
                 </>
@@ -710,7 +660,7 @@ export function TradeFlowV2({
               >
                 Back
               </Button>
-              <MetalButton metal={m} size="lg" onClick={confirm}>
+              <MetalButton metal={metal} size="lg" onClick={confirm}>
                 {verb} {label}
               </MetalButton>
             </DialogFooter>

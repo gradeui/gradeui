@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Silver — wallet v2"
-// (design dmuppmv1xj9ju, version 1790869889993). Registry: lib/screens.ts;
+// (design dmuppmv1xj9ju, version 1790871295021). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 29e8a9135027
+// source-hash: a350fafad16f
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -23,7 +23,7 @@ import { ActivityTable } from "@/components/activity-table";
 // "Silver — wallet", which stays untouched because the live demo is
 // promoted from it. The only changes: the wallet card is
 // MetalWalletCardV2, so Buy and Sell open TradeFlowV2 (from and to
-// the USD wallet, Sell picks Gold or Silver), and Back returns to the
+// the USD wallet, selling this wallet's metal), and Back returns to the
 // v2 Wallets screen.
 //
 // Glint Silver wallet screen (Ali, 11 Aug 2026): the desktop silver
