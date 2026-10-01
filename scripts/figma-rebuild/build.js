@@ -783,6 +783,10 @@
       if (!fr) continue;
       try { fr.paddingTop = fr.paddingBottom = fr.paddingLeft = fr.paddingRight = 0; fr.itemSpacing = 0; } catch {}
     }
+    // an auto-layout instance ignores resize() on a hugging axis
+    try { inst.counterAxisSizingMode = "FIXED"; inst.primaryAxisSizingMode = "FIXED"; } catch (e) {}
+    // the library Dialog carries max-width 480; the code's dialogs run to 512+
+    try { inst.maxWidth = null; inst.minWidth = null; inst.maxHeight = null; } catch (e) {}
     inst.resize(Math.max(1, n.box.w), Math.max(1, n.box.h));
     const body = figma.createFrame();
     body.name = "content"; body.fills = []; body.clipsContent = true;
@@ -793,6 +797,9 @@
     try { slot.paddingTop = slot.paddingBottom = slot.paddingLeft = slot.paddingRight = 0; } catch {}
     slot.appendChild(body);
     try { body.layoutSizingHorizontal = "FIXED"; body.layoutSizingVertical = "FIXED"; } catch {}
+    // the library's slot has its own fixed width (Dialog: 432 inside 480);
+    // it must fill the surface or a wider dialog's content overflows it
+    try { slot.layoutSizingHorizontal = "FILL"; } catch (e) {}
     // the surface hugs its slot and can grow a few px once the body lands
     try { inst.resize(Math.max(1, n.box.w), Math.max(1, n.box.h)); } catch {}
     // a master's drawer body fills the panel and keeps the panel's height
@@ -859,7 +866,7 @@
           for (const ic of kids[i].children.filter((x) => x.type === "INSTANCE")) ic.visible = false;
         }
       }
-      try { inst.resize(Math.max(1, n.box.w), inst.height); } catch {}
+      try { inst.maxWidth = null; inst.minWidth = null; inst.counterAxisSizingMode = "FIXED"; inst.resize(Math.max(1, n.box.w), inst.height); inst.primaryAxisSizingMode = "AUTO"; } catch {}
       place(inst, parent, n.box, ox, oy);
       return inst;
     },
@@ -1023,7 +1030,8 @@
   // space ("4.7average") or opened one ("Delete “ name ”"), and a wrapped
   // sentence with a bold date in it was drawn over itself. Merged, the text
   // flows like the browser's does and keeps each run's style as a range.
-  const inlineKid = (k) => !k.v && !k.clip && !k.svg && !k.img && !k.input && !k.pos && !k.rot && !(k.lay && k.lay.d !== "block") &&
+  const INLINE_TAGS = /^(span|a|b|strong|em|i|code|small|sup|sub|abbr|time|label|mark|s|u|kbd|q|cite|data|var|bdi|bdo|br)$/;
+  const inlineKid = (k) => INLINE_TAGS.test(k.tag) && !k.v && !k.clip && !k.svg && !k.img && !k.input && !k.pos && !k.rot && !(k.lay && k.lay.d !== "block") &&
     ((k.text && k.text.length) || (k.kids && k.kids.length)) && (!k.kids || k.kids.every(inlineKid)) && !MAP.some((m) => m.when(k));
   const segsOf = (n) => {
     const out = (n.text || []).map((r) => ({ t: r.t, box: r.box, lines: r.lines || 1, font: n.font, o: r.o }));
@@ -1034,6 +1042,13 @@
     const lineOf = (b) => Math.round(b.y / 4);
     if (segs.every((sg) => sg.o !== undefined)) segs.sort((a, b) => a.o - b.o);
     else segs.sort((a, b) => (Math.abs(a.box.y - b.box.y) < 6 ? a.box.x - b.box.x : a.box.y - b.box.y));
+    // a gap the code made with a margin (ml-2 between "Ratings" and "4.7
+    // average") has no space character: put one in where the runs sit apart
+    for (let i = 1; i < segs.length; i++) {
+      const a = segs[i - 1], b = segs[i];
+      const sameLine = Math.abs(a.box.y - b.box.y) < 6 && (a.lines || 1) === 1;
+      if (sameLine && !/\s$/.test(a.t) && !/^\s/.test(b.t) && b.box.x - (a.box.x + a.box.w) > 2) segs[i] = Object.assign({}, b, { t: " " + b.t });
+    }
     const f0 = segs[0].font || n.font || {};
     const k = f0.scale || 1;
     const lh = (f0.lh || Math.round((f0.size || 14) * 1.2)) * k;
@@ -1166,6 +1181,9 @@
   // Size a child inside an auto-layout parent the way the browser did:
   // FILL where it spans the parent's content box (or flex-grows), HUG where
   // its own layout reproduces its size, FIXED otherwise.
+  // a row of DS buttons may hug wider than the code's box (Figma's button
+  // metrics); anything else keeps the code's width so columns stay aligned
+  const buttonsOnly = (node) => { try { return node.children && node.children.length > 0 && node.children.every((c) => c.type === "INSTANCE" && /^Button/.test(c.name)); } catch (e) { return false; } };
   function sizeIn(node, n, parent, pn) {
     if (!isAL(parent)) return;
     const inner = innerOf(pn);
@@ -1178,13 +1196,13 @@
     try {
       if (row) {
         if (n.grow) node.layoutSizingHorizontal = "FILL";
-        else if (canHug) { node.layoutSizingHorizontal = "HUG"; if (!near(node.width, n.box.w, 1.5)) { node.layoutSizingHorizontal = "FIXED"; node.resize(Math.max(1, n.box.w), node.height); } }
+        else if (canHug) { node.layoutSizingHorizontal = "HUG"; if ((buttonsOnly(node) ? node.width < n.box.w - 1.5 : !near(node.width, n.box.w, 1.5))) { node.layoutSizingHorizontal = "FIXED"; node.resize(Math.max(1, n.box.w), node.height); } }
         else node.layoutSizingHorizontal = "FIXED";
         if (pn && pn.lay && /stretch|normal/.test(pn.lay.ai || "") && near(n.box.h, inner.h)) node.layoutSizingVertical = "FILL";
         else if (canHug && node.type !== "TEXT") { node.layoutSizingVertical = "HUG"; if (!near(node.height, n.box.h, 0.4)) { node.layoutSizingVertical = "FIXED"; node.resize(node.width, Math.max(1, n.box.h)); } }
       } else {
         if (near(n.box.w, inner.w, 2)) node.layoutSizingHorizontal = "FILL";
-        else if (canHug) { node.layoutSizingHorizontal = "HUG"; if (!near(node.width, n.box.w, 1.5)) { node.layoutSizingHorizontal = "FIXED"; node.resize(Math.max(1, n.box.w), node.height); } }
+        else if (canHug) { node.layoutSizingHorizontal = "HUG"; if ((buttonsOnly(node) ? node.width < n.box.w - 1.5 : !near(node.width, n.box.w, 1.5))) { node.layoutSizingHorizontal = "FIXED"; node.resize(Math.max(1, n.box.w), node.height); } }
         else node.layoutSizingHorizontal = "FIXED";
         if (n.grow) node.layoutSizingVertical = "FILL";
         else if (canHug && node.type !== "TEXT") { node.layoutSizingVertical = "HUG"; if (!near(node.height, n.box.h, 0.4)) { node.layoutSizingVertical = "FIXED"; node.resize(node.width, Math.max(1, n.box.h)); } }
@@ -1223,12 +1241,17 @@
     f.primaryAxisAlignItems = /space-between|space-around|space-evenly/.test(jc) ? "SPACE_BETWEEN" : /center/.test(jc) ? "CENTER" : /end/.test(jc) ? "MAX" : "MIN";
     const ai = lay.ai || "normal";
     f.counterAxisAlignItems = /center/.test(ai) ? "CENTER" : /end/.test(ai) ? "MAX" : (/baseline/.test(ai) && dir === "HORIZONTAL") ? "BASELINE" : "MIN";
-    if (lay.wrap || lay.d === "grid" && (lay.cols || 1) > 1) { f.layoutWrap = "WRAP"; f.counterAxisSpacing = lay.gap ? (dir === "HORIZONTAL" ? lay.gap[0] : lay.gap[1]) : f.itemSpacing; }
+    // a wrapping row the browser laid out on ONE line stays one line here:
+    // Figma's slightly wider buttons would otherwise tip it onto two
+    const oneLine = flow.length > 1 && flow.every((k) => Math.abs(k.box.y - flow[0].box.y) < 3);
+    if ((lay.wrap || lay.d === "grid" && (lay.cols || 1) > 1) && !(dir === "HORIZONTAL" && oneLine)) { f.layoutWrap = "WRAP"; f.counterAxisSpacing = lay.gap ? (dir === "HORIZONTAL" ? lay.gap[0] : lay.gap[1]) : f.itemSpacing; }
     f.primaryAxisSizingMode = "AUTO"; f.counterAxisSizingMode = "AUTO";
   }
 
+  let VIEW_H = Infinity;
   async function autoKids(n, frame) {
-    const kids = (n.kids || []).filter((k) => !(k.comps && k.comps.some((c) => /^(ShellTweaker|DemoTweaker|Tweaker)/.test(c.n))));
+    // a table row the capture's viewport cut in half is not content: drop it
+    const kids = (n.kids || []).filter((k) => !(k.comps && k.comps.some((c) => /^(ShellTweaker|DemoTweaker|Tweaker)/.test(c.n))) && !(k.tag === "tr" && k.box.y + k.box.h > VIEW_H + 1));
     const mixed = (n.text && n.text.length && kids.length) || (n.text && n.text.length > 1) || (n.input && !kids.length);
     if (mixed || !kids.length && n.text) {
       // inline mixes (text beside a link, "7 of 60") keep the browser's
@@ -1239,6 +1262,39 @@
       await renderKids(n, frame, n.box.x, n.box.y);
       AUTO = was;
       return;
+    }
+    // display:contents wrappers have no box, so the extractor hoists their
+    // children: a row of two columns arrives as four children, two pairs
+    // sharing an x. Regroup children that overlap on the row's own axis into
+    // stacks (and side-by-side children of a column into rows).
+    const lay0 = n.lay || {};
+    const rowish = lay0.d === "flex" && /row/.test(lay0.dir || "row");
+    const colish = lay0.d === "flex" && /column/.test(lay0.dir || "");
+    const flowKids = kids.filter((k) => k.pos !== "absolute" && k.pos !== "fixed");
+    const cluster = (axis) => {
+      const sorted = flowKids.slice().sort((a, b) => a.box[axis] - b.box[axis]);
+      const groups = [];
+      for (const k of sorted) {
+        const g = groups[groups.length - 1];
+        const lo = k.box[axis], hi = k.box[axis] + (axis === "x" ? k.box.w : k.box.h);
+        if (g && lo < g.hi - 1) { g.items.push(k); g.hi = Math.max(g.hi, hi); } else groups.push({ items: [k], hi });
+      }
+      return groups;
+    };
+    if ((rowish || colish) && flowKids.length >= 3) {
+      const groups = cluster(rowish ? "x" : "y");
+      if (groups.length >= 2 && groups.some((g) => g.items.length > 1)) {
+        const synth = groups.map((g) => {
+          if (g.items.length === 1) return g.items[0];
+          const items = g.items.slice().sort((a, b) => rowish ? a.box.y - b.box.y : a.box.x - b.box.x);
+          const box = { x: Math.min(...items.map((k) => k.box.x)), y: Math.min(...items.map((k) => k.box.y)) };
+          box.w = Math.max(...items.map((k) => k.box.x + k.box.w)) - box.x; box.h = Math.max(...items.map((k) => k.box.y + k.box.h)) - box.y;
+          const gaps = items.slice(1).map((k, i) => rowish ? k.box.y - (items[i].box.y + items[i].box.h) : k.box.x - (items[i].box.x + items[i].box.w));
+          return { tag: "div", box, kids: items, lay: { d: "flex", dir: rowish ? "column" : "row", gap: [Math.max(0, median(gaps)), Math.max(0, median(gaps))], pad: [0, 0, 0, 0], jc: "normal", ai: "normal" } };
+        });
+        const out = kids.filter((k) => k.pos === "absolute" || k.pos === "fixed");
+        return autoKids(Object.assign({}, n, { kids: synth.concat(out) }), frame);
+      }
     }
     layoutFrom(frame, n, kids);
     // DOM order is layout order; only out-of-flow children paint by z, last
@@ -1298,7 +1354,8 @@
       if (!made) {
         const kids = n.kids || [];
         // a wrapper that paints nothing and holds one child is that child
-        if (!n.v && !n.clip && !n.lay && kids.length === 1 && !n.text && !n.hook) return await renderAuto(kids[0], parent, pn);
+        // (never a table cell: its width IS the column, painted or not)
+        if (!n.v && !n.clip && !n.lay && kids.length === 1 && !n.text && !n.hook && !/^(td|th)$/.test(n.tag)) return await renderAuto(kids[0], parent, pn);
         const f = figma.createFrame();
         f.name = nice(n) || n.tag;
         f.fills = [];
@@ -1347,6 +1404,7 @@
     const w = (n) => { if (target) return; if (test(n)) { target = n; return; } (n.kids || []).forEach(w); };
     w(spec.root);
     if (!target) return { error: "not found" };
+    VIEW_H = spec.h || Infinity;
     const page = await pageNamed(opts.page || "DS rebuild · scratch");
     const host = figma.createFrame();
     host.name = "host"; host.fills = []; host.layoutMode = "VERTICAL"; host.primaryAxisSizingMode = "AUTO"; host.counterAxisSizingMode = "AUTO";
