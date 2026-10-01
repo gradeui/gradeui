@@ -95,6 +95,7 @@ import {
   type TradeDirection,
 } from "@/lib/market";
 import { Wordmark, METALS, metalSolid } from "@/components/wordmark";
+import { MetalButton } from "@/components/metal-button";
 import { SideDrawer } from "@/components/side-drawer";
 
 /** The vaults a purchase can land in (Ali, 1 Oct: "both vaults, Zurich
@@ -663,10 +664,14 @@ export function TradeFlowV2({
               >
                 Back
               </Button>
-              {/* The DS primary, as every Web DS drawer action is. */}
-              <Button size="lg" className="h-12" onClick={confirm}>
+              {/* The metal confirm is back (Ali, 1 Oct): the one place the
+                  brand treatment stays. 48 tall like the rest of the
+                  footer. ASSUMPTION: MetalButton keeps its own pill shape
+                  next to Back's DS radius; the shared MetalButton is used
+                  by the live demo, so it is not reshaped from here. */}
+              <MetalButton metal={metal} size="lg" className="h-12" onClick={confirm}>
                 {verb} {label}
-              </Button>
+              </MetalButton>
             </SideDrawer.Footer>
           </>
         )}
