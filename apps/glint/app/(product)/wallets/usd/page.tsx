@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "USD — wallet v2"
-// (design dmupum94g8tuz, version 1790878369331). Registry: lib/screens.ts;
+// (design dmupum94g8tuz, version 1790879095023). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: ce051a18fee6
+// source-hash: 2ae2df5ccadb
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -25,7 +25,6 @@ import { ActivityTableV2 } from "@/components/activity-table-v2";
 import { Wordmark } from "@/components/wordmark";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
 import { AccountDetails } from "@/components/account-details";
-import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 
 // V2 (1 Oct 2026, the business portal v2 for staging): a copy of
 // "USD — wallet", which stays untouched because the live demo is promoted
@@ -70,7 +69,12 @@ import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 // missing. Filtering on `metal` cannot express this wallet at all: cash
 // rows have metal null. This is the screen that forced the wallet key.
 //
-// ACTIONS ARE DEPOSIT AND WITHDRAW (Ali, 11 Aug), pinned to the bottom
+// V2, 1 Oct: NO ACTIONS on this card (Ali: no Deposit anywhere in v2,
+// because depositing happens offline at the business's own bank; and
+// Withdraw went too, because it was inert rather than going to support).
+// The Glint account details beside it are how money gets in. The note
+// below is the history.
+// ACTIONS WERE DEPOSIT AND WITHDRAW (Ali, 11 Aug), pinned to the bottom
 // of the card as on the metal wallets. They are INERT, which Ali
 // confirmed is fine: neither flow exists in the demo, and the dashboard
 // Deposit button is already the same kind of affordance, so this matches
@@ -147,16 +151,6 @@ export default function UsdWalletPage() {
                       either place moves both. */}
                   <AutoInvestToggle />
                 </Stack>
-                <Row gap="sm">
-                  <Button size="md" className="rounded-full">
-                    <ArrowDownToLine className="size-4" />
-                    Deposit
-                  </Button>
-                  <Button variant="ghost" size="md" className="rounded-full">
-                    <ArrowUpFromLine className="size-4" />
-                    Withdraw
-                  </Button>
-                </Row>
               </Stack>
             </CardContent>
           </Card>

@@ -19,10 +19,14 @@
 //   - the base gradient, Figma's exact stops in the face's own unit space
 //     from (0.1528, 0.1528) to (0.8472, 0.8472). In CSS that is a "to
 //     bottom right" gradient with the stops at 15.28% to 84.72%;
-//   - BARE METAL: no G-unit ring lattice. Ali took the pattern off the
-//     cards on 30 Sep ("remove remove remove"; the iOS default, Pattern
-//     Subtle, "leaves the metal bare"). The lattice stays a band
-//     treatment;
+//   - THE G-UNIT RING LATTICE, back on the web cards (Ali, 1 Oct: "we are
+//     losing the pattern on the GOLD and SILVER cards on the web, so please
+//     sort that out"): Figma's pattern exactly, G units on a 70 grid with
+//     centres at (25 + 70i, 15 + 70j), each an outer ring r 45.16, an inner
+//     ring r 32.665 and a bar from 11.29 to 58.33 right of the centre,
+//     stroked 1.2923 with butt ends, in gold/300 on Gold and silver/200 on
+//     Silver, the whole layer at 24% so crossings do not darken. USD has
+//     none;
 //   - the emboss: a white hairline along the top edge, a dark one along
 //     the bottom, and type stamped with a 1px white shadow at 20%;
 //   - the G and the metal's name, Auto-buy as an outline chip on the
@@ -39,9 +43,11 @@
 // value goes. It holds no vaults, so there is no pin.
 //
 // THE ACTIONS sit under the face (Ali, 1 Oct: "we are also losing the buy
-// and sell buttons entirely, no CTAs"): Buy as the metal button, Sell as an
-// outline button, both opening TradeFlowV2 with this card's metal. USD has
-// one, Deposit, which goes to the USD wallet and its account details.
+// and sell buttons entirely, no CTAs"), both opening TradeFlowV2 with this
+// card's metal. BOTH ARE THE PLAIN DS PRIMARY (Ali, later on 1 Oct: not
+// the metal button, not outline), a matched pair of equal choices. USD has
+// NO button (Ali, 1 Oct): depositing happens offline, and the account
+// details stay on the USD wallet page and Bank accounts.
 //
 // `vaults` adds the per-vault table under the actions, for the metal's own
 // page. `link` makes the face the way into that page.
@@ -69,7 +75,6 @@ import { Market, type MetalKey, type MetalUnit } from "@/lib/market";
 import { Accounts } from "@/lib/accounts";
 import { Wordmark } from "@/components/wordmark";
 import { TradeFlowV2 } from "@/components/trade-flow-v2";
-import { MetalButton } from "@/components/metal-button";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
 
 /** The App DS metal tokens for the face. */
@@ -101,6 +106,38 @@ const RALEWAY: React.CSSProperties = {
 };
 
 /* No useRaleway here: app/layout.tsx registers Raleway with next/font. */
+
+/** The lattice ink: gold/300 on Gold, silver/200 on Silver. */
+const LATTICE_INK: Record<MetalKey, string> = { gold: "#ECD19C", silver: "#E7E7E7" };
+/** A unit sits at the tile's centre; its eight neighbours are drawn too,
+ *  because rings of r 45 overlap the next tile. */
+const LATTICE_UNITS = [-70, 0, 70].flatMap((dx) =>
+  [-70, 0, 70].map((dy) => [35 + dx, 35 + dy]),
+);
+
+/** The metal face's G-unit ring lattice, as one SVG pattern. The tile grid
+ *  starts at (-10, -20), so unit centres land at (25 + 70i, 15 + 70j). */
+function Lattice({ metal }: { metal: MetalKey }) {
+  const id = `glint-lattice-${React.useId().replace(/[^a-zA-Z0-9-]/g, "")}`;
+  return (
+    <svg aria-hidden className="pointer-events-none absolute inset-0 size-full">
+      <defs>
+        <pattern id={id} width="70" height="70" x="-10" y="-20" patternUnits="userSpaceOnUse">
+          <g fill="none" stroke={LATTICE_INK[metal]} strokeWidth="1.2923" strokeLinecap="butt">
+            {LATTICE_UNITS.map(([cx, cy]) => (
+              <g key={`${cx},${cy}`}>
+                <circle cx={cx} cy={cy} r="45.16" />
+                <circle cx={cx} cy={cy} r="32.665" />
+                <line x1={cx + 11.29} y1={cy} x2={cx + 58.33} y2={cy} />
+              </g>
+            ))}
+          </g>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill={`url(#${id})`} opacity="0.24" />
+    </svg>
+  );
+}
 
 /** "1,423" and ".9395": the grams with the fraction set smaller. */
 function splitFigure(n: number, places: number): [string, string] {
@@ -215,7 +252,7 @@ export function MetalWalletCardV2({
   );
 
   const body = (
-    <Stack gap="sm">
+    <Stack gap="sm" className="relative">
       {title}
       {figure}
       <Separator style={face ? { backgroundColor: face.rule } : undefined} />
@@ -229,45 +266,31 @@ export function MetalWalletCardV2({
         interactive={Boolean(link)}
         data-grade-goto={link}
         aria-label={link ? `Open ${label}` : undefined}
-        className="rounded-2xl p-5"
+        className="relative overflow-hidden rounded-2xl p-5"
         style={
           face
             ? { background: face.base, color: INK, borderColor: "transparent", boxShadow: EMBOSS }
             : undefined
         }
       >
+        {metal ? <Lattice metal={metal} /> : null}
         {body}
       </Card>
 
       {metal ? (
         <Row gap="sm">
           <TradeFlowV2 metal={metal}>
-            <MetalButton metal={metal} size="md" className="flex-1" aria-label={`Buy ${label}`}>
+            <Button size="md" className="flex-1 rounded-full" aria-label={`Buy ${label}`}>
               Buy
-            </MetalButton>
+            </Button>
           </TradeFlowV2>
           <TradeFlowV2 metal={metal} direction="sell">
-            <Button
-              variant="outline"
-              size="md"
-              className="flex-1 rounded-full"
-              aria-label={`Sell ${label}`}
-            >
+            <Button size="md" className="flex-1 rounded-full" aria-label={`Sell ${label}`}>
               Sell
             </Button>
           </TradeFlowV2>
         </Row>
-      ) : (
-        <Row gap="sm">
-          <Button
-            size="md"
-            className="flex-1 rounded-full"
-            data-grade-goto="USD — wallet v2"
-          >
-            Deposit
-          </Button>
-        </Row>
-      )}
+      ) : null}
 
       {metal && showVaults && vaults.length > 0 ? (
         <Card className="p-5">

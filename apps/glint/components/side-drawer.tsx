@@ -12,10 +12,16 @@
 // THE SPEC, all of it the DS Sheet as shipped except where noted:
 //   - Panel: from the right, full height, 448 wide from 640 up
 //     (sm:max-w-md), the full screen below 640 (w-full). Padding 24 (the
-//     Sheet's p-6), the Sheet's own close button, its scrim and border.
-//   - Header: never scrolls. SheetTitle (18/28, 600) with an optional
-//     20px icon 8 before it, SheetDescription (14/20 muted) under it.
-//     Left-aligned at every size: the DS header centres below 640.
+//     Sheet's p-6), the Sheet's scrim and border.
+//   - Header: never scrolls. SheetTitle (18/28, 600), SheetDescription
+//     (14/20 muted) 8 under it, left-aligned at every size (the DS header
+//     centres below 640). An optional 20px icon sits 8 before the title,
+//     centred on the title's 28px line, and the description starts under
+//     the title TEXT, not under the icon (Ali, 1 Oct: line them up).
+//   - Close: a 40 by 40 ghost button with a 20px X (Ali, 1 Oct: the DS
+//     Sheet's 16px X read small on desktop), centred on the title's line,
+//     at the header's right. The Sheet's own close is hidden for it, so
+//     there is exactly one, and every drawer has the same one.
 //   - Body: the only part that scrolls, taking the height the header and
 //     footer leave. 24 under the header (gap-6 on the panel). Its content
 //     fills at least the body's height, so a group can be pushed to the
@@ -36,13 +42,17 @@ import * as React from "react";
 import {
   Sheet,
   SheetTrigger,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetDescription,
   SheetFooter,
+  Stack,
   Row,
+  Button,
 } from "@gradeui/ui";
+import { X } from "lucide-react";
 
 export function SideDrawer({
   open,
@@ -58,7 +68,11 @@ export function SideDrawer({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       {trigger ? <SheetTrigger asChild>{trigger}</SheetTrigger> : null}
-      <SheetContent side="right" className="flex w-full flex-col gap-6 sm:max-w-md">
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col gap-6 sm:max-w-md"
+        closeClassName="hidden"
+      >
         {children}
       </SheetContent>
     </Sheet>
@@ -75,14 +89,30 @@ SideDrawer.Header = function SideDrawerHeader({
   description?: React.ReactNode;
 }) {
   return (
-    <SheetHeader className="shrink-0 pr-8 text-left">
-      <SheetTitle>
-        <Row gap="sm" align="center">
-          {icon}
-          {title}
+    <SheetHeader className="shrink-0 text-left">
+      <Row justify="between" align="start" gap="sm">
+        <Row gap="sm" align="start" className="min-w-0">
+          {/* mt-1: a 20px icon centred on the title's 28px line. */}
+          {icon ? <span className="mt-1 flex shrink-0">{icon}</span> : null}
+          <Stack gap="sm" className="min-w-0">
+            <SheetTitle>{title}</SheetTitle>
+            {description ? <SheetDescription>{description}</SheetDescription> : null}
+          </Stack>
         </Row>
-      </SheetTitle>
-      {description ? <SheetDescription>{description}</SheetDescription> : null}
+        {/* -mt-1.5 centres the 40px button on the title's 28px line;
+            -mr-2 keeps the X where the panel's padding puts it. */}
+        <SheetClose asChild>
+          <Button
+            variant="ghost"
+            size="lg"
+            iconOnly
+            aria-label="Close"
+            className="-mr-2 -mt-1.5 shrink-0 rounded-full"
+          >
+            <X />
+          </Button>
+        </SheetClose>
+      </Row>
     </SheetHeader>
   );
 };

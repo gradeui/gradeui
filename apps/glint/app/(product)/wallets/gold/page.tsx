@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Gold — wallet v2"
-// (design dmuppmu4zpn8y, version 1790878366423). Registry: lib/screens.ts;
+// (design dmuppmu4zpn8y, version 1790879475503). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 55ea0b2f9f02
+// source-hash: a905f37d6c40
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -28,7 +28,8 @@ import { ActivityTableV2 } from "@/components/activity-table-v2";
 // App DS metal face with Buy and Sell under it and the vault table below,
 // and the chrome is AppChromeV2, with no rail on mobile. Then: a page
 // title, and ActivityTableV2 (the transaction detail is the shared
-// SideDrawer).
+// SideDrawer). And the split now favours the wallet: 7 columns for the
+// card and vaults, 5 for the price (Ali, 1 Oct).
 //
 // Glint Gold wallet screen (Ali, 10 Aug 2026; componentised 11 Aug):
 // the desktop gold view. Holding card and price card side by side, then
@@ -45,7 +46,7 @@ import { ActivityTableV2 } from "@/components/activity-table-v2";
 //
 // WALLET CARD LEADS, ON THE LEFT (Ali, 11 Aug). The holding is what you
 // came to the screen for; the price is context for it. The narrower card
-// takes the left 5 columns and the chart the right 7, so the page still
+// takes the left 7 columns (5 until 1 Oct) and the chart the right 5, so the page still
 // reads as one asymmetric pair rather than two equal blocks.
 //
 // ACTIVITY: Persona.useActivity(METAL) is the shared wallet filter, so
@@ -75,8 +76,8 @@ export default function GoldWalletPage() {
           <h1 className="text-2xl font-semibold text-foreground">{label}</h1>
         </Container>
         <Container maxW="xl" grid className="gap-6">
-          <MetalWalletCardV2 asset={METAL} vaults className="col-span-12 lg:col-span-5" />
-          <MetalPriceCard metal={METAL} className="col-span-12 lg:col-span-7" />
+          <MetalWalletCardV2 asset={METAL} vaults className="col-span-12 lg:col-span-7" />
+          <MetalPriceCard metal={METAL} className="col-span-12 lg:col-span-5" />
         </Container>
       </Section>
 

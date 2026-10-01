@@ -12,7 +12,7 @@
 // TWIN: the Studio shared component "TradeFlowV2" (cmuppmluj1r1r5).
 // Editing one does not touch the other. Keep the pair in sync. The
 // spellings differ where the modules do: Studio reads metalSolid and
-// metalRing off Wordmark, this app imports them by name.
+// METALS off Wordmark, this app imports them by name.
 //
 // THE BUSINESS MODEL (Ali, 1 Oct). A business account has exactly three
 // wallets: Gold, Silver and USD. A buy is always paid FROM the USD wallet
@@ -27,9 +27,10 @@
 //     balance sits UNDER it, the converted figure on the same line at the
 //     right. Buy is entered in USD. Sell takes USD or grams, switched on
 //     the label line, with Sell all for the most that can be sold.
-//   - OVER THE BALANCE a buy shows the shortfall and ONE action, Deposit,
-//     which replaces Review in the footer and goes to the USD wallet, where
-//     the Glint account details are. There is no deposit flow in here.
+//   - OVER THE BALANCE a buy says so in plain words under the field ("You
+//     have $2,159.58 in your USD wallet. This is $657.40 more.") and Review
+//     stays disabled. NO deposit action or link (Ali, 1 Oct): depositing
+//     happens offline, at the business's own bank.
 //   - THE METAL COMES FROM WHERE IT WAS OPENED, for both directions (Ali,
 //     1 Oct: "Web sell, we don't need a toggle for gold and silver"). Sell
 //     on the Gold wallet sells gold; the header says which. There is no
@@ -42,6 +43,10 @@
 //     Glint has dropped the primary vault: nothing here says default or
 //     primary.
 //
+//   - NO METAL RING ON THE RECEIPT (Ali, 1 Oct: "not sure why we suddenly
+//     introduced a gold strip, let's remove it"). On a full-height drawer
+//     the old gradient hairline read as a strip down the edge. Success is
+//     plain: the header, the sentence, the footer.
 //   - A SIDE DRAWER, NOT A CENTRED MODAL (Ali, 1 Oct, from the layout
 //     audit): SideDrawer, the one drawer spec the transaction detail
 //     shares. From the right, 448 wide from 640 up, the full screen below;
@@ -89,7 +94,7 @@ import {
   type MetalUnit,
   type TradeDirection,
 } from "@/lib/market";
-import { Wordmark, metalSolid, metalRing } from "@/components/wordmark";
+import { Wordmark, METALS, metalSolid } from "@/components/wordmark";
 import { MetalButton } from "@/components/metal-button";
 import { SideDrawer } from "@/components/side-drawer";
 
@@ -106,25 +111,35 @@ const QUOTE_TICK_MS = 250;
 /** How far a refresh may move the rate: plus or minus 0.12%. */
 const QUOTE_DRIFT = 0.0012;
 
-/** WHERE A SHORT BUY SENDS YOU: the USD wallet screen, which carries the
- *  Glint account details a deposit is sent to. This is a Studio SCREEN
- *  NAME resolved by the goto protocol (and by the app's screen registry),
- *  so the long dash is part of the name, not prose. */
-const DEPOSIT_TARGET = "USD — wallet v2";
+/* THE G, THEME-AWARE (Ali, 1 Oct: too faint in light mode). The flat
+   metal, step 400, on dark surfaces; step 700 on light ones, which clears
+   3:1 against white for a graphic (the iOS cards set the G at 700). Both
+   are Wordmark's pinned brand ladder, passed in as variables, and one
+   class picks between them by mode. A <style> element rather than a
+   utility class: Fast Frame's stylesheet is precompiled, so a variant
+   class this file invents would not exist in Studio. */
+const MARK_CSS =
+  ".glint-metal-mark{color:oklch(var(--glint-mark-light))}" +
+  ".dark .glint-metal-mark{color:oklch(var(--glint-mark-dark))}";
 
-/** Turns a filled box into a 1px outline: the metal ring on the receipt. */
-const RING_MASK =
-  "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)";
-
-/** The Glint G in the metal's flat brand colour. */
+/** The Glint G in the metal's colour, darker in light mode. */
 function MetalMark({ metal }: { metal: MetalKey }) {
+  const ladder = METALS[metal];
   return (
-    <Wordmark
-      lockup="mark"
-      tone="current"
-      className="size-5"
-      style={{ color: metalSolid(metal) }}
-    />
+    <>
+      <style>{MARK_CSS}</style>
+      <Wordmark
+        lockup="mark"
+        tone="current"
+        className="glint-metal-mark size-5"
+        style={
+          {
+            "--glint-mark-light": ladder[700],
+            "--glint-mark-dark": ladder[400],
+          } as React.CSSProperties
+        }
+      />
+    </>
   );
 }
 
@@ -443,13 +458,15 @@ export function TradeFlowV2({
       ? "you hold"
       : "held";
   const balanceLine = !selling
-    ? `${Persona.fmtMoney(fiat)} in your USD wallet`
+    ? overBalance
+      ? `You have ${Persona.fmtMoney(fiat)} in your USD wallet. This is ${Persona.fmtMoney(shortfall)} more.`
+      : `${Persona.fmtMoney(fiat)} in your USD wallet`
     : overBalance
       ? `More than the ${heldQty} ${heldWhere}`
       : `${heldQty} ${heldWhere}`;
 
   const amountField = (
-    <Field data-invalid={(selling && overBalance) || undefined}>
+    <Field data-invalid={overBalance || undefined}>
       {selling ? (
         <Row justify="between" align="center" gap="sm">
           <FieldLabel>Amount</FieldLabel>
@@ -483,7 +500,7 @@ export function TradeFlowV2({
           inputMode="decimal"
           value={raw}
           onChange={(e) => setRaw(e.target.value)}
-          aria-invalid={(selling && overBalance) || undefined}
+          aria-invalid={overBalance || undefined}
         />
         {inQty || (selling && held > 0) ? (
           <InputGroupAddon align="inline-end">
@@ -509,31 +526,6 @@ export function TradeFlowV2({
     </Field>
   );
 
-  /* THE SHORTFALL (Ali, 1 Oct): what is missing, and the one thing to do
-     about it, which is the footer's Deposit. */
-  const shortfallCallout =
-    shortfall > 0 ? (
-      <Callout variant="warning">
-        <CalloutTitle>{`You need ${Persona.fmtMoney(shortfall)} more`}</CalloutTitle>
-        <CalloutDescription>
-          Deposit it into your USD wallet by bank transfer.
-        </CalloutDescription>
-      </Callout>
-    ) : null;
-
-  const completedRing = (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-0 p-px duration-700 animate-in fade-in motion-reduce:animate-none"
-      style={{
-        background: metalRing(metal),
-        WebkitMask: RING_MASK,
-        mask: RING_MASK,
-        WebkitMaskComposite: "xor",
-        maskComposite: "exclude",
-      }}
-    />
-  );
 
   const quoteTimer = (
     <Stack gap="xs">
@@ -577,40 +569,24 @@ export function TradeFlowV2({
               ) : (
                 <>
                   {amountField}
-                  {shortfallCallout}
                   {vaultField}
                 </>
               )}
             </Stack>
             </SideDrawer.Body>
             <SideDrawer.Footer>
-              {shortfall > 0 ? (
-                /* ONE ACTION when short: Deposit takes the place of Review
-                   and goes to the USD wallet. A goto, so it is navigation
-                   in Studio and in the app alike. */
-                <Button
-                  size="lg"
-                  className="rounded-full"
-                  data-grade-goto={DEPOSIT_TARGET}
-                  onClick={() => setOpen(false)}
-                >
-                  Deposit
-                  <ChevronRight className="size-4" />
-                </Button>
-              ) : (
-                <Button
-                  size="lg"
-                  className="rounded-full"
-                  disabled={!valid}
-                  onClick={() => {
-                    setLocked({ qty: formQty, cash: formCash });
-                    setStep("review");
-                  }}
-                >
-                  Review
-                  <ChevronRight className="size-4" />
-                </Button>
-              )}
+              <Button
+                size="lg"
+                className="rounded-full"
+                disabled={!valid}
+                onClick={() => {
+                  setLocked({ qty: formQty, cash: formCash });
+                  setStep("review");
+                }}
+              >
+                Review
+                <ChevronRight className="size-4" />
+              </Button>
             </SideDrawer.Footer>
           </>
         )}
@@ -695,7 +671,6 @@ export function TradeFlowV2({
 
         {step === "done" && order && (
           <>
-            {completedRing}
             {header}
             <SideDrawer.Body>
             <Stack gap="md" className="flex-1">
