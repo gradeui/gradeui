@@ -44,8 +44,10 @@
 //
 // THE ACTIONS sit under the face (Ali, 1 Oct: "we are also losing the buy
 // and sell buttons entirely, no CTAs"), both opening TradeFlowV2 with this
-// card's metal. BOTH ARE THE PLAIN DS PRIMARY (Ali, later on 1 Oct: not
-// the metal button, not outline), a matched pair of equal choices. USD has
+// card's metal. Buy is the DS primary and Sell the DS secondary (Ali,
+// later on 1 Oct: "too many primaries"), in a two-column grid so the pair
+// is exactly the card's width, edges flush with the card's, split 50/50
+// with an 8px gap at every breakpoint. USD has
 // NO button (Ali, 1 Oct): depositing happens offline, and the account
 // details stay on the USD wallet page and Bank accounts.
 //
@@ -278,18 +280,23 @@ export function MetalWalletCardV2({
       </Card>
 
       {metal ? (
-        <Row gap="sm">
+        <div className="grid grid-cols-2 gap-2">
           <TradeFlowV2 metal={metal}>
-            <Button size="md" className="flex-1 rounded-full" aria-label={`Buy ${label}`}>
+            <Button size="md" className="w-full rounded-full" aria-label={`Buy ${label}`}>
               Buy
             </Button>
           </TradeFlowV2>
           <TradeFlowV2 metal={metal} direction="sell">
-            <Button size="md" className="flex-1 rounded-full" aria-label={`Sell ${label}`}>
+            <Button
+              variant="secondary"
+              size="md"
+              className="w-full rounded-full"
+              aria-label={`Sell ${label}`}
+            >
               Sell
             </Button>
           </TradeFlowV2>
-        </Row>
+        </div>
       ) : null}
 
       {metal && showVaults && vaults.length > 0 ? (
