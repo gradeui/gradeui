@@ -65,6 +65,8 @@
 //     uses the metal instead: gold/600 or silver/600 in
 //     Light, gold/400 or silver/400 in Dark, the steps the drawer's G uses
 //     against the same surfaces. No glow and no motion: it is for business.
+//     ASSUMPTION: no sheen was tried. The brief allowed a very slow one,
+//     off by default; the still gradient already reads as a lit edge.
 //   USD has one look; `variant` does nothing there.
 //
 // THE STAGING SWITCH: a card with no `variant` takes its look from the
@@ -154,6 +156,9 @@ const SUBTLE: Record<
     ringLight: "linear-gradient(135deg, #BC9B55 0%, #6C4F04 35%, #ECD19C 55%, #533C00 100%)",
     /* gold/200, gold/400, gold/100, gold/500 */
     ringDark: "linear-gradient(135deg, #EAEBBA 0%, #BC9B55 35%, #FEF3DE 55%, #8E6D25 100%)",
+    /* ASSUMPTION: the Light G is gold/600, not the face's gold/700, which
+       reads brown on white; 600 is the step nearest the drawer's Light G.
+       Make it #533C00 (gold/700) if Ali wants the face's own accent. */
     accentLight: "#6C4F04", // gold/600
     accentDark: "#BC9B55", // gold/400
   },
@@ -321,6 +326,10 @@ export function MetalWalletCardV2({
           className="size-6"
           style={{ color: accent }}
         />
+        {/* ASSUMPTION: on Subtle the name stays in the foreground and only
+            the G, the unit and the chip take the metal (Ali: the name
+            "maybe" could). To try it, give this span `color: accent` when
+            `subtle` is set. */}
         <span
           className={`text-xl font-semibold ${face ? "" : "text-foreground"}`}
           style={face ? { textShadow: STAMP } : undefined}
