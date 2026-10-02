@@ -12,10 +12,14 @@
 //   <ErrorPageV2 code="404" />
 //   <ErrorPageV2 code="500" onRetry={reset} />
 //
-// ALWAYS DARK: the Web DS draws ErrorPage on the deep ground only, so the
-// page sets the dark tokens on itself and stays dark in a light session.
+// ALWAYS DARK: the Web DS draws ErrorPage on the deep ground only, so in
+// a light session the page puts the "dark" class on itself and stays dark.
+// Only then, and only after mounting: when the document is already dark
+// the page inherits the theme as it is, because in Studio a nested "dark"
+// class picks up the design system's default dark tokens instead of the
+// Glint theme's (the theme is applied to the root, not to ".dark").
 // ASSUMPTION: there is no light ErrorPage in the Web DS; if one lands,
-// drop the "dark" class here.
+// drop useForceDark here.
 //
 // COPY is the Web Portal file's, verbatim (System states, 1 Oct). The 404
 // says "System status" and the 500 says "Glint status": the file has both,
@@ -70,6 +74,21 @@ const FIGURE: React.CSSProperties = {
   color: "transparent",
 };
 
+/** True when the document is not dark, so the page must darken itself. */
+function useForceDark(): boolean {
+  const [force, setForce] = React.useState(false);
+  React.useEffect(() => {
+    const root = document.documentElement;
+    const read = () => setForce(!root.classList.contains("dark"));
+    read();
+    /* Follows a mode switch made while the page is open. */
+    const watch = new MutationObserver(read);
+    watch.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => watch.disconnect();
+  }, []);
+  return force;
+}
+
 export function ErrorPageV2({
   code = "404",
   onRetry,
@@ -78,6 +97,7 @@ export function ErrorPageV2({
   /** The error boundary's reset. Without it, Try again reloads. */
   onRetry?: () => void;
 }) {
+  const forceDark = useForceDark();
   const copy = COPY[code] ?? COPY[404];
   const retry = () => (onRetry ? onRetry() : window.location.reload());
   const back = () => window.history.back();
@@ -104,7 +124,7 @@ export function ErrorPageV2({
     );
 
   return (
-    <div className="dark relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background px-6 py-16 text-foreground">
+    <div className={`${forceDark ? "dark " : ""}relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background px-6 py-16 text-foreground`}>
       <RingLattice fade="centre" />
       <main className="relative flex w-full flex-col items-center text-center" style={{ maxWidth: 560 }}>
         <Wordmark cut="champagne" style={{ height: 30 }} />
