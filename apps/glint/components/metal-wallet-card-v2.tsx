@@ -35,15 +35,28 @@
 //
 // USD, NOT METAL: the same card in its own treatment. The DS card surface
 // instead of a metal face, the G in the action blue as before, the balance
-// where the grams go, the same rule, and the Auto-buy setting where the
-// value goes. It holds no vaults, so there is no pin.
+// where the grams go, the same rule, and a second line where the value
+// goes. It holds no vaults, so there is no pin.
+//
+// NO AUTO-BUY ON STAGING (Ali, 2 Oct: "I need staging not to have
+// auto-buy, but we do need a layout where auto-buy exists in the
+// future"). Behind StagingSwitches.useAutoBuy(), off unless ?autobuy=on:
+//   - off: no Auto-buy chip on the metal cards, and the USD card's second
+//     line is the balance available, "$1,842.60 available" (the Web DS
+//     card set's wording), so the three cards keep one height;
+//   - on: the chip and "Auto-buy to Gold" / "Auto-buy off", as before.
+//
+// THE FIGURE IS THE WEB DS DisplayNumber, Size=md (2 Oct, confirmed from
+// the Figma node): Raleway 700, lining tabular figures, the whole number
+// 36 and the "$", the fraction and the unit 30. It was 30 / 20 here.
 //
 // TWO LOOKS FOR GOLD AND SILVER, `variant` (Ali, 2 Oct: "I'd also like to
 // have a more subtle version of the gold and silver web cards, maybe an
 // inner shiny border, 2px thick ... I think for business this full gold
 // and silver might be too much"):
-//   - "metal", the default: the metal face above.
-//   - "subtle": the USD card's quiet surface (the DS card, so white in
+//   - "metal": the metal face above, with ?cards=metal.
+//   - "subtle", THE DEFAULT ON WEB (Ali, 2 Oct: "I think the subtle metals
+//     work for Web"): the USD card's quiet surface (the DS card, so white in
 //     Light and the theme's neutral 900 in Dark, with the DS card shadow
 //     and hover), and a 2px metal edge INSIDE the card's outline, like
 //     light catching a bevel. The edge is a 135deg gradient of the metal's
@@ -70,11 +83,10 @@
 //   USD has one look; `variant` does nothing there.
 //
 // THE STAGING SWITCH: a card with no `variant` takes its look from the
-// address, ?cards=subtle or ?cards=metal, so Ali can compare the two on
-// his phone (2 Oct). The choice is kept for the tab (sessionStorage), so
-// it follows the cards from Wallets to the Gold and Silver pages, whose
-// links drop the query. A new tab starts on metal again. Studio reads the
-// same parameter from its own page when the frame can see it.
+// address, ?cards=subtle or ?cards=metal, through StagingSwitches.useCards
+// (the one module every staging switch lives in). The choice is kept for
+// the tab, so it follows the cards from Wallets to the Gold and Silver
+// pages, whose links drop the query. A new tab starts on subtle again.
 //
 // THE ACTIONS sit under the face (Ali, 1 Oct: "we are also losing the buy
 // and sell buttons entirely, no CTAs"), both opening TradeFlowV2 with this
@@ -90,7 +102,8 @@
 // page. `link` makes the face the way into that page.
 //
 // RALEWAY FOR THE GRAMS AND THE PLACE (Ali, 1 Oct: as in the App DS),
-// with lining figures and no ligatures, as the iOS app sets them. The app
+// with lining figures and no ligatures, as the iOS app sets them. The
+// grams are DisplayNumber's (above); the place keeps RALEWAY here. The app
 // registers the face with next/font as --font-raleway (app/layout.tsx), so
 // it is self-hosted and its fallback is metric-matched: no layout shift.
 // STUDIO DIFFERS HERE: the docs app has no Raleway loader, so this copy
@@ -113,6 +126,8 @@ import { Accounts } from "@/lib/accounts";
 import { Wordmark } from "@/components/wordmark";
 import { TradeFlowV2 } from "@/components/trade-flow-v2";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
+import { DisplayNumber } from "@/components/display-number";
+import { StagingSwitches } from "@/lib/staging-switches";
 
 /** The App DS metal tokens for the face. */
 const INK = "#141B3D";
@@ -202,71 +217,6 @@ function isCardVariant(v: unknown): v is CardVariant {
   return v === "metal" || v === "subtle";
 }
 
-/* THE STAGING SWITCH (see the header). sessionStorage, not localStorage,
-   so the default comes back in a new tab.
-   ASSUMPTION: per tab is the right lifetime for a comparison switch. If
-   Ali wants it to stick on his phone between visits, make it
-   localStorage. */
-const CARDS_KEY = "glint-cards";
-
-/** ?cards= on this page, or on the page hosting this frame (Studio's
- *  share view), when that one is readable. */
-function cardsFromAddress(): CardVariant | null {
-  const read = (w: Window) => new URLSearchParams(w.location.search).get("cards");
-  let v: string | null = null;
-  try {
-    v = read(window);
-    if (!v && window.top && window.top !== window) v = read(window.top);
-  } catch {
-    /* a cross-origin host: this page's own address is all there is */
-  }
-  return isCardVariant(v) ? v : null;
-}
-
-function readCards(): CardVariant {
-  if (typeof window === "undefined") return "metal";
-  const fromAddress = cardsFromAddress();
-  if (fromAddress) return fromAddress;
-  try {
-    const kept = window.sessionStorage.getItem(CARDS_KEY);
-    if (isCardVariant(kept)) return kept;
-  } catch {
-    /* storage unavailable: the address alone decides */
-  }
-  return "metal";
-}
-
-function subscribeCards(onChange: () => void) {
-  window.addEventListener("popstate", onChange);
-  return () => window.removeEventListener("popstate", onChange);
-}
-
-/** The look a card without `variant` takes. The server renders metal and
- *  the client corrects on hydration, as FlowStore does. */
-function useCardsSwitch(): CardVariant {
-  const cards = React.useSyncExternalStore(subscribeCards, readCards, () => "metal" as CardVariant);
-  React.useEffect(() => {
-    const fromAddress = cardsFromAddress();
-    if (!fromAddress) return;
-    try {
-      window.sessionStorage.setItem(CARDS_KEY, fromAddress);
-    } catch {
-      /* storage unavailable: the switch lasts for this page only */
-    }
-  }, []);
-  return cards;
-}
-
-/** "1,423" and ".9395": the grams with the fraction set smaller. */
-function splitFigure(n: number, places: number): [string, string] {
-  const text = n.toLocaleString("en-US", {
-    minimumFractionDigits: places,
-    maximumFractionDigits: places,
-  });
-  const at = text.indexOf(".");
-  return at === -1 ? [text, ""] : [text.slice(0, at), text.slice(at)];
-}
-
 /** Where the metal is held: one vault by name, two as "Zurich, Miami",
  *  more as a count, as the iOS card's pin does. */
 function heldIn(vaults: VaultBalance[]): string {
@@ -299,7 +249,8 @@ export function MetalWalletCardV2({
   const vaults = Persona.useVaults(asset);
   const vaultTotal = vaults.reduce((sum, v) => sum + v.amount, 0);
   const label = Persona.DEFAULT.balances[asset].label;
-  const switched = useCardsSwitch();
+  const switched = StagingSwitches.useCards();
+  const autoBuy = StagingSwitches.useAutoBuy();
   const variant = isCardVariant(variantProp) ? variantProp : switched;
   /* The metal face, or Subtle's metal; USD has neither. */
   const face = metal && variant === "metal" ? FACE[metal] : null;
@@ -312,9 +263,6 @@ export function MetalWalletCardV2({
       ? "var(--glint-card-accent)"
       : "oklch(var(--primary))";
 
-  const [whole, fraction] = metal
-    ? splitFigure(Market.toQty(amount, metal, unit as MetalUnit), 4)
-    : splitFigure(amount, 2);
   const place = metal ? heldIn(vaults) : "";
 
   const title = (
@@ -336,7 +284,8 @@ export function MetalWalletCardV2({
         >
           {label}
         </span>
-        {metal && autoInvest === metal ? (
+        {/* The chip only with ?autobuy=on (see the header). */}
+        {metal && autoBuy && autoInvest === metal ? (
           <Badge
             variant="outline"
             style={{ color: accent, borderColor: accent }}
@@ -351,19 +300,18 @@ export function MetalWalletCardV2({
 
   const figure = (
     <Row justify="between" align="baseline" gap="sm" className="mt-1">
-      <span
-        className={`font-bold ${face ? "" : "text-foreground"}`}
-        style={face ? { ...RALEWAY, textShadow: STAMP } : RALEWAY}
-      >
-        {metal ? null : <span className="text-xl">$</span>}
-        <span className="text-3xl">{whole}</span>
-        <span className="text-xl">{fraction}</span>
-        {metal ? (
-          <span className="text-xl" style={{ color: face ? face.unit : accent }}>
-            {` ${unit}`}
-          </span>
-        ) : null}
-      </span>
+      {/* The Web DS DisplayNumber, Size=md: "117" 36 and ".2057 g" 30, or
+          "$1,842" 36 with "$" and ".60" 30 on USD. */}
+      <DisplayNumber
+        value={metal ? Market.toQty(amount, metal, unit as MetalUnit) : amount}
+        places={metal ? 4 : 2}
+        currency={!metal}
+        suffix={metal ? ` ${unit}` : undefined}
+        suffixColor={metal ? (face ? face.unit : accent) : undefined}
+        size="md"
+        className={face ? "" : "text-foreground"}
+        style={face ? { textShadow: STAMP } : undefined}
+      />
       {place ? (
         <Row gap="xs" align="center" className="min-w-0 font-bold">
           <MapPin aria-hidden className="size-4 shrink-0" />
@@ -382,9 +330,13 @@ export function MetalWalletCardV2({
     >
       {metal
         ? Persona.fmtMoney(amount)
-        : autoInvest === "none"
-          ? "Auto-buy off"
-          : `Auto-buy to ${AutoInvestToggle.labelFor(autoInvest)}`}
+        : !autoBuy
+          ? /* The balance available, formatted as the figure above it
+               is, in the Web DS card set's words (2 Oct). */
+            `${Persona.fmtMoney(amount)} available`
+          : autoInvest === "none"
+            ? "Auto-buy off"
+            : `Auto-buy to ${AutoInvestToggle.labelFor(autoInvest)}`}
     </span>
   );
 

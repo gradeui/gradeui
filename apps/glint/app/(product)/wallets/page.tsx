@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home v2"
-// (design dmuppmsu1t19c, version 1790888606534). Registry: lib/screens.ts;
+// (design dmuppmsu1t19c, version 1790941631747). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 5964b1f0afa0
+// source-hash: 2c8e74ffb732
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -20,7 +20,19 @@ import {
 import { Persona, type AssetKey } from "@/lib/persona";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
 import { MetalWalletCardV2 } from "@/components/metal-wallet-card-v2";
+import { StagingSwitches } from "@/lib/staging-switches";
+import { DisplayNumber } from "@/components/display-number";
 
+// 2 OCT, on staging (Ali):
+//   - NO AUTO-BUY: the Auto-buy control beside the Balance shows only with
+//     ?autobuy=on (StagingSwitches.useAutoBuy). It is kept, not deleted:
+//     "we do need a layout where auto-buy exists in the future". The cards
+//     drop their own auto-buy parts on the same switch.
+//   - THE BALANCE IS THE WEB DS DisplayNumber, Size=lg: Raleway 700,
+//     lining tabular figures, "$" 36, the whole dollars 48 and the cents
+//     36, scaled down as one piece on a narrow screen.
+//   - The cards are Subtle by default; ?cards=metal shows the metal faces.
+//
 // V2 (1 Oct 2026, the business portal v2 for staging): a copy of
 // "Dashboard — logged-in home", which stays untouched because the live
 // demo is promoted from it. What changed here, and only here:
@@ -95,14 +107,18 @@ function TotalBalance() {
   return (
     <Stack gap="xs">
       <span className="text-sm font-medium text-muted-foreground">Balance</span>
-      <span className="text-4xl font-semibold text-foreground">
-        {Persona.fmtMoney(gold + silver + fiat)}
-      </span>
+      <DisplayNumber
+        value={gold + silver + fiat}
+        currency
+        size="lg"
+        className="text-foreground"
+      />
     </Stack>
   );
 }
 
 export default function WalletsPage() {
+  const autoBuy = StagingSwitches.useAutoBuy();
   /* NO TOOLBAR ACTIONS (Ali, 1 Oct): Buy Gold, Buy Silver and Deposit
      moved onto the cards, so the toolbar keeps the title area and the
      utilities, and nothing on this page says the same thing twice. */
@@ -132,7 +148,7 @@ export default function WalletsPage() {
           <Stack gap="lg">
             <Row justify="between" align="end" wrap gap="md">
               <TotalBalance />
-              <AutoInvestToggle />
+              {autoBuy ? <AutoInvestToggle /> : null}
             </Row>
             <Grid cols="3" gap="lg">
               {ASSET_ORDER.map((asset) => (

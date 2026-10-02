@@ -8,6 +8,19 @@
  * live demo uses ActivityTable. TWIN: the Studio shared component
  * "ActivityTableV2" (cmupuqfhr5kmfa).
  *
+ * NO AUTO-BUY ON STAGING (Ali, 2 Oct): the "Direct Gold" rows are past
+ * auto-buy purchases, so with auto-buy off (StagingSwitches.useAutoBuy,
+ * off unless ?autobuy=on) their method reads "Bought" instead, in the
+ * table and in the detail. The rows themselves, their amounts and every
+ * balance stay as they are. With ?autobuy=on they read "Direct Gold" again.
+ * ASSUMPTION: only the method name changes. The description stays
+ * "Exchange USD to Gold" and the reference keeps its DG prefix, which is
+ * data, not wording; Ali to say if either should move too.
+ *
+ * THE DETAIL'S LARGE AMOUNT is the Web DS DisplayNumber, Size=md (2 Oct):
+ * Raleway 700, lining tabular figures, the whole number 36 and the sign,
+ * "$", fraction and unit 30.
+ *
  * The notes below are ActivityTable's and still apply. It is ported from
  * the Studio shared component "ActivityTable" (cmsoq23o03cvf3). ONE component for every surface
  * that lists transactions: the Activity screen, the Dashboard's recent
@@ -83,6 +96,8 @@ import {
 } from "@gradeui/ui";
 import { Info } from "lucide-react";
 import { SideDrawer } from "@/components/side-drawer";
+import { DisplayNumber } from "@/components/display-number";
+import { StagingSwitches } from "@/lib/staging-switches";
 import { vaultLabel, vaultLocation } from "@/lib/accounts";
 import {
   fmtMoney,
@@ -94,7 +109,23 @@ import {
   txPlace,
   TX_STATUS_LABEL,
   type ActivityRow,
+  type TxMethod,
 } from "@/lib/persona";
+
+/* Method names while auto-buy is off on staging (see the header). Keyed
+   on the stored method, like TX_METHOD_LABEL in lib/persona, which stays
+   the source for every other method. */
+const AUTO_BUY_OFF_METHOD_LABEL: Partial<Record<TxMethod, string>> = {
+  "direct-gold": "Bought",
+};
+
+/** The method as this table shows it: the persona's label, unless
+ *  auto-buy is off and the row's method has a staging name. */
+function methodLabel(row: ActivityRow, autoBuy: boolean): string {
+  const staging = AUTO_BUY_OFF_METHOD_LABEL[row.method];
+  if (!autoBuy && staging) return staging;
+  return txMethodLabel(row);
+}
 
 /** Metal moved on top, cash underneath, the way the app reads.
  *  Cash-only rows show cash alone. */
@@ -115,7 +146,7 @@ function AmountCell({ row }: { row: ActivityRow }) {
   );
 }
 
-function buildColumns(): DataViewColumn<ActivityRow>[] {
+function buildColumns(autoBuy: boolean): DataViewColumn<ActivityRow>[] {
   return [
     {
       key: "description",
@@ -127,7 +158,7 @@ function buildColumns(): DataViewColumn<ActivityRow>[] {
           <span className="font-medium text-foreground">{row.description}</span>
           <span className="text-xs text-muted-foreground">
             {[
-              txMethodLabel(row),
+              methodLabel(row, autoBuy),
               row.vault ? vaultLabel(row.vault) : "",
               txPlace(row),
             ]
@@ -197,9 +228,11 @@ const FILTERS: {
 function TxSheet({
   row,
   onClose,
+  autoBuy,
 }: {
   row: ActivityRow | null;
   onClose: () => void;
+  autoBuy: boolean;
 }) {
   const d = row ? fmtTxDate(row.timestamp) : null;
   return (
@@ -208,16 +241,31 @@ function TxSheet({
         <>
           <SideDrawer.Header
             title={row.description}
-            description={txPlace(row) || row.subtitle || txMethodLabel(row)}
+            description={txPlace(row) || row.subtitle || methodLabel(row, autoBuy)}
           />
           <SideDrawer.Body>
           <Stack gap="lg">
             <Stack gap="xs">
-              <span className="text-3xl font-semibold text-foreground tabular-nums">
-                {row.metalAmount == null
-                  ? fmtSigned(row.fiatAmount)
-                  : fmtGrams(row.metalAmount)}
-              </span>
+              {/* "-$8,400.00" or "+59.8778 g", as fmtSigned and fmtGrams
+                  write them, set as the Web DS figure. */}
+              {row.metalAmount == null ? (
+                <DisplayNumber
+                  value={row.fiatAmount}
+                  currency
+                  sign
+                  size="md"
+                  className="text-foreground"
+                />
+              ) : (
+                <DisplayNumber
+                  value={row.metalAmount}
+                  places={4}
+                  suffix=" g"
+                  sign
+                  size="md"
+                  className="text-foreground"
+                />
+              )}
               {row.metalAmount != null && (
                 <span className="text-sm text-muted-foreground tabular-nums">
                   {fmtSigned(row.fiatAmount)}
@@ -238,7 +286,7 @@ function TxSheet({
                 </PropertyList.Row>
               )}
               <PropertyList.Row label="Type">
-                {txMethodLabel(row)}
+                {methodLabel(row, autoBuy)}
               </PropertyList.Row>
               {/* The full city and country here, where there is room for
                   it. A cash row has no vault and drops the whole row
@@ -299,7 +347,8 @@ export function ActivityTableV2({
      row would look dead. */
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [filter, setFilter] = React.useState("all");
-  const columns = buildColumns().filter((c) => !hide.includes(c.key));
+  const autoBuy = StagingSwitches.useAutoBuy();
+  const columns = buildColumns(autoBuy).filter((c) => !hide.includes(c.key));
 
   const active = FILTERS.find((f) => f.value === filter) ?? FILTERS[0];
   const shown = rows.filter(active.test);
@@ -331,7 +380,7 @@ export function ActivityTableV2({
         stickyHeader
         emptyMessage="Nothing here yet."
       />
-      <TxSheet row={open} onClose={() => setActiveId(null)} />
+      <TxSheet row={open} onClose={() => setActiveId(null)} autoBuy={autoBuy} />
     </Stack>
   );
 }

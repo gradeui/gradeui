@@ -36,6 +36,9 @@
 //     Settings and Help have no screen yet, so they close the menu and do
 //     nothing else.
 //
+// NO HIDE-BALANCES EYE (Ali, 2 Oct): the desktop toolbar's eye button
+// went. It was stateless (it hid nothing), so nothing else went with it.
+//
 // FIGMA WINS (Ali, 1 Oct, Web DS over this code): the header is 56 tall
 // (the rail header too, so their rules still meet), the account menu is
 // 280 wide, and the type is the Web DS's: Chivo for text, Raleway 700 for
@@ -43,9 +46,10 @@
 // --font-heading-weight). In the app those tokens come from
 // app/globals.css and the faces from next/font. STUDIO DIFFERS HERE: the
 // Studio theme is the project's, shared with the original screens, so this
-// copy sets the three tokens on the document while it is mounted and
-// fetches the faces from Google Fonts (useWebDsType). The app twin has no
-// such hook.
+// copy sets the three tokens on the document while it is mounted, with
+// lining tabular figures as the default (2 Oct), through a style element
+// the theme cannot overwrite, and fetches the faces from Google Fonts
+// (useWebDsType). The app twin has no such hook.
 //
 // Everything else is AppChrome's, and its notes still apply: the nav
 // (Wallets, Activity, Bank Accounts) keeps the lit item a link, the
@@ -83,7 +87,6 @@ import {
 import {
   Landmark,
   Bell,
-  EyeOff,
   MessageCircle,
   Menu,
   Settings,
@@ -177,7 +180,8 @@ const RAIL = {
 } as React.CSSProperties;
 
 /* No useWebDsType here: app/globals.css sets the Web DS type tokens and
-   app/layout.tsx loads Chivo and Raleway with next/font. */
+   the lining tabular figure default, and app/layout.tsx loads Chivo and
+   Raleway with next/font. */
 
 type SlotRegion = "leading" | "center" | "trailing";
 
@@ -504,9 +508,6 @@ export function AppChromeV2({
           trailing={
             <Row gap="sm">
               {slotsIn("trailing")}
-              <Button variant="ghost" size="md" iconOnly aria-label="Hide balances">
-                <EyeOff className="size-4" />
-              </Button>
               {utilities}
             </Row>
           }

@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Bank Accounts v2"
-// (design dmupume7sb1e7, version 1790888614511). Registry: lib/screens.ts;
+// (design dmupume7sb1e7, version 1790941642978). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 97994bc820ee
+// source-hash: df1864f905a9
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -31,8 +31,13 @@ import { Accounts } from "@/lib/accounts";
 import { ActivityTableV2 } from "@/components/activity-table-v2";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
 import { AccountDetails } from "@/components/account-details";
+import { StagingSwitches } from "@/lib/staging-switches";
 import { MoreHorizontal } from "lucide-react";
 
+// 2 OCT, on staging (Ali): the Linked Account's Auto-buy row shows only
+// with ?autobuy=on (StagingSwitches.useAutoBuy). Kept for the future
+// rather than deleted.
+//
 // V2 (1 Oct 2026, the business portal v2 for staging): a copy of
 // "Bank Accounts", which stays untouched because the live demo is promoted
 // from it. Changes: AppChromeV2 (no rail on mobile), ActivityTableV2 (the
@@ -89,6 +94,7 @@ export default function BankAccountsPage() {
      reads its own. Live preference, not the persona default: the toggle on two other screens writes
      this, and a stale line here would contradict them. Gold by default. */
   const [autoInvest] = Persona.usePreference("autoInvest");
+  const autoBuy = StagingSwitches.useAutoBuy();
   /* Deposits only: see TRANSFERS above. useActivity("fiat") returns both
      legs of every cash movement, so the filter is what makes this list
      the transfers rather than the wallet's history. */
@@ -184,11 +190,13 @@ export default function BankAccountsPage() {
                     Ali). The stored preference key is still `autoInvest`,
                     because it is session state and renaming it would
                     orphan every demo run already holding a value. */}
-                <PropertyList.Row label="Auto-buy">
-                  {autoInvest === "none"
-                    ? "Off"
-                    : `To ${AutoInvestToggle.labelFor(autoInvest)}`}
-                </PropertyList.Row>
+                {autoBuy ? (
+                  <PropertyList.Row label="Auto-buy">
+                    {autoInvest === "none"
+                      ? "Off"
+                      : `To ${AutoInvestToggle.labelFor(autoInvest)}`}
+                  </PropertyList.Row>
+                ) : null}
               </AccountDetails>
             </CardContent>
           </Card>

@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Silver — wallet v2"
-// (design dmuppmv1xj9ju, version 1790888609797). Registry: lib/screens.ts;
+// (design dmuppmv1xj9ju, version 1790941638396). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 7f15501a7dcd
+// source-hash: b93c386c0901
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -15,10 +15,14 @@ import {
   Button,
 } from "@gradeui/ui";
 import { Persona } from "@/lib/persona";
-import { MetalPriceCard } from "@/components/metal-price-card";
+import { MetalPriceCardV2 } from "@/components/metal-price-card-v2";
 import { MetalWalletCardV2 } from "@/components/metal-wallet-card-v2";
 import { ActivityTableV2 } from "@/components/activity-table-v2";
 
+// 2 OCT, on staging (Ali: the large numbers in the Web DS face, and
+// tabular): the price card is MetalPriceCardV2, whose headline is the Web
+// DS DisplayNumber. MetalPriceCard stays as it is for the live demo.
+//
 // V2 (1 Oct 2026, the business portal v2 for staging): a copy of
 // "Silver — wallet", which stays untouched because the live demo is
 // promoted from it. The only changes: the wallet card is
@@ -79,7 +83,7 @@ export default function SilverWalletPage() {
         </Container>
         <Container maxW="xl" grid className="gap-6">
           <MetalWalletCardV2 asset={METAL} vaults className="col-span-12 lg:col-span-7" />
-          <MetalPriceCard metal={METAL} className="col-span-12 lg:col-span-5" />
+          <MetalPriceCardV2 metal={METAL} className="col-span-12 lg:col-span-5" />
         </Container>
       </Section>
 

@@ -30,6 +30,19 @@
   --font-heading-weight: 700;
 }
 
+/* ── Figures (Ali, 2 Oct 2026) ─────────────────────────────────────
+   "make sure they are tabular": every figure on staging is tabular, and
+   lining wherever Raleway is used, since Raleway's own figures are
+   old-style. Set once on the root and inherited by everything, portals
+   included (the drawers render outside the page tree). The large figures
+   also set it themselves (components/display-number.tsx). An element
+   with Tailwind's tabular-nums class keeps tabular and drops lining, which
+   is only right because those are all set in Chivo, whose figures are
+   lining already. Studio's AppChromeV2 sets the same while it is mounted. */
+html {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
 /* ── Source scanning ────────────────────────────────────────────────
    v4 auto-detection covers this app's own tree; the explicit lines are
    kept for determinism (mirrors apps/docs). Out-of-package paths MUST

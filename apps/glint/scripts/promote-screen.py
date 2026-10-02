@@ -105,6 +105,11 @@ COMPONENT_MODULES = {
     "AppChromeV2": "@/components/layouts/app-chrome-v2",
     "SideDrawer": "@/components/side-drawer",
     "ActivityTableV2": "@/components/activity-table-v2",
+    # Staging, 2 Oct 2026: the switches (?cards=, ?autobuy=), the Web DS
+    # large figure, and the price card fork that uses it.
+    "StagingSwitches": "@/lib/staging-switches",
+    "DisplayNumber": "@/components/display-number",
+    "MetalPriceCardV2": "@/components/metal-price-card-v2",
     "PhoneField": "@/components/phone-field",
     "AutoInvestToggle": "@/components/auto-invest-toggle",
     "AccountDetails": "@/components/account-details",

@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "USD — wallet v2"
-// (design dmupum94g8tuz, version 1790888611592). Registry: lib/screens.ts;
+// (design dmupum94g8tuz, version 1790941640876). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: e94b4e27b6c6
+// source-hash: 486681b1e324
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -25,7 +25,15 @@ import { ActivityTableV2 } from "@/components/activity-table-v2";
 import { Wordmark } from "@/components/wordmark";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
 import { AccountDetails } from "@/components/account-details";
+import { StagingSwitches } from "@/lib/staging-switches";
+import { DisplayNumber } from "@/components/display-number";
 
+// 2 OCT, on staging (Ali): the Auto-buy control in the balance card shows
+// only with ?autobuy=on (StagingSwitches.useAutoBuy), kept for the future
+// rather than deleted. The balance is the Web DS DisplayNumber, Size=md
+// (Raleway 700, lining tabular figures, "$" and cents 30, dollars 36),
+// the same size as the figures on the Gold and Silver screens.
+//
 // V2 (1 Oct 2026, the business portal v2 for staging): a copy of
 // "USD — wallet", which stays untouched because the live demo is promoted
 // from it. Changes: AppChromeV2 (no rail on mobile), ActivityTableV2 (the
@@ -90,6 +98,7 @@ const ASSET = "fiat";
 
 export default function UsdWalletPage() {
   const [amount] = Persona.useBalance(ASSET);
+  const autoBuy = StagingSwitches.useAutoBuy();
   const acct = Accounts.ALL[ASSET];
   return (
     <>
@@ -141,17 +150,21 @@ export default function UsdWalletPage() {
             <CardContent className="flex flex-1 flex-col">
               <Stack gap="md" justify="between" className="flex-1">
                 <Stack gap="lg">
-                  <span className="text-4xl font-semibold tabular-nums text-foreground">
-                    {Persona.fmtMoney(amount)}
-                  </span>
+                  <DisplayNumber
+                    value={amount}
+                    currency
+                    size="md"
+                    className="text-foreground"
+                  />
                   {/* AUTO-BUY INSIDE THE CARD (Ali, 11 Aug: "this
                       should also have the auto-invest toggle inside the
                       card"). It is the setting that decides what happens
                       to this balance, so it belongs on the balance, not
                       only on the dashboard. Same shared control as the
                       dashboard, reading one preference, so flipping it
-                      either place moves both. */}
-                  <AutoInvestToggle />
+                      either place moves both. Only with ?autobuy=on on
+                      staging (2 Oct). */}
+                  {autoBuy ? <AutoInvestToggle /> : null}
                 </Stack>
               </Stack>
             </CardContent>
