@@ -77,6 +77,9 @@ const ALLOWED = new Set([
   "AppChrome",
   "AppChromeV2",
   "OnboardingLayout",
+  "RingLattice",
+  "LoginTemplateV2",
+  "ErrorPageV2",
 ]);
 
 function arg(flag: string): string | undefined {

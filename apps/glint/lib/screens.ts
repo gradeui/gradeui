@@ -53,6 +53,9 @@ export interface ScreenEntry {
    *  green tick. This is the fallback for pages promoted before that
    *  stamp existed. `--update` keeps it current. */
   sourceHash?: string;
+  /** false keeps GotoBridge from prefetching the route. For the error
+   *  pages, which answer 404 and 500 by design (staging, 2 Oct 2026). */
+  prefetch?: boolean;
 }
 
 export const SCREENS: ScreenEntry[] = [
@@ -189,6 +192,41 @@ export const SCREENS: ScreenEntry[] = [
     aliases: ["USD — wallet"],
     promotedAt: 1790941640876,
     sourceHash: "486681b1e324",
+  },
+  /* Staging, 2 Oct 2026: the signed-out pages. New screens rather than v2
+     copies (production has no log in and no error pages), named "v2" to
+     sit with the rest of the business portal v2. The two error pages are
+     also the app's not-found and error boundary (app/not-found.tsx,
+     app/error.tsx). */
+  {
+    slug: "/login",
+    name: "Log in v2",
+    id: "dmur2ps41k9hh",
+    promotedAt: 1790952229118,
+    sourceHash: "eca92e5722b9",
+  },
+  {
+    slug: "/login/code",
+    name: "Log in code v2",
+    id: "dmur2qa05uort",
+    promotedAt: 1790952286682,
+    sourceHash: "d82a78d9a30d",
+  },
+  {
+    slug: "/404",
+    name: "Page not found v2",
+    id: "dmur2qhnjqpm4",
+    promotedAt: 1790952262158,
+    sourceHash: "d64524346adb",
+    prefetch: false,
+  },
+  {
+    slug: "/500",
+    name: "Server error v2",
+    id: "dmur2qjt0mxyu",
+    promotedAt: 1790952264999,
+    sourceHash: "e05e2515d3b3",
+    prefetch: false,
   },
 ];
 

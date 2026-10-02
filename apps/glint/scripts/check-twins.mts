@@ -126,6 +126,9 @@ const TWINS: Record<string, string> = {
   AppChrome: "components/layouts/app-chrome.tsx",
   AppChromeV2: "components/layouts/app-chrome-v2.tsx",
   OnboardingLayout: "components/layouts/onboarding.tsx",
+  RingLattice: "components/ring-lattice.tsx",
+  LoginTemplateV2: "components/login-template-v2.tsx",
+  ErrorPageV2: "components/error-page-v2.tsx",
 };
 
 /**

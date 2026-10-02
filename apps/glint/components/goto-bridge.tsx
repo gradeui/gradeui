@@ -21,9 +21,12 @@ import { SCREENS, screenByName } from "@/lib/screens";
 export function GotoBridge() {
   const router = useRouter();
 
-  /* Eleven tiny routes: prefetch them all so demo hops are instant. */
+  /* Eleven tiny routes: prefetch them all so demo hops are instant.
+     Except the error pages (prefetch: false in the registry): /404 and
+     /500 answer with their real status codes, so prefetching them logged
+     a failed request on every page. */
   React.useEffect(() => {
-    for (const s of SCREENS) router.prefetch(s.slug);
+    for (const s of SCREENS) if (s.prefetch !== false) router.prefetch(s.slug);
   }, [router]);
 
   React.useEffect(() => {

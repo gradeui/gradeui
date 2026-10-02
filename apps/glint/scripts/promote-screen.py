@@ -114,6 +114,11 @@ COMPONENT_MODULES = {
     "PhoneField": "@/components/phone-field",
     "AutoInvestToggle": "@/components/auto-invest-toggle",
     "AccountDetails": "@/components/account-details",
+    # Staging, 2 Oct 2026: the signed-out pages (Log in, Page not found,
+    # Server error) and the ring pattern behind them.
+    "RingLattice": "@/components/ring-lattice",
+    "LoginTemplateV2": "@/components/login-template-v2",
+    "ErrorPageV2": "@/components/error-page-v2",
 }
 
 # BuyFlow is deliberately absent. TradeFlow superseded it and there is no
