@@ -108,6 +108,7 @@ COMPONENT_MODULES = {
     # Staging, 2 Oct 2026: the switches (?cards=, ?autobuy=), the Web DS
     # large figure, and the price card fork that uses it.
     "StagingSwitches": "@/lib/staging-switches",
+    "VaultsV2": "@/lib/vaults-v2",
     "DisplayNumber": "@/components/display-number",
     "MetalPriceCardV2": "@/components/metal-price-card-v2",
     "PhoneField": "@/components/phone-field",

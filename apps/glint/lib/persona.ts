@@ -56,12 +56,12 @@
  * VAULTS (Ali, 11 Aug): each METAL balance carries a per-vault
  * breakdown, every metal activity row names the vault it settled in,
  * and preferences.vault is the vault a new purchase lands in. The vault
- * directory itself, the three ids and the label helpers, lives in
+ * directory itself, the two ids and the label helpers, lives in
  * lib/accounts.ts; this file only ever stores an id.
  *
  * THE INVARIANT, and its limit. Each metal's vault figures SUM EXACTLY
- * to that metal's balance: 3318.40 + 1991.04 + 1327.36 = 6636.80 for
- * gold, 1193.66 + 1044.45 + 746.04 = 2984.15 for silver, both in USD,
+ * to that metal's balance: 4226.17 + 2410.63 = 6636.80 for gold, and
+ * 2984.15 for silver (one vault), both in USD,
  * the unit `amount` is stored in. That is the ONLY arithmetic these
  * figures satisfy. They do not reconcile against the five metal
  * activity rows, and they are not meant to: a balance here is a stated
@@ -165,7 +165,7 @@ export interface ActivityRow {
    *  outside Glint. */
   counterAccount?: AssetKey;
   /** The vault the metal settled in. Typed as the VaultId from
-   *  lib/accounts so the three ids are defined in exactly one place, and
+   *  lib/accounts so the vault ids are defined in exactly one place, and
    *  OPTIONAL because the two cash deposits have none: dollars are not
    *  in a vault, the same reasoning as the fiat balance. A stored id,
    *  never a display string, so composition stays at render:
@@ -414,19 +414,19 @@ export const PERSONAS: Record<string, PersonaRecord> = {
       "unit.gold": "g",
       "unit.silver": "g",
       autoInvest: "gold",
-      /* SALT LAKE CITY is where a new purchase lands (Ali, 12 Aug: "I
-         also want the default vault to be Salt Lake City"). It is the
-         only vault holding silver, and it is where the most recent Direct
-         Gold conversion went, so a new order landing there reads as the
-         current habit. NOTE the gold slices still have Salt Lake City
-         smallest at 20.1%: that is history, not the default, but it does
-         mean the default vault is this persona's smallest gold holding. */
-      vault: "saltlake",
+      /* MIAMI is where a new purchase lands. It was a third vault in
+         Utah until 2 Oct, when Ali swapped it out on glint-staging ("Swap
+         Salt Lake City for Miami (it will always just be Miami for
+         now)"), so the preference, the slices and the rows that named it
+         now name Miami. It is the only vault holding silver, and it is
+         where the most recent Direct Gold conversion went, so a new order
+         landing there reads as the current habit. */
+      vault: "miami",
     },
     balances: {
       /* The vault splits are ordered LARGEST FIRST, so a list, a chip
          row or a stacked bar renders in that order without sorting at
-         the call site. Each metal's three figures sum exactly to the
+         the call site. Each metal's figures sum exactly to the
          `amount` above them; the header block has the arithmetic and,
          more importantly, the limits of what that sum proves. */
       gold: {
@@ -434,17 +434,15 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         amount: 6636.8,
         account: accountLabel("gold"),
         vaults: [
-          /* SALT LAKE CITY IS THE MAIN VAULT (Ali, 12 Aug: "Salt lake
-             City should be the main vault here, not Zurich"). The same
-             three uneven figures, reassigned: the standing default vault
-             is Salt Lake City and the two most recent Direct Gold
-             conversions landed there, so it holding the most is the story
-             the activity list already tells. Zurich keeps second place
-             because the 1 Aug conversion, under the older default, went
-             there. Sum is unchanged and still exactly the gold balance. */
-          { vault: "saltlake", amount: 2891.44 },
+          /* MIAMI IS THE MAIN VAULT. Since 2 Oct it holds what the third
+             vault held as well (2,891.44 + 1,334.73 = 4,226.17), so the two
+             most recent Direct Gold conversions sit here and it holding the
+             most is the story the activity list already tells. Zurich
+             keeps 2,410.63 because the 1 Aug conversion, under the older
+             default, went there. Sum is unchanged and still exactly the
+             gold balance: 4,226.17 + 2,410.63 = 6,636.80. */
+          { vault: "miami", amount: 4226.17 },
           { vault: "zurich", amount: 2410.63 },
-          { vault: "miami", amount: 1334.73 },
         ],
       },
       silver: {
@@ -452,14 +450,12 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         amount: 2984.15,
         account: accountLabel("silver"),
         /* ONE VAULT (Ali, 11 Aug: "we wouldnt always have it in multiple
-           vaults, maybe silver could just have it in Salt Lake City").
-           It also fits the history: the 6 Aug sale of 510 g came out of
-           MIAMI, which closed that position, and the holding that remains
-           sits in Salt Lake City. So the breakdown reads as the result of
-           what the activity list shows rather than a tidy allocation.
+           vaults"), and since 2 Oct that vault is Miami (Ali: "Swap Salt
+           Lake City for Miami"). The 6 Aug sale of 510 g came out of Miami
+           too, so the holding that remains is what the sale left behind.
            Worth keeping as the single-entry case: it is what proves the
            vault table renders one row, at 100%, with no divider under it. */
-        vaults: [{ vault: "saltlake", amount: 2984.15 }],
+        vaults: [{ vault: "miami", amount: 2984.15 }],
       },
       /* NO VAULTS ON CASH, and this is a decision rather than an
          oversight: the dollars sit in the Sutton Bank checking account,
@@ -570,15 +566,14 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         status: "completed",
         account: "gold",
         counterAccount: "fiat",
-        /* SALT LAKE CITY (Ali, 12 Aug: "the last Direct Gold purchase
-           [should] be Salt Lake City"). Direct Gold buys land in
-           preferences.vault, and that default is now Salt Lake City, so
-           this row and the preference agree: the customer placed no
-           order, so there was no per-order choice to make.
+        /* MIAMI. Direct Gold buys land in preferences.vault, and that
+           default is Miami (it was the Utah vault until 2 Oct, see the
+           preference), so this row and the preference agree: the customer
+           placed no order, so there was no per-order choice to make.
            The 1 Aug Direct Gold row a few entries down still reads
            Zurich, deliberately: it predates the change of default, which
            is what a standing preference looks like in a history. */
-        vault: "saltlake",
+        vault: "miami",
         method: "direct-gold",
         fee: 74.93,
         reference: "DG-2026-08-0551",
@@ -596,11 +591,10 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         status: "completed",
         account: "gold",
         counterAccount: "fiat",
-        /* Salt Lake City on this one, so the demo has a row that is not
-           the default vault: a hand-placed order can pick any of the
-           three, and a screen that only ever showed Zurich would hide
-           the fact that the field varies. */
-        vault: "saltlake",
+        /* Miami on this one: a hand-placed order can pick either vault,
+           and a screen that only ever showed Zurich would hide the fact
+           that the field varies. */
+        vault: "miami",
         method: "market-order",
         fee: 11.06,
         reference: "GX-4318-0092",
@@ -637,7 +631,7 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         counterAccount: "fiat",
         /* Direct Gold again, so the standing default vault again, but
            the OLDER default: this is 1 Aug and the customer moved the
-           default to Salt Lake City later. See the 11 Aug row. */
+           default to Miami later. See the 11 Aug row. */
         vault: "zurich",
         method: "direct-gold",
         fee: 28.54,
@@ -754,10 +748,10 @@ export function fullName(): string {
     .join(" ");
 }
 
-/** The three vaults, in registry order. The source of truth for what a
+/** The two vaults, in registry order. The source of truth for what a
  *  vault IS lives in lib/accounts.ts; this is just the iteration order,
  *  spelled out so the hooks below can be written one per vault. */
-const VAULT_IDS: VaultId[] = ["zurich", "miami", "saltlake"];
+const VAULT_IDS: VaultId[] = ["zurich", "miami"];
 
 /** A metal's seed figure for one vault: the persona slice, or zero where
  *  that metal does not sit in that vault today. Zero is a real answer,
@@ -772,7 +766,7 @@ function sliceDefault(metal: MetalAsset, vault: VaultId): number {
  * PER-VAULT BALANCES, and why the metal totals are now COMPUTED (Ali, 12
  * Aug: "I think our totals should always be computed").
  *
- * Each metal's money lives in THREE FlowStore keys, one per vault
+ * Each metal's money lives in one FlowStore key per vault
  * (`bal.gold.zurich` and so on), seeded from the persona's slices. A
  * metal's balance is their SUM, never a stored figure. Before this, the
  * total lived in `bal.<metal>` and the slices were static persona data,
@@ -796,7 +790,7 @@ function sliceDefault(metal: MetalAsset, vault: VaultId): number {
  *        one vault first. If sells should instead come out of a chosen
  *        vault, or largest-first, this is the one function to change.
  *
- * A FOURTH VAULT means a fourth line in useMetalVaults: the hooks are
+ * A THIRD VAULT means a third line in useMetalVaults: the hooks are
  * written out one per vault rather than looped, because React needs the
  * same hooks in the same order every render and a loop over a list is
  * both a lint error and a trap if the list ever becomes dynamic.
@@ -832,18 +826,13 @@ export function useMetalVaults(metal: MetalAsset) {
     `bal.${metal}.miami`,
     sliceDefault(metal, "miami"),
   );
-  const saltlake = useFlowField<number>(
-    `bal.${metal}.saltlake`,
-    sliceDefault(metal, "saltlake"),
-  );
   /* Each pair is [value, set]; the value goes through the guard above, so
      a corrupted store cannot make a total NaN. */
   const slices: Record<VaultId, [number, (v: number | ((p: number) => number)) => void]> = {
     zurich: [storedSlice(zurich[0], metal, "zurich"), zurich[1]],
     miami: [storedSlice(miami[0], metal, "miami"), miami[1]],
-    saltlake: [storedSlice(saltlake[0], metal, "saltlake"), saltlake[1]],
   };
-  const total = slices.zurich[0] + slices.miami[0] + slices.saltlake[0];
+  const total = slices.zurich[0] + slices.miami[0];
   /* LARGEST FIRST, and only vaults that hold something: a vault at zero
      is not a holding, so it drops off the table until a purchase puts
      metal in it, at which point it appears. That is why silver shows one

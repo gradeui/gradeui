@@ -98,7 +98,7 @@ import { Info } from "lucide-react";
 import { SideDrawer } from "@/components/side-drawer";
 import { DisplayNumber } from "@/components/display-number";
 import { StagingSwitches } from "@/lib/staging-switches";
-import { vaultLabel, vaultLocation } from "@/lib/accounts";
+import { VaultsV2 } from "@/lib/vaults-v2";
 import {
   fmtMoney,
   fmtSigned,
@@ -159,7 +159,7 @@ function buildColumns(autoBuy: boolean): DataViewColumn<ActivityRow>[] {
           <span className="text-xs text-muted-foreground">
             {[
               methodLabel(row, autoBuy),
-              row.vault ? vaultLabel(row.vault) : "",
+              row.vault ? VaultsV2.label(row.vault) : "",
               txPlace(row),
             ]
               .filter(Boolean)
@@ -293,7 +293,7 @@ function TxSheet({
                   rather than showing an empty one. */}
               {row.vault && (
                 <PropertyList.Row label="Vault">
-                  {vaultLocation(row.vault)}
+                  {VaultsV2.location(row.vault)}
                 </PropertyList.Row>
               )}
               <PropertyList.Row label="Status">

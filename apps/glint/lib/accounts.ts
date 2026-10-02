@@ -30,7 +30,7 @@
  * "current" account (Ali, 11 Aug) — the UK term had leaked in from
  * the Glint iOS app, whose home market is the UK.
  *
- * VAULTS: the file also carries the vault directory, the three places
+ * VAULTS: the file also carries the vault directory, the two places
  * the metal physically sits. It lives here because this file is
  * already the directory of where this customer's money and metal are,
  * and it already names GLINT_CUSTODY as the institution behind the
@@ -172,8 +172,8 @@ const GLINT_CUSTODY: Institution = {
 
 /* The customer's OWN bank, the one they fund from: Zions Bank, Ali's
    pick (11 Aug, pointing at zionsbank.com/business). A real Mountain
-   West business bank, and the one Glint's Salt Lake City vault shares a
-   city with. The routing number is minted on the same terms as Sutton's
+   West business bank, chosen in August for a Utah audience. The
+   routing number is minted on the same terms as Sutton's
    above: 124 is the Utah prefix and the ABA checksum passes, so it
    reads correctly, and it is deliberately not 124000054, which is
    Zions' actual number. */
@@ -271,8 +271,10 @@ export function accountIdentifiers(id: AccountRecord["id"]): string {
 }
 
 /**
- * The vault directory: the three places Glint's metal physically sits
- * (Ali, 11 Aug 2026). Balances, activity rows and the purchase flow all
+ * The vault directory: the two places Glint's metal physically sits,
+ * Zurich and Miami (Ali, 11 Aug 2026; and 2 Oct, on glint-staging:
+ * "Swap Salt Lake City for Miami (it will always just be Miami for
+ * now)"). Balances, activity rows and the purchase flow all
  * need to name a vault, so the list is defined once here and everything
  * else references an id.
  *
@@ -281,14 +283,14 @@ export function accountIdentifiers(id: AccountRecord["id"]): string {
  * vaults. So a vault is not an account. It has no routing number and no
  * last four, and it must never be added to ACCOUNTS. The tempting wrong
  * move later is to model each vault as its own account: that would turn
- * one gold wallet held in three places into three gold wallets, and
+ * one gold wallet held in two places into two gold wallets, and
  * every balance the screens show would then be a subtotal that has to
  * be summed back up before it means anything to the customer.
  *
  * Rows elsewhere store the id ("zurich"), never a display string, and
  * compose through the two helpers below.
  */
-export type VaultId = "zurich" | "miami" | "saltlake";
+export type VaultId = "zurich" | "miami";
 
 export interface VaultRecord {
   /** The stored key: what a balance, activity row or order holds. */
@@ -302,11 +304,6 @@ export interface VaultRecord {
 export const VAULTS: Record<VaultId, VaultRecord> = {
   zurich: { id: "zurich", city: "Zurich", country: "Switzerland" },
   miami: { id: "miami", city: "Miami", country: "United States" },
-  saltlake: {
-    id: "saltlake",
-    city: "Salt Lake City",
-    country: "United States",
-  },
 };
 
 /** "Zurich": the city alone, for a dense table cell or a chip. */
@@ -330,6 +327,11 @@ export function vaultLocation(id: VaultId): string {
  * The vault keys are spelled the same on both sides for the same
  * reason, so `Accounts.vaultLabel(row.vault)` survives promotion. Keep
  * any new key added here in step with the Studio statics.
+ *
+ * STAGING DIFFERS FROM STUDIO HERE (2 Oct): Studio's Accounts still lists
+ * a third vault, "saltlake", because the live demo's screens share it.
+ * On glint-staging that vault is gone and its metal is Miami's; Studio's
+ * v2 screens get the same result through VaultsV2 (lib/vaults-v2.ts).
  */
 export const Accounts = {
   ALL: ACCOUNTS,

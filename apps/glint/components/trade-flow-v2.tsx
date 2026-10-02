@@ -42,6 +42,10 @@
 //     holds the metal, and names the one vault as text when only one does.
 //     Glint has dropped the primary vault: nothing here says default or
 //     primary.
+//   - ZURICH AND MIAMI ARE THE ONLY VAULTS (Ali, 2 Oct: "Swap Salt Lake
+//     City for Miami (it will always just be Miami for now)"). Every vault
+//     here goes through VaultsV2: the choices, the holdings, the Latest
+//     tag, the labels, and the credit a confirmed order makes.
 //
 //   - NO METAL RING ON THE RECEIPT (Ali, 1 Oct: "not sure why we suddenly
 //     introduced a gold strip, let's remove it"). On a full-height drawer
@@ -87,7 +91,8 @@ import {
 } from "@gradeui/ui";
 import { ChevronRight } from "lucide-react";
 import { Persona, type ActivityRow } from "@/lib/persona";
-import { Accounts, type VaultId } from "@/lib/accounts";
+import { type VaultId } from "@/lib/accounts";
+import { VaultsV2 } from "@/lib/vaults-v2";
 import {
   Market,
   type MetalKey,
@@ -99,8 +104,8 @@ import { MetalButton } from "@/components/metal-button";
 import { SideDrawer } from "@/components/side-drawer";
 
 /** The vaults a purchase can land in (Ali, 1 Oct: "both vaults, Zurich
- *  and Miami"). Ids only: labels are composed through Accounts. */
-const VAULT_CHOICES: VaultId[] = ["zurich", "miami"];
+ *  and Miami"). Ids only, from VaultsV2; labels compose through it. */
+const VAULT_CHOICES: VaultId[] = VaultsV2.IDS;
 
 const METAL_LABEL: Record<MetalKey, string> = { gold: "Gold", silver: "Silver" };
 
@@ -192,7 +197,7 @@ export function TradeFlowV2({
   const [unit] = Persona.usePreference(
     metal === "silver" ? "unit.silver" : "unit.gold",
   );
-  const vaults = Persona.useMetalVaults(metal);
+  const vaults = VaultsV2.useMetalVaults(metal);
   const { add: addActivity } = Persona.useLiveActivity();
   /* This metal's history, live trades first, for the Latest tag. */
   const history = Persona.useActivity(metal);
@@ -204,21 +209,22 @@ export function TradeFlowV2({
   /* WHICH VAULT. Buy: where the metal lands, Zurich or Miami. Sell: where
      it comes out of (Ali, 12 Aug), only the vaults that hold this metal.
      LATEST (Ali, 1 Oct) is the vault of the most recent trade in this
-     metal among the ones on offer. It is preselected; with no such trade
-     the first vault on offer is. */
+     metal among the ones on offer, read in v2 terms (VaultsV2.id). It is
+     preselected; with no such trade the first vault on offer is. */
   const sellRows = vaults.rows;
   const vaultChoices: VaultId[] = selling
     ? sellRows.map((row) => row.vault)
     : VAULT_CHOICES;
   let latestRow: ActivityRow | null = null;
   for (const row of history) {
-    if (!row.vault || !vaultChoices.includes(row.vault)) continue;
+    const rowVault = VaultsV2.id(row.vault);
+    if (!rowVault || !vaultChoices.includes(rowVault)) continue;
     if (!latestRow || row.timestamp > latestRow.timestamp) latestRow = row;
   }
-  const latestVault: VaultId | undefined = latestRow?.vault ?? undefined;
+  const latestVault: VaultId | undefined = VaultsV2.id(latestRow?.vault);
   const vault: VaultId | undefined =
     vaultChoice ?? latestVault ?? vaultChoices[0];
-  const vaultName = vault ? Accounts.vaultLabel(vault) : "";
+  const vaultName = vault ? VaultsV2.label(vault) : "";
   /* Radios only when there is a choice to make. */
   const showVaultField = vaultChoices.length > 1;
   const vaultUsd = sellRows.find((row) => row.vault === vault)?.amount ?? 0;
@@ -422,11 +428,11 @@ export function TradeFlowV2({
               indicatorPosition="leading"
               label={
                 usd > 0
-                  ? `${Accounts.vaultLabel(id)} · ${Market.fmtQty(
+                  ? `${VaultsV2.label(id)} · ${Market.fmtQty(
                       Market.toQty(usd, metal, unit),
                       unit,
                     )}`
-                  : Accounts.vaultLabel(id)
+                  : VaultsV2.label(id)
               }
               aside={
                 id === latestVault ? (
@@ -622,7 +628,7 @@ export function TradeFlowV2({
                 {vault ? (
                   <PropertyList.Row
                     label={selling ? "Sold from" : "Vault"}
-                    value={Accounts.vaultLabel(vault)}
+                    value={VaultsV2.label(vault)}
                   />
                 ) : null}
                 <PropertyList.Row
@@ -704,7 +710,7 @@ export function TradeFlowV2({
                   <>
                     from{" "}
                     <span className="font-medium text-foreground">
-                      {Accounts.vaultLabel(order.vault)}
+                      {VaultsV2.label(order.vault)}
                     </span>{" "}
                   </>
                 ) : null}
@@ -718,7 +724,7 @@ export function TradeFlowV2({
                   <>
                     . It will be vaulted in{" "}
                     <span className="font-medium text-foreground">
-                      {Accounts.vaultLabel(order.vault)}
+                      {VaultsV2.label(order.vault)}
                     </span>
                     .
                   </>

@@ -70,6 +70,7 @@ const ALLOWED = new Set([
   "MetalPriceCardV2",
   "DisplayNumber",
   "StagingSwitches",
+  "VaultsV2",
   "MetalWalletCard",
   "MetalWalletCardV2",
   "PhoneField",

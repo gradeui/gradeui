@@ -33,6 +33,11 @@
 // gold/700 or silver/700 for the G, the unit and the chip, gold/300 or
 // silver/200 for the rule (Glint-Styleguide brand/colours.ts).
 //
+// THE VAULTS ARE ZURICH AND MIAMI ONLY (Ali, 2 Oct: "Swap Salt Lake City
+// for Miami (it will always just be Miami for now)"). The pin and the
+// vault table read them through VaultsV2, so Silver's pin reads "Miami"
+// and Gold's "Miami, Zurich", and the table still sums to the balance.
+//
 // USD, NOT METAL: the same card in its own treatment. The DS card surface
 // instead of a metal face, the G in the action blue as before, the balance
 // where the grams go, the same rule, and a second line where the value
@@ -122,7 +127,7 @@ import {
 import { ChevronRight, MapPin } from "lucide-react";
 import { Persona, type AssetKey, type VaultBalance } from "@/lib/persona";
 import { Market, type MetalKey, type MetalUnit } from "@/lib/market";
-import { Accounts } from "@/lib/accounts";
+import { VaultsV2 } from "@/lib/vaults-v2";
 import { Wordmark } from "@/components/wordmark";
 import { TradeFlowV2 } from "@/components/trade-flow-v2";
 import { AutoInvestToggle } from "@/components/auto-invest-toggle";
@@ -222,7 +227,7 @@ function isCardVariant(v: unknown): v is CardVariant {
 function heldIn(vaults: VaultBalance[]): string {
   if (vaults.length === 0) return "";
   if (vaults.length > 2) return `${vaults.length} vaults`;
-  return vaults.map((v) => Accounts.vaultLabel(v.vault)).join(", ");
+  return vaults.map((v) => VaultsV2.label(v.vault)).join(", ");
 }
 
 export function MetalWalletCardV2({
@@ -246,7 +251,7 @@ export function MetalWalletCardV2({
   const [amount] = Persona.useBalance(asset);
   const [unit] = Persona.usePreference(asset === "silver" ? "unit.silver" : "unit.gold");
   const [autoInvest] = Persona.usePreference("autoInvest");
-  const vaults = Persona.useVaults(asset);
+  const vaults = VaultsV2.useVaults(asset);
   const vaultTotal = vaults.reduce((sum, v) => sum + v.amount, 0);
   const label = Persona.DEFAULT.balances[asset].label;
   const switched = StagingSwitches.useCards();
@@ -412,7 +417,7 @@ export function MetalWalletCardV2({
                 return (
                   <React.Fragment key={v.vault}>
                     <span className={`py-1.5 pr-4 text-sm text-muted-foreground ${rule}`}>
-                      {Accounts.vaultLabel(v.vault)}
+                      {VaultsV2.label(v.vault)}
                     </span>
                     <span className={`py-1.5 pr-4 text-right text-sm tabular-nums text-muted-foreground ${rule}`}>
                       {vaultTotal ? ((v.amount / vaultTotal) * 100).toFixed(1) : "0.0"}%

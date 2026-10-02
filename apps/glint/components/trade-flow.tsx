@@ -185,8 +185,11 @@ function MetalMark({ metal }: { metal: MetalKey }) {
  *  Accounts directory, so a vault renamed there renames here too and
  *  nothing is typed twice. A vault added to the directory has to be added
  *  HERE as well, which is deliberate: the buy form offers a curated list,
- *  not a dump of the registry. */
-const VAULT_CHOICES: VaultId[] = ["saltlake", "miami", "zurich"];
+ *  not a dump of the registry.
+ *  ON glint-staging the Utah vault is gone (Ali, 2 Oct: "it will always
+ *  just be Miami for now"), so the list is the two vaults left. The live
+ *  demo's copy of this file on main is untouched. */
+const VAULT_CHOICES: VaultId[] = ["miami", "zurich"];
 
 const METAL_LABEL: Record<MetalKey, string> = {
   gold: "Gold",
