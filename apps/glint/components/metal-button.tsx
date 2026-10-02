@@ -13,6 +13,11 @@
  * than a :hover rule or a pseudo-element, because the identical
  * component has to work inside Studio, where screens can only ship
  * inline styles. Keep in sync with the Studio MetalButton.
+ *
+ * SHAPE (Ali, 2 Oct): "pill" (the default, unchanged for every existing
+ * call site) or "square", which drops the pill so the DS Button's own
+ * radius applies. The staging trade drawer's confirm is square to match
+ * Back.
  */
 
 import * as React from "react";
@@ -23,10 +28,12 @@ type ButtonProps = React.ComponentProps<typeof Button>;
 
 export interface MetalButtonProps extends Omit<ButtonProps, "style"> {
   metal: "gold" | "silver";
+  shape?: "pill" | "square";
 }
 
 export function MetalButton({
   metal,
+  shape = "pill",
   className,
   onMouseEnter,
   onMouseLeave,
@@ -38,7 +45,7 @@ export function MetalButton({
   return (
     <Button
       {...props}
-      className={`rounded-full border ${className ?? ""}`.trim()}
+      className={`${shape === "square" ? "" : "rounded-full "}border ${className ?? ""}`.trim()}
       style={metalGlint(metal, lit)}
       /* Keyboard focus lights it too — the glint is the affordance. */
       onMouseEnter={(e) => {

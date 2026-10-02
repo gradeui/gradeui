@@ -666,10 +666,15 @@ export function TradeFlowV2({
               </Button>
               {/* The metal confirm is back (Ali, 1 Oct): the one place the
                   brand treatment stays. 48 tall like the rest of the
-                  footer. ASSUMPTION: MetalButton keeps its own pill shape
-                  next to Back's DS radius; the shared MetalButton is used
-                  by the live demo, so it is not reshaped from here. */}
-              <MetalButton metal={metal} size="lg" className="h-12" onClick={confirm}>
+                  footer, and square (Ali, 2 Oct) so its corners match
+                  Back's DS radius. */}
+              <MetalButton
+                metal={metal}
+                shape="square"
+                size="lg"
+                className="h-12"
+                onClick={confirm}
+              >
                 {verb} {label}
               </MetalButton>
             </SideDrawer.Footer>
