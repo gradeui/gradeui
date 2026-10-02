@@ -19,14 +19,10 @@
 //   - the base gradient, Figma's exact stops in the face's own unit space
 //     from (0.1528, 0.1528) to (0.8472, 0.8472). In CSS that is a "to
 //     bottom right" gradient with the stops at 15.28% to 84.72%;
-//   - THE G-UNIT RING LATTICE, back on the web cards (Ali, 1 Oct: "we are
-//     losing the pattern on the GOLD and SILVER cards on the web, so please
-//     sort that out"): Figma's pattern exactly, G units on a 70 grid with
-//     centres at (25 + 70i, 15 + 70j), each an outer ring r 45.16, an inner
-//     ring r 32.665 and a bar from 11.29 to 58.33 right of the centre,
-//     stroked 1.2923 with butt ends, in gold/300 on Gold and silver/200 on
-//     Silver, the whole layer at 24% so crossings do not darken. USD has
-//     none;
+//   - NO RING LATTICE (Ali, 2 Oct: "We need to drop the ring decoration
+//     from the web cards"). That reverses 1 Oct, when Figma's G-unit
+//     lattice went back on the web faces; the face is the bare metal
+//     gradient again;
 //   - the emboss: a white hairline along the top edge, a dark one along
 //     the bottom, and type stamped with a 1px white shadow at 20%;
 //   - the G and the metal's name, Auto-buy as an outline chip on the
@@ -41,6 +37,42 @@
 // instead of a metal face, the G in the action blue as before, the balance
 // where the grams go, the same rule, and the Auto-buy setting where the
 // value goes. It holds no vaults, so there is no pin.
+//
+// TWO LOOKS FOR GOLD AND SILVER, `variant` (Ali, 2 Oct: "I'd also like to
+// have a more subtle version of the gold and silver web cards, maybe an
+// inner shiny border, 2px thick ... I think for business this full gold
+// and silver might be too much"):
+//   - "metal", the default: the metal face above.
+//   - "subtle": the USD card's quiet surface (the DS card, so white in
+//     Light and the theme's neutral 900 in Dark, with the DS card shadow
+//     and hover), and a 2px metal edge INSIDE the card's outline, like
+//     light catching a bevel. The edge is a 135deg gradient of the metal's
+//     own ramp: pale at the top left, a brighter catch past the middle,
+//     the deepest step at the bottom right. Light takes steps two deeper
+//     than Dark, so it still reads on white:
+//       Gold   Light  gold/400 0%, gold/600 35%, gold/300 55%, gold/700 100%
+//              Dark   gold/200 0%, gold/400 35%, gold/100 55%, gold/500 100%
+//       Silver Light  silver/400, silver/600, silver/300, silver/700
+//              Dark   silver/200, silver/400, silver/100, silver/500
+//     It is a layer over the card's own 1px border, so it sits flush with
+//     the card's edge, follows its radius exactly and moves no content: the
+//     text sits where the USD card's does. A mask cuts the middle out, so
+//     the DS surface and its hover lift show through untouched.
+//     The type is the metal face's, in the theme's foreground where the
+//     face has its on-metal ink (the value too, not muted as on USD: a
+//     muted line is the theme's blue, which fought the gold). Where the
+//     face uses its accent (the G, the unit, the Auto-buy chip), Subtle
+//     uses the metal instead: gold/600 or silver/600 in
+//     Light, gold/400 or silver/400 in Dark, the steps the drawer's G uses
+//     against the same surfaces. No glow and no motion: it is for business.
+//   USD has one look; `variant` does nothing there.
+//
+// THE STAGING SWITCH: a card with no `variant` takes its look from the
+// address, ?cards=subtle or ?cards=metal, so Ali can compare the two on
+// his phone (2 Oct). The choice is kept for the tab (sessionStorage), so
+// it follows the cards from Wallets to the Gold and Silver pages, whose
+// links drop the query. A new tab starts on metal again. Studio reads the
+// same parameter from its own page when the frame can see it.
 //
 // THE ACTIONS sit under the face (Ali, 1 Oct: "we are also losing the buy
 // and sell buttons entirely, no CTAs"), both opening TradeFlowV2 with this
@@ -110,36 +142,114 @@ const RALEWAY: React.CSSProperties = {
 
 /* No useRaleway here: app/layout.tsx registers Raleway with next/font. */
 
-/** The lattice ink: gold/300 on Gold, silver/200 on Silver. */
-const LATTICE_INK: Record<MetalKey, string> = { gold: "#ECD19C", silver: "#E7E7E7" };
-/** A unit sits at the tile's centre; its eight neighbours are drawn too,
- *  because rings of r 45 overlap the next tile. */
-const LATTICE_UNITS = [-70, 0, 70].flatMap((dx) =>
-  [-70, 0, 70].map((dy) => [35 + dx, 35 + dy]),
-);
+/** Subtle's metal, per mode (see the header): the 2px edge and the accent.
+ *  Every value is a step of the metal's own ramp (Glint-Styleguide
+ *  brand/colours.ts), named beside it. */
+const SUBTLE: Record<
+  MetalKey,
+  { ringLight: string; ringDark: string; accentLight: string; accentDark: string }
+> = {
+  gold: {
+    /* gold/400, gold/600, gold/300, gold/700 */
+    ringLight: "linear-gradient(135deg, #BC9B55 0%, #6C4F04 35%, #ECD19C 55%, #533C00 100%)",
+    /* gold/200, gold/400, gold/100, gold/500 */
+    ringDark: "linear-gradient(135deg, #EAEBBA 0%, #BC9B55 35%, #FEF3DE 55%, #8E6D25 100%)",
+    accentLight: "#6C4F04", // gold/600
+    accentDark: "#BC9B55", // gold/400
+  },
+  silver: {
+    /* silver/400, silver/600, silver/300, silver/700 */
+    ringLight: "linear-gradient(135deg, #9F9F9F 0%, #545454 35%, #D4D4D4 55%, #404040 100%)",
+    /* silver/200, silver/400, silver/100, silver/500 */
+    ringDark: "linear-gradient(135deg, #E7E7E7 0%, #9F9F9F 35%, #F4F4F4 55%, #737373 100%)",
+    accentLight: "#545454", // silver/600
+    accentDark: "#9F9F9F", // silver/400
+  },
+};
 
-/** The metal face's G-unit ring lattice, as one SVG pattern. The tile grid
- *  starts at (-10, -20), so unit centres land at (25 + 70i, 15 + 70j). */
-function Lattice({ metal }: { metal: MetalKey }) {
-  const id = `glint-lattice-${React.useId().replace(/[^a-zA-Z0-9-]/g, "")}`;
-  return (
-    <svg aria-hidden className="pointer-events-none absolute inset-0 size-full">
-      <defs>
-        <pattern id={id} width="70" height="70" x="-10" y="-20" patternUnits="userSpaceOnUse">
-          <g fill="none" stroke={LATTICE_INK[metal]} strokeWidth="1.2923" strokeLinecap="butt">
-            {LATTICE_UNITS.map(([cx, cy]) => (
-              <g key={`${cx},${cy}`}>
-                <circle cx={cx} cy={cy} r="45.16" />
-                <circle cx={cx} cy={cy} r="32.665" />
-                <line x1={cx + 11.29} y1={cy} x2={cx + 58.33} y2={cy} />
-              </g>
-            ))}
-          </g>
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill={`url(#${id})`} opacity="0.24" />
-    </svg>
-  );
+/* The mode picks the pair. A <style> element rather than a dark: class:
+   Fast Frame's stylesheet is precompiled, so a variant class this file
+   invents would not exist in Studio (TradeFlowV2's G does the same). */
+const SUBTLE_CSS =
+  ".glint-card-subtle{--glint-card-ring:var(--glint-ring-light);--glint-card-accent:var(--glint-accent-light)}" +
+  ".dark .glint-card-subtle{--glint-card-ring:var(--glint-ring-dark);--glint-card-accent:var(--glint-accent-dark)}";
+
+/** The 2px edge: a layer over the Card's own 1px (transparent) border, so
+ *  its outer edge IS the card's and `inherit` gives it the card's radius;
+ *  the mask keeps only its 2px padding. The -webkit- pair first, for
+ *  older Safari. */
+const SUBTLE_EDGE: React.CSSProperties = {
+  position: "absolute",
+  inset: "-1px",
+  borderRadius: "inherit",
+  padding: "2px",
+  background: "var(--glint-card-ring)",
+  pointerEvents: "none",
+  WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+  WebkitMaskComposite: "xor",
+  mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+  maskComposite: "exclude",
+};
+
+type CardVariant = "metal" | "subtle";
+
+function isCardVariant(v: unknown): v is CardVariant {
+  return v === "metal" || v === "subtle";
+}
+
+/* THE STAGING SWITCH (see the header). sessionStorage, not localStorage,
+   so the default comes back in a new tab.
+   ASSUMPTION: per tab is the right lifetime for a comparison switch. If
+   Ali wants it to stick on his phone between visits, make it
+   localStorage. */
+const CARDS_KEY = "glint-cards";
+
+/** ?cards= on this page, or on the page hosting this frame (Studio's
+ *  share view), when that one is readable. */
+function cardsFromAddress(): CardVariant | null {
+  const read = (w: Window) => new URLSearchParams(w.location.search).get("cards");
+  let v: string | null = null;
+  try {
+    v = read(window);
+    if (!v && window.top && window.top !== window) v = read(window.top);
+  } catch {
+    /* a cross-origin host: this page's own address is all there is */
+  }
+  return isCardVariant(v) ? v : null;
+}
+
+function readCards(): CardVariant {
+  if (typeof window === "undefined") return "metal";
+  const fromAddress = cardsFromAddress();
+  if (fromAddress) return fromAddress;
+  try {
+    const kept = window.sessionStorage.getItem(CARDS_KEY);
+    if (isCardVariant(kept)) return kept;
+  } catch {
+    /* storage unavailable: the address alone decides */
+  }
+  return "metal";
+}
+
+function subscribeCards(onChange: () => void) {
+  window.addEventListener("popstate", onChange);
+  return () => window.removeEventListener("popstate", onChange);
+}
+
+/** The look a card without `variant` takes. The server renders metal and
+ *  the client corrects on hydration, as FlowStore does. */
+function useCardsSwitch(): CardVariant {
+  const cards = React.useSyncExternalStore(subscribeCards, readCards, () => "metal" as CardVariant);
+  React.useEffect(() => {
+    const fromAddress = cardsFromAddress();
+    if (!fromAddress) return;
+    try {
+      window.sessionStorage.setItem(CARDS_KEY, fromAddress);
+    } catch {
+      /* storage unavailable: the switch lasts for this page only */
+    }
+  }, []);
+  return cards;
 }
 
 /** "1,423" and ".9395": the grams with the fraction set smaller. */
@@ -164,6 +274,7 @@ export function MetalWalletCardV2({
   asset = "gold",
   link,
   vaults: showVaults = false,
+  variant: variantProp,
   className,
 }: {
   asset?: AssetKey;
@@ -171,6 +282,9 @@ export function MetalWalletCardV2({
   link?: string;
   /** Show the per-vault table, for the metal's own page. */
   vaults?: boolean;
+  /** Gold and Silver only: "metal" (the face) or "subtle" (the quiet
+   *  surface with a 2px metal edge). Unset, the staging switch decides. */
+  variant?: CardVariant;
   className?: string;
 }) {
   const metal: MetalKey | null = asset === "fiat" ? null : asset;
@@ -180,7 +294,18 @@ export function MetalWalletCardV2({
   const vaults = Persona.useVaults(asset);
   const vaultTotal = vaults.reduce((sum, v) => sum + v.amount, 0);
   const label = Persona.DEFAULT.balances[asset].label;
-  const face = metal ? FACE[metal] : null;
+  const switched = useCardsSwitch();
+  const variant = isCardVariant(variantProp) ? variantProp : switched;
+  /* The metal face, or Subtle's metal; USD has neither. */
+  const face = metal && variant === "metal" ? FACE[metal] : null;
+  const subtle = metal && variant === "subtle" ? SUBTLE[metal] : null;
+  /* The G, the unit and the chip: the face's accent, Subtle's metal for
+     the mode, or the action blue on USD. */
+  const accent = face
+    ? face.accent
+    : subtle
+      ? "var(--glint-card-accent)"
+      : "oklch(var(--primary))";
 
   const [whole, fraction] = metal
     ? splitFigure(Market.toQty(amount, metal, unit as MetalUnit), 4)
@@ -194,7 +319,7 @@ export function MetalWalletCardV2({
           lockup="mark"
           tone="current"
           className="size-6"
-          style={{ color: face ? face.accent : "oklch(var(--primary))" }}
+          style={{ color: accent }}
         />
         <span
           className={`text-xl font-semibold ${face ? "" : "text-foreground"}`}
@@ -205,7 +330,7 @@ export function MetalWalletCardV2({
         {metal && autoInvest === metal ? (
           <Badge
             variant="outline"
-            style={{ color: face!.accent, borderColor: face!.accent }}
+            style={{ color: accent, borderColor: accent }}
           >
             Auto-buy
           </Badge>
@@ -225,7 +350,7 @@ export function MetalWalletCardV2({
         <span className="text-3xl">{whole}</span>
         <span className="text-xl">{fraction}</span>
         {metal ? (
-          <span className="text-xl" style={{ color: face!.unit }}>
+          <span className="text-xl" style={{ color: face ? face.unit : accent }}>
             {` ${unit}`}
           </span>
         ) : null}
@@ -233,7 +358,7 @@ export function MetalWalletCardV2({
       {place ? (
         <Row gap="xs" align="center" className="min-w-0 font-bold">
           <MapPin aria-hidden className="size-4 shrink-0" />
-          <span className="truncate" style={{ ...RALEWAY, textShadow: STAMP }}>
+          <span className="truncate" style={face ? { ...RALEWAY, textShadow: STAMP } : RALEWAY}>
             {place}
           </span>
         </Row>
@@ -243,7 +368,7 @@ export function MetalWalletCardV2({
 
   const footer = (
     <span
-      className={`text-base tabular-nums ${face ? "" : "text-muted-foreground"}`}
+      className={`text-base tabular-nums ${face ? "" : subtle ? "text-foreground" : "text-muted-foreground"}`}
       style={face ? { textShadow: STAMP } : undefined}
     >
       {metal
@@ -269,14 +394,27 @@ export function MetalWalletCardV2({
         interactive={Boolean(link)}
         data-grade-goto={link}
         aria-label={link ? `Open ${label}` : undefined}
-        className="relative overflow-hidden rounded-2xl p-5"
+        className={`relative rounded-2xl p-5 ${subtle ? "glint-card-subtle" : ""}`}
         style={
           face
             ? { background: face.base, color: INK, borderColor: "transparent", boxShadow: EMBOSS }
-            : undefined
+            : subtle
+              ? {
+                  borderColor: "transparent",
+                  "--glint-ring-light": subtle.ringLight,
+                  "--glint-ring-dark": subtle.ringDark,
+                  "--glint-accent-light": subtle.accentLight,
+                  "--glint-accent-dark": subtle.accentDark,
+                } as React.CSSProperties
+              : undefined
         }
       >
-        {metal ? <Lattice metal={metal} /> : null}
+        {subtle ? (
+          <>
+            <style>{SUBTLE_CSS}</style>
+            <span aria-hidden style={SUBTLE_EDGE} />
+          </>
+        ) : null}
         {body}
       </Card>
 
