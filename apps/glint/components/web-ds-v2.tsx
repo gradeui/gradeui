@@ -306,20 +306,20 @@ WebDsV2.Button = React.forwardRef(function WebDsV2Button(
 /* Web DS Input, Surface=filled. lg: 48 tall, 10 corners, 16 sides, Chivo
    16/24. default (the FormField's): 36 tall, 8 corners, 12 sides, Chivo
    14/20. input-background with a 1px input border; invalid swaps the
-   border for destructive; disabled is 50%. A suffix ("USD", "g") sits
-   inside the right edge in muted-foreground, 8 from the text. */
+   border for destructive; disabled is 50%. A prefix ("$") or suffix
+   ("USD", "g") sits inside the edge in muted-foreground, 8 from the text. */
 const INPUT_SIZE = {
   lg: "h-12 rounded-[10px] px-4 text-base leading-6",
   default: "h-9 rounded-[8px] px-3 text-sm leading-5",
 };
 
 WebDsV2.Input = React.forwardRef(function WebDsV2Input(
-  { invalid, size = "lg", suffix, className, ...props },
+  { invalid, size = "lg", prefix, suffix, className, ...props },
   ref,
 ) {
   const edge = invalid ? "border-[color:var(--wds-destructive)]" : "border-[color:var(--wds-input)]";
   const box = "w-full min-w-0 border bg-[var(--wds-input-background)] text-[color:var(--wds-foreground)]";
-  if (suffix == null) {
+  if (suffix == null && prefix == null) {
     return (
       <input
         ref={ref}
@@ -346,13 +346,14 @@ WebDsV2.Input = React.forwardRef(function WebDsV2Input(
         className,
       )}
     >
+      {prefix != null ? <span className="shrink-0 text-[color:var(--wds-muted-foreground)]">{prefix}</span> : null}
       <input
         ref={ref}
         aria-invalid={invalid || undefined}
         className="h-full min-w-0 flex-1 bg-transparent outline-none placeholder:text-[color:var(--wds-muted-foreground)]"
         {...props}
       />
-      <span className="shrink-0 text-[color:var(--wds-muted-foreground)]">{suffix}</span>
+      {suffix != null ? <span className="shrink-0 text-[color:var(--wds-muted-foreground)]">{suffix}</span> : null}
     </div>
   );
 });
@@ -469,7 +470,8 @@ WebDsV2.Badge = function WebDsV2Badge({ variant = "default", className, ...props
    with a 1px border and 4 inside it; items 28 tall, 16 sides, Chivo
    Medium 14/20; the one that is on sits on card in foreground, the rest
    are muted-foreground. stretch fills the width, items sharing it equally
-   (Settings · Display). */
+   with 8 sides so two fit a 160 column (Settings · Display, Withdraw's
+   Account type). */
 WebDsV2.Segmented = function WebDsV2Segmented({
   value,
   onValueChange,
@@ -498,8 +500,8 @@ WebDsV2.Segmented = function WebDsV2Segmented({
             aria-checked={on}
             onClick={() => onValueChange?.(o.value)}
             className={cx(
-              "h-7 cursor-pointer rounded-full px-4 text-sm font-medium leading-5 transition-colors",
-              stretch && "flex-1",
+              "h-7 cursor-pointer rounded-full text-sm font-medium leading-5 transition-colors",
+              stretch ? "min-w-0 flex-1 px-2" : "px-4",
               FOCUS,
               on
                 ? "bg-[var(--wds-card)] text-[color:var(--wds-foreground)]"

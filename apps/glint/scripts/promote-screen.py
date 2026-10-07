@@ -125,6 +125,7 @@ COMPONENT_MODULES = {
     "AutoBuyV2": "@/components/auto-buy-v2",
     "ActivityListV2": "@/components/activity-list-v2",
     "AccountCardV2": "@/components/account-card-v2",
+    "TransferV2": "@/components/transfer-v2",
 }
 
 # BuyFlow is deliberately absent. TradeFlow superseded it and there is no

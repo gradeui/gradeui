@@ -36,9 +36,9 @@
 // THE PLACE: Figma writes "2 vaults" for the gold held in two. Here one
 // vault reads "Zurich", two read "2 vaults", as the slide does.
 //
-// ACTIONS: Buy and Sell open TradeFlowV2. Deposit and Withdraw take their
-// behaviour from the screen (onDeposit, onWithdraw), so this card does not
-// own the money-movement drawers.
+// ACTIONS: Buy and Sell open TradeFlowV2; Deposit and Withdraw open the
+// TransferV2 drawers, so every USD card (Wallets and the USD page) works
+// the same.
 import * as React from "react";
 import { ChevronRight, MapPin } from "lucide-react";
 import { Persona } from "@/lib/persona";
@@ -49,6 +49,7 @@ import { TradeFlowV2 } from "@/components/trade-flow-v2";
 import { StagingSwitches } from "@/lib/staging-switches";
 import { DisplayNumber } from "@/components/display-number";
 import { WebDsV2 } from "@/components/web-ds-v2";
+import { TransferV2 } from "@/components/transfer-v2";
 
 const cx = (...c) => c.filter(Boolean).join(" ");
 
@@ -91,8 +92,6 @@ function WalletGroupCardV2({
   link,
   surface: surfaceProp,
   actions = true,
-  onDeposit,
-  onWithdraw,
   className,
 }) {
   const metal = asset === "fiat" ? null : asset;
@@ -188,12 +187,16 @@ function WalletGroupCardV2({
               </>
             ) : (
               <>
-                <WebDsV2.Button variant="secondary" size="lg" onClick={onDeposit}>
-                  Deposit
-                </WebDsV2.Button>
-                <WebDsV2.Button variant="secondary" size="lg" onClick={onWithdraw}>
-                  Withdraw
-                </WebDsV2.Button>
+                <TransferV2.Deposit>
+                  <WebDsV2.Button variant="secondary" size="lg">
+                    Deposit
+                  </WebDsV2.Button>
+                </TransferV2.Deposit>
+                <TransferV2.Withdraw>
+                  <WebDsV2.Button variant="secondary" size="lg">
+                    Withdraw
+                  </WebDsV2.Button>
+                </TransferV2.Withdraw>
               </>
             )}
           </div>

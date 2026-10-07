@@ -23,7 +23,9 @@
 //     row with the title in Raleway Bold 24/32 and a 40 square Close (8
 //     corners, a 24 X). An optional description, Chivo 16/24
 //     muted-foreground, 8 under the title; an optional icon before the
-//     title; an optional Back (onBack) before that.
+//     title; an optional Back (onBack, the Web DS secondary icon Button,
+//     36) before that. inset="sheet" is the Web DS SheetHeader the
+//     Deposit and Withdraw slides use: 24 from the top and 16 under.
 //   - Body (the only part that scrolls): 24 sides, 16 under the header,
 //     16 at the foot. Its content fills at least its height, so a group
 //     can sit at the bottom with mt-auto, by the footer it belongs to.
@@ -58,9 +60,9 @@ function SideDrawer({ open, onOpenChange, trigger, children }) {
   );
 }
 
-SideDrawer.Header = function SideDrawerHeader({ icon, title, description, onBack }) {
+SideDrawer.Header = function SideDrawerHeader({ icon, title, description, onBack, inset }) {
   return (
-    <div className="flex shrink-0 flex-col gap-2 px-6 pb-2 pt-4 text-left">
+    <div className={`flex shrink-0 flex-col gap-2 px-6 text-left ${inset === "sheet" ? "pb-4 pt-6" : "pb-2 pt-4"}`}>
       <div className="flex h-10 items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           {onBack ? (
@@ -68,7 +70,7 @@ SideDrawer.Header = function SideDrawerHeader({ icon, title, description, onBack
               type="button"
               aria-label="Back"
               onClick={onBack}
-              className={`flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[color:var(--wds-border)] text-[color:var(--wds-foreground)] hover:bg-[var(--wds-accent)] ${FOCUS}`}
+              className={`flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[8px] bg-[var(--wds-secondary)] text-[color:var(--wds-secondary-foreground)] hover:bg-[var(--wds-secondary-hover)] ${FOCUS}`}
             >
               <ChevronLeft className="size-4" />
             </button>
