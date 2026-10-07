@@ -1,13 +1,27 @@
 "use client";
 
 // Promoted from Studio screen "RM — Review Manager (DataTable)"
-// (design dmsxf5zjggd0n, version 1790884971041). Registry: lib/screens.ts;
+// (design dmsxf5zjggd0n, version 1791410054414). Registry: lib/screens.ts;
 // re-promotion workflow: apps/brightlocal/README.md.
-// source-hash: d04cddd733cc
+// source-hash: 632bf674edc9
 
 // RM — Review Manager. Real DS throughout: DataTable, DataTableSearch,
 // DataTablePagination, Tabs, and Popover+Command for every facet menu.
-// Reply and filters both open in a Drawer.
+// Filters open in a Drawer; a review opens in the PaginatedSheet.
+//
+// 7 Oct — SYNCED TO FIGMA "New Platform - WIP" › 07.10.2026 - Review Manager.
+//   - Page header SCROLLS now: stickyHeader={false} is forced on the shell
+//     (Ali, 7 Oct). The card's own filter band still sticks, at top 0.
+//   - Table headers are back and sortable (DataTableColumnHeader). They
+//     replace the Order menu that sat on the old row 3.
+//   - Pagination moved to the bottom of the card, sticky at bottom 0.
+//   - Tabs regrouped per Figma "Data decisions › Status filter": All, Needs
+//     action, Replied (manual + auto), Skipped, Removal. Counts add up to All.
+//   - Card gets its "Reviews" title (Figma "Layout decisions › Card").
+//   - Review panel is the PaginatedSheet shared component (Figma Sheet_V2),
+//     details are the DescriptionList shared component.
+//   - Dates follow Figma: "Sep 9, 2026" in the table, "September 8, 2026"
+//     in the sheet.
 //
 // 27 Aug — TEMPLATES + AUTO-REPLY MOVED OUT. Both were sub-views behind
 // header buttons here, which made this screen carry three pages. They now
@@ -22,7 +36,7 @@
 // reply) are gone: bulk actions have no v2 API commitment and
 // Do-Not-Respond / removal are open decisions in the brief (Q4). The
 // pre-removal build is preserved as "RM — Review Manager (DataTable) — bulk
-// select". Row 3 is now Order + pagination.
+// select". (Row 3, Order + pagination, went on 7 Oct: see above.)
 //
 // 27 Aug: SEND CAN FAIL. A reply that the source rejects is the top
 // recurring support theme, and the brief is explicit that a generic
@@ -44,8 +58,8 @@
 // in order to edit the file.
 //
 // ─── WHAT IS DELIBERATE HERE ───
-// TABLE HEADERS ARE HIDDEN, NOT REMOVED (sr-only <th>) — the row reads as a
-// list, but screen readers still get column names.
+// TABLE HEADERS ARE VISIBLE (7 Oct). They were sr-only until the Figma sync;
+// they now carry the sort, so they have to be seen.
 //
 // FILTER ROW IS ONE SIZE: size="sm" on every control, per the DS's own
 // DataTableToolbarLeft recipe. The search field is forced to rounded-full
@@ -64,11 +78,9 @@
 // See finding 12.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { usePersona, useDemo } from "@/lib/demo";
+import { usePersona } from "@/lib/demo";
 import { useLocationKey } from "@/lib/location";
-import { profileFor } from "@/lib/location-profiles";
 import { inboxRowsFor, TODAY as DATA_TODAY } from "@/lib/reviews-data";
-import { pickIllustration } from "@/lib/illustrations";
 import { ReviewPlanStrip } from "@/components/review-insights";
 import { BeaconNugget } from "@/components/beacon-nugget";
 import {
@@ -81,8 +93,8 @@ import {
   useDataTable,
   DataTable,
   DataTablePagination,
-  DataTableColumnHeader,
   DataTableSearch,
+  DataTableColumnHeader,
 } from "@brightlocal/ui-components/data-table";
 import {
   Drawer,
@@ -102,15 +114,17 @@ import {
   CommandGroup,
   CommandItem,
 } from "@brightlocal/ui-components/command";
-import { Card, CardTitle } from "@brightlocal/ui-components/card";
+import { Card } from "@brightlocal/ui-components/card";
 import { Tabs, TabsList, TabsTrigger } from "@brightlocal/ui-components/tabs";
 import { Separator } from "@brightlocal/ui-components/separator";
 import { TypographyText } from "@brightlocal/ui-components/typography-text";
+import { TypographyHeading } from "@brightlocal/ui-components/typography-heading";
 import { Badge } from "@brightlocal/ui-components/badge";
+import { EmptyState } from "@brightlocal/ui-components/empty-state";
 import { Button } from "@brightlocal/ui-components/button";
 import { Rating } from "@brightlocal/ui-components/rating";
 import { Checkbox } from "@brightlocal/ui-components/checkbox";
-import { AlertInfo, AlertDestructive } from "@brightlocal/ui-components/alert";
+import { AlertInfo, AlertDestructive, AlertSuccess } from "@brightlocal/ui-components/alert";
 import {
   Menu,
   SlidersHorizontal,
@@ -125,23 +139,24 @@ import {
   Pencil,
   X,
   ExternalLink,
-  Star,
   Globe,
   GoogleOriginal,
   FacebookOriginal,
   YelpOriginal,
   AppleOriginal,
+  Star,
+  Layers,
 } from "@brightlocal/icons";
 import {
   AppLayoutShell,
   ProposalSidebar,
   PageHeader,
-  EmptyState,
   useProposalData,
-  formatDate,
-  formatDateShort,
 } from "@brightlocal/proposal";
 import { SideSheetHeader } from "@brightlocal/side-sheet-header";
+import * as __React from "react";
+import * as __UI from "@brightlocal/ui-components";
+import * as __Icons from "@brightlocal/icons";
 import {
   FACET_COMMAND_CLASS,
   FacetOptions,
@@ -149,6 +164,325 @@ import {
   FacetedFilterMenu,
   SingleSelectMenu,
 } from "@brightlocal/facet-menu";
+
+// Inlined from the project shared component "DescriptionList" (7 Oct).
+// The BrightLocal sandbox cannot resolve "@project/components", so the
+// screen carries its own copy; keep it in step with the shared one.
+const { DescriptionList } = (() => {
+  const { createContext, useContext, useEffect, useRef, useState } = __React;
+// DescriptionList — a record's details as labels and values (HTML dl / dt / dd).
+// Source: Figma "New Platform - WIP" › 07.10.2026 - Review Manager ›
+// "Review Manager · New components" (anatomy + in use).
+//
+// Use it when you open a row, in sheets and drawers, and in summary cards.
+// Values take the same pieces as a table cell: text, Badge, Rating, a logo.
+//
+//   <DescriptionList layout="auto">
+//     <DescriptionList.Item term="Source"><SourceMark /> Google</DescriptionList.Item>
+//     <DescriptionList.Item term="Status"><Badge …>Needs action</Badge></DescriptionList.Item>
+//   </DescriptionList>
+//
+// LAYOUT
+//   inline   term in a fixed column, value beside it (Figma "Inline")
+//   stacked  term above value (Figma "Stacked")
+//   auto     inline once the LIST'S OWN width is at least 16rem (256px),
+//            stacked below that. Measured on the list itself (ResizeObserver),
+//            not the viewport, so the same list goes inline in a sheet and
+//            stacks in a narrow card on the same page. (7 Oct: was a 22rem
+//            container query, which stacked it inside the 384px review sheet;
+//            Figma wants left/right there. Measuring in JS also means it does
+//            not depend on the sandbox compiling @container variants.)
+//
+// TOKENS (override with style={{ "--dl-term-width": "6rem" }} or a
+// [--dl-term-width:6rem] class on the list)
+//   --dl-term-width   inline term column             default 8.75rem (140px)
+//   --dl-col-gap      gap between term and value      default 0
+//   --dl-row-gap      gap between inline items        default 0.5rem (8px)
+//   --dl-stack-gap    term-to-value gap when stacked  default 0.25rem (4px)
+//   --dl-item-gap     gap between stacked items       default 1rem (16px)
+//   inlineMin prop    width where auto goes inline   default 256 (px)
+//
+// Terms are muted text-sm; values are text-sm foreground. Long values wrap
+// and stay lined up on the value column.
+
+
+const LayoutContext = createContext("inline");
+
+const join = (...c) => c.filter(Boolean).join(" ");
+
+const LIST_GAP = {
+  inline: "gap-y-(--dl-row-gap,0.5rem)",
+  stacked: "gap-y-(--dl-item-gap,1rem)",
+};
+
+const INLINE_ITEM =
+  "grid grid-cols-[var(--dl-term-width,8.75rem)_minmax(0,1fr)] items-center gap-x-(--dl-col-gap,0) min-h-5";
+const STACKED_ITEM = "flex flex-col gap-(--dl-stack-gap,0.25rem)";
+
+const ITEM = { inline: INLINE_ITEM, stacked: STACKED_ITEM };
+
+// auto: measure the list's own box and pick inline or stacked. Starts inline
+// so the common case (a sheet, a wide card) never flashes stacked.
+function useAutoLayout(enabled, inlineMin) {
+  const ref = useRef(null);
+  const [mode, setMode] = useState("inline");
+  useEffect(() => {
+    if (!enabled || !ref.current) return undefined;
+    const el = ref.current;
+    const measure = () => setMode(el.getBoundingClientRect().width >= inlineMin ? "inline" : "stacked");
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [enabled, inlineMin]);
+  return [ref, mode];
+}
+
+function DescriptionList({ layout = "inline", inlineMin = 256, dataHook, className, style, children, ...rest }) {
+  const [ref, autoMode] = useAutoLayout(layout === "auto", inlineMin);
+  const mode = layout === "auto" ? autoMode : ITEM[layout] ? layout : "inline";
+  return (
+    <div ref={ref} className="min-w-0">
+      <dl
+        data-slot="description-list"
+        data-layout={mode}
+        data-hook={dataHook}
+        className={join("m-0 flex flex-col", LIST_GAP[mode], className)}
+        style={style}
+        {...rest}
+      >
+        <LayoutContext.Provider value={mode}>{children}</LayoutContext.Provider>
+      </dl>
+    </div>
+  );
+}
+
+function DescriptionTerm({ className, children, ...rest }) {
+  return (
+    <dt
+      data-slot="description-term"
+      className={join("text-muted-foreground m-0 text-sm font-medium", className)}
+      {...rest}
+    >
+      {children}
+    </dt>
+  );
+}
+
+function DescriptionDetails({ className, children, ...rest }) {
+  return (
+    <dd
+      data-slot="description-details"
+      className={join("text-foreground m-0 flex min-w-0 flex-wrap items-center gap-2 text-sm", className)}
+      {...rest}
+    >
+      {children}
+    </dd>
+  );
+}
+
+// One label and value. A div around dt + dd is valid inside a dl and is what
+// lets each pair lay out on its own grid.
+// The inline grid template is ALSO set as an inline style, reading the same
+// custom properties, so the two-column layout holds even if an arbitrary
+// grid-cols class is not compiled in a given sandbox.
+const INLINE_STYLE = {
+  gridTemplateColumns: "var(--dl-term-width, 8.75rem) minmax(0, 1fr)",
+  columnGap: "var(--dl-col-gap, 0)",
+};
+
+function DescriptionItem({ term, dataHook, className, style, termClassName, detailsClassName, children, ...rest }) {
+  const mode = useContext(LayoutContext);
+  return (
+    <div
+      data-slot="description-item"
+      data-hook={dataHook}
+      className={join(ITEM[mode], className)}
+      style={mode === "inline" ? { ...INLINE_STYLE, ...style } : style}
+      {...rest}
+    >
+      <DescriptionTerm className={termClassName}>{term}</DescriptionTerm>
+      <DescriptionDetails className={detailsClassName}>{children}</DescriptionDetails>
+    </div>
+  );
+}
+
+DescriptionList.Item = DescriptionItem;
+DescriptionList.Term = DescriptionTerm;
+DescriptionList.Details = DescriptionDetails;
+
+  return { DescriptionList };
+})();
+
+// Inlined from the project shared component "PaginatedSheet" (7 Oct),
+// for the same reason as DescriptionList above.
+const { PaginatedSheet } = (() => {
+  const { Sheet, SheetContent, SheetTitle, SheetDescription, Button } = __UI;
+  const { ChevronUp, ChevronDown } = __Icons;
+// PaginatedSheet — a side sheet that steps through a list of records.
+// Source: Figma "New Platform - WIP" › 07.10.2026 - Review Manager ›
+// Sheet_V2 (library component, the four loose instances under the review
+// sheet section). Anatomy, top to bottom:
+//
+//   pager    up / down + "1 of 30 results", the DS close on the right,
+//            a rule underneath
+//   header   title + description (optional), then an optional tabs slot
+//   body     the slot, scrolls on its own
+//   footer   actions, right-aligned
+//
+// Built on the DS Sheet, so focus trap, Escape, overlay and the close button
+// are the package's. Up/down move through whatever list the caller passes in
+// (the table's filtered, sorted order), so the pager and the table never
+// disagree about what "next" means.
+//
+//   <PaginatedSheet
+//     open={!!active} onOpenChange={(o) => !o && setActiveId(null)}
+//     index={i} total={rows.length} onPrev={…} onNext={…}
+//     title="Review" hideTitle
+//     footer={<><Button variant="outline">Skip reply</Button><Button>Send reply</Button></>}
+//   >
+//     …body…
+//   </PaginatedSheet>
+//
+// TOKENS (override with style or [--sheet-…:value] on className)
+//   --sheet-inline-pad   left/right padding of every band   default 1.5rem
+//   --sheet-band-pad     top/bottom padding of pager+body   default 1rem
+//   --sheet-body-gap     gap between body children          default 1rem
+//   --sheet-footer-pad   padding round the footer           default 1.5rem
+//
+// Width is the DS default (384px from sm up). Pass className to widen it;
+// on a phone pass side="bottom" and a height.
+
+
+const join = (...c) => c.filter(Boolean).join(" ");
+
+function SheetPager({ index, total, onPrev, onNext, itemLabel = "results", dataHook = "sheet-pager" }) {
+  if (index == null || index < 0 || !total) return <div className="h-9" aria-hidden="true" />;
+  return (
+    <div className="flex items-center" data-hook={dataHook}>
+      <Button
+        variant="ghost"
+        iconOnly
+        dataHook={`${dataHook}-prev`}
+        ariaLabel="Previous"
+        onClick={onPrev}
+        disabled={index <= 0}
+      >
+        <ChevronUp className="size-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        iconOnly
+        dataHook={`${dataHook}-next`}
+        ariaLabel="Next"
+        onClick={onNext}
+        disabled={index >= total - 1}
+      >
+        <ChevronDown className="size-4" />
+      </Button>
+      <span className="text-muted-foreground ml-2 text-sm font-medium tabular-nums" aria-live="polite">
+        {index + 1} of {total} {itemLabel}
+      </span>
+    </div>
+  );
+}
+
+function PaginatedSheet({
+  open,
+  onOpenChange,
+  side = "right",
+  index,
+  total,
+  onPrev,
+  onNext,
+  itemLabel = "results",
+  title,
+  hideTitle = false,
+  description,
+  tabs,
+  footer,
+  bodyKey,
+  dataHook = "paginated-sheet",
+  className,
+  style,
+  bodyClassName,
+  children,
+}) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side={side}
+        dataHook={dataHook}
+        closeLabel="Close"
+        className={join("gap-0 p-0", className)}
+        style={style}
+      >
+        <div className="flex shrink-0 flex-col gap-4 pt-(--sheet-band-pad,1rem)">
+          <div className="border-b px-(--sheet-inline-pad,1.5rem) pb-(--sheet-band-pad,1rem) pr-14">
+            <SheetPager
+              index={index}
+              total={total}
+              onPrev={onPrev}
+              onNext={onNext}
+              itemLabel={itemLabel}
+              dataHook={`${dataHook}-pager`}
+            />
+          </div>
+          {title || description || tabs ? (
+            <div
+              className={join(
+                "flex flex-col gap-4 px-(--sheet-inline-pad,1.5rem)",
+                hideTitle && !description && !tabs ? "sr-only" : "",
+              )}
+            >
+              {title || description ? (
+                <div className={join("flex flex-col gap-1", hideTitle && !description ? "sr-only" : "")}>
+                  <SheetTitle
+                    dataHook={`${dataHook}-title`}
+                    className={join("text-lg font-semibold", hideTitle ? "sr-only" : "")}
+                  >
+                    {title ?? "Details"}
+                  </SheetTitle>
+                  {description ? (
+                    <SheetDescription dataHook={`${dataHook}-description`}>{description}</SheetDescription>
+                  ) : null}
+                </div>
+              ) : null}
+              {tabs}
+            </div>
+          ) : (
+            <SheetTitle className="sr-only">Details</SheetTitle>
+          )}
+        </div>
+
+        <div
+          key={bodyKey}
+          data-slot="paginated-sheet-body"
+          className={join(
+            "animate-entrance-fade flex min-h-0 flex-1 flex-col gap-(--sheet-body-gap,1rem) overflow-y-auto px-(--sheet-inline-pad,1.5rem) py-(--sheet-band-pad,1rem)",
+            bodyClassName,
+          )}
+          style={{ scrollbarWidth: "thin", scrollbarColor: "var(--border) transparent" }}
+        >
+          {children}
+        </div>
+
+        {footer ? (
+          <div
+            data-slot="paginated-sheet-footer"
+            className="flex shrink-0 items-center justify-end gap-2 p-(--sheet-footer-pad,1.5rem) pb-[max(var(--sheet-footer-pad,1.5rem),env(safe-area-inset-bottom))]"
+          >
+            {footer}
+          </div>
+        ) : null}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+  return { PaginatedSheet };
+})();
+
 
 /* ------------------------------ interim mark ------------------------------ */
 
@@ -217,32 +551,21 @@ const UNCONNECTED_SOURCES = [
   { id: "bing", name: "Bing Places", Icon: Globe, hasMark: false },
 ];
 
-// WHERE A FIRST-RUN ACCOUNT GOES NEXT, when the inbox has nothing in it
-// yet. Both are screens this prototype actually has, and both ids are the
-// ones lib/first-run.ts already sends a first-run account to, so the empty
-// inbox and the "Why it matters" band above it cannot point at two
-// different places.
-// ASSUMPTION: lib/first-run.ts offers ONE action on this page, "Connect a
-// review site". The second button, asking customers for reviews, is mine: it
-// is the product's own step 2 and the Review Builder screen exists, but
-// nobody asked for it here. Drop it if the empty inbox should carry the
-// single action the band carries.
-const CONNECT_GOTO = "screen:dmtkj124xagqa"; // Report Settings: the review sites
-const ASK_GOTO = "screen:dmt094j963aye"; // Review Builder: ask customers for reviews
-
 const RECOMMENDATION_SOURCE = "facebook";
 const AI_DRAFT_QUOTA = 3;
 const TODAY = DATA_TODAY;
 
-// ONE LONG FORMAT AND ONE SHORT (Ali, 17 Sep: "I want the date format to be
-// consistent in the Review Manager"). The page header already said "August
-// 18, 2026" through the library's formatDate, while the table said "9 Sept"
-// with no year and the review panel "Wednesday 9 September 2026". The table
-// takes the short form, "Aug 18, 2026", and the panel the long one. Both come
-// from the library, and they parse the ISO string rather than going through
-// new Date, which would apply the viewer's timezone and can move the day.
-const shortDate = (iso) => formatDateShort(iso);
-const longDate = (iso) => formatDate(iso);
+// Figma (7 Oct) writes dates the US way: "Sep 9, 2026" in the table and
+// "September 8, 2026" in the sheet. The year is back on the short form
+// because the seed runs over two years and "4 Aug" was ambiguous.
+const shortDate = (iso) =>
+  new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const longDate = (iso) =>
+  new Date(iso).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 const daysAgo = (iso) => Math.round((TODAY - new Date(iso)) / 86400000);
 
 const ratingValue = (r) => (r === "up" ? 5 : r === "down" ? 1 : r);
@@ -380,25 +703,26 @@ const SEED_REVIEWS = [
     "Thanks {{firstname}}, and sorry you found a section late in the day. The map is being redrawn and this is exactly the feedback we need for it."],
 ];
 
+// GROUPED BY WHAT YOU DO NEXT (Figma "Data decisions › Status filter",
+// 7 Oct). There are eight statuses behind the scenes, too many for one row,
+// so the tabs group them and each row still shows its exact status badge.
+// The counts always add up to All. Removal holds pending-removal,
+// successfully-removed and removal-failed; nothing in the seed uses them
+// yet, so it reads 0, which is what Figma shows. Fallback if the groups are
+// not agreed: a status dropdown beside the other filters.
 const TABS = [
   { id: "all", label: "All" },
-  { id: "needs", label: "Needs action" },
-  { id: "manual", label: "Manually replied" },
-  { id: "auto", label: "Auto-replied" },
-  { id: "skipped", label: "Skipped" },
+  { id: "needs", label: "Needs action", statuses: ["needs"] },
+  { id: "replied", label: "Replied", statuses: ["manual", "auto"] },
+  { id: "skipped", label: "Skipped", statuses: ["skipped"] },
+  { id: "removal", label: "Removal", statuses: ["pending-removal", "removed", "removal-failed"] },
 ];
+const inTab = (tabId, status) =>
+  tabId === "all" || (TABS.find((t) => t.id === tabId)?.statuses ?? []).includes(status);
 
-// WHAT A NARROWED LIST SAYS WHEN IT HOLDS NOTHING. A tab narrows the list the
-// same way a facet does, so "No reviews match these filters" is the wrong
-// sentence when the only thing narrowing it is the tab you are standing on.
-// One line per tab, in that tab's own terms. "All" cannot reach this state
-// with no filters set, so it has no line of its own.
-const TAB_EMPTY = {
-  needs: "Nothing here needs a reply.",
-  manual: "No replies have been written by hand.",
-  auto: "No replies have gone out automatically.",
-  skipped: "No reviews have been skipped.",
-};
+// Column sort keys for the header sort (7 Oct). Status sorts in the order
+// you work through it: needs first, done last.
+const STATUS_ORDER = { needs: 0, manual: 1, auto: 2, skipped: 3 };
 
 // Labels match the current product's own time filter, minus one. The product
 // also offers "Last Month", which we deliberately drop: sitting directly above
@@ -486,8 +810,7 @@ const SEND_FAILURES = {
     // that has been removed at the source is gone, and offering a retry
     // that is guaranteed to fail sends someone round a loop with no exit
     // (Ali, 27 Aug). The only real move left is to clear it, so the alert
-    // carries no button at all and the footer's Skip, which is there for
-    // every unreplied review, is the one thing on screen to press.
+    // offers Skip and the footer's Send goes disabled.
     terminal: true,
     blocking: true,
     title: "This review is no longer on {{source}}",
@@ -558,16 +881,6 @@ const FAILURE_DEMO_SEQUENCE = [
 
 // Repliable AND still needing action: a review that already carries a reply
 // renders the sent reply instead of a composer, so it has no Send to fail.
-// STARTER PERSONA (app-side, 8 Sep): four reviews, none answered. Same
-// indexes as SEED_REVIEWS so ids (r0..r3) line up with the failure demo.
-const STARTER_REVIEWS = SEED_REVIEWS.slice(0, 4).map((row) => {
-  const next = [...row];
-  next[5] = "needs";
-  return next;
-});
-const seedRowsFor = (persona, location) =>
-  inboxRowsFor(location, persona); // every persona from the rows: the old STARTER_REVIEWS seed showed TripAdvisor and Facebook with only Google connected (Ali, 10 Sep)
-
 // FROM THE ROWS ON SCREEN, not from SEED_REVIEWS. The app builds its inbox
 // with inboxRowsFor(location, persona), so a position picked out of the
 // Studio seed pointed at a different review here: the seeded permission
@@ -644,10 +957,6 @@ function useStickyHeaderOffset(headerHook) {
   useEffect(() => {
     const el = document.querySelector(`[data-hook="${headerHook}"]`);
     if (!el) return undefined;
-    // The band is the nearest STICKY ancestor. With none (the de facto
-    // GlobalLayout has no sticky header) the offset is zero: measuring
-    // the header itself put the table's sticky header 100px down the
-    // page (Ali, 9 Sep).
     let band = null;
     let node = el;
     while (node && node !== document.body) {
@@ -657,11 +966,16 @@ function useStickyHeaderOffset(headerHook) {
       }
       node = node.parentElement;
     }
-    const measure = () => setOffset(band ? Math.round(band.getBoundingClientRect().height) : 0);
-    const watched = band ?? el;
+    // 7 Oct: the page header scrolls now, so there is usually no sticky
+    // band above the card. No band, nothing to clear: stick at 0.
+    if (!band) {
+      setOffset(0);
+      return undefined;
+    }
+    const measure = () => setOffset(Math.round(band.getBoundingClientRect().height));
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(watched);
+    ro.observe(band);
     return () => ro.disconnect();
   }, [headerHook]);
   return offset;
@@ -739,36 +1053,13 @@ const SHEET_COMMAND_CLASS =
   FACET_COMMAND_CLASS +
   " shrink-0 [&_[data-slot=command-list]]:max-h-none [&_[data-slot=command-list]]:overflow-visible";
 
-function PanelNav({ index, total, onPrev, onNext }) {
-  if (index < 0) return null;
-  return (
-    <div className="flex items-center gap-1">
-      <Button variant="ghost" iconOnly dataHook="panel-prev" onClick={onPrev} disabled={index <= 0} aria-label="Previous review">
-        <ChevronUp className="size-4" />
-      </Button>
-      <Button variant="ghost" iconOnly dataHook="panel-next" onClick={onNext} disabled={index >= total - 1} aria-label="Next review">
-        <ChevronDown className="size-4" />
-      </Button>
-      <span className="text-muted-foreground ml-1 text-sm tabular-nums">
-        {index + 1} of {total}
-      </span>
-    </div>
-  );
-}
-
-function DetailRow({ label, children }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-muted-foreground w-20 shrink-0 text-sm">{label}</span>
-      {children}
-    </div>
-  );
-}
-
 /* --------------------------------- panel ---------------------------------- */
 
-function ReplyBody({ review, business, draft, onDraft, onAi, aiPending, aiSpent, aiBlocked, aiRemaining, templates, onTemplate, sending, onRetry }) {
+function ReplyBody({ review, business, draft, onDraft, onAi, aiPending, aiSpent, aiBlocked, aiRemaining, templates, onTemplate, sending, onRetry, onSkip, sentAt, openTemplates }) {
   const [tplOpen, setTplOpen] = useState(false);
+  useEffect(() => {
+    if (openTemplates) setTplOpen(true);
+  }, [openTemplates]);
   if (!review) return null;
   const replied = review.status === "manual" || review.status === "auto";
   const failure = sendFailureCopy(review);
@@ -801,34 +1092,40 @@ function ReplyBody({ review, business, draft, onDraft, onAi, aiPending, aiSpent,
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <DetailRow label="Source">
-          <span className="flex items-center gap-2 text-sm">
-            <SourceMark source={SOURCES[review.source]} />
-            {SOURCES[review.source].name}
-          </span>
-        </DetailRow>
-        <DetailRow label="Rating">
+    <div className="flex flex-col gap-4 pt-2">
+      {sentAt ? (
+        <AlertSuccess
+          dataHook={`reply-sent-${review.id}`}
+          title={`Reply posted to ${SOURCES[review.source].name}`}
+          description={`Sent ${TODAY.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} at ${String(sentAt.getHours()).padStart(2, "0")}:${String(sentAt.getMinutes()).padStart(2, "0")}.`}
+        />
+      ) : null}
+      {/* DESCRIPTION LIST (Figma "New components › Description list",
+          7 Oct): the shared component, inline here because the sheet has
+          the room. Same badge, stars and logo as the table row. */}
+      <DescriptionList layout="auto" dataHook={`panel-details-${review.id}`}>
+        <DescriptionList.Item term="Source">
+          <SourceMark source={SOURCES[review.source]} />
+          {SOURCES[review.source].name}
+        </DescriptionList.Item>
+        <DescriptionList.Item term="Rating">
           <RatingValue rating={review.rating} hook={`panel-stars-${review.id}`} />
-        </DetailRow>
-        <DetailRow label="Date">
-          <span className="text-sm">{longDate(review.date)}</span>
-        </DetailRow>
-        <DetailRow label="Status">
+        </DescriptionList.Item>
+        <DescriptionList.Item term="Date">{longDate(review.date)}</DescriptionList.Item>
+        <DescriptionList.Item term="Status">
           <StatusChip
             status={review.status}
             hook={`panel-status-${review.id}`}
           />
-        </DetailRow>
-      </div>
+        </DescriptionList.Item>
+        <DescriptionList.Item term="Reviewer">{review.name}</DescriptionList.Item>
+      </DescriptionList>
 
-      <Separator dataHook={`panel-rule-${review.id}`} />
+      <Separator dataHook={`panel-rule-${review.id}`} className="mt-2 mb-6" />
 
-      <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium">{review.name}</p>
-        <p className="text-sm leading-relaxed">{review.text}</p>
-      </div>
+      {/* The review text straight after the rule: Figma's sheet carries the
+          reviewer in the list above, not again over the text (7 Oct). */}
+      <p className="text-sm leading-relaxed">{review.text}</p>
 
       {!canReply(review) ? (
         // No composer, no textarea, no AI/template triggers. An existing
@@ -847,36 +1144,9 @@ function ReplyBody({ review, business, draft, onDraft, onAi, aiPending, aiSpent,
           ) : null}
           <AlertInfo
             dataHook={`no-reply-${review.id}`}
-            title={`${SOURCES[review.source].name} replies cannot be sent from here`}
-            // Button lives INSIDE description, below the text — not in the
-            // `action` slot. AlertInfo lays action out as a second COLUMN, so
-            // it stole the width and reflowed the copy into a ~9-word ribbon
-            // (Ali, 27 Aug). Stacking it under the text keeps the paragraph
-            // full-width and still reads as part of the same block.
-            //
-            // The one action a read-only source HAS: leave for the place the
-            // reply can actually be written. Named per source rather than a
-            // generic "Open review", so the destination is obvious before the
-            // click. PROTOTYPE GAP — the real control is an <a> carrying the
-            // review's permalink with target="_blank"; the seed rows have no
-            // per-review URL, so this is the affordance without a destination.
-            description={
-              <span className="flex flex-col items-start gap-3">
-                <span>
-                  {SOURCES[review.source].name} does not accept replies posted through a
-                  connected tool, so there is no reply box for this review. You can still
-                  reply on {SOURCES[review.source].name} itself.
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  dataHook={`open-source-${review.id}`}
-                >
-                  <ExternalLink className="size-4" />
-                  Open in {SOURCES[review.source].name}
-                </Button>
-              </span>
-            }
+            // 7 Oct, Figma "Review sheet · Read-only source": the title alone.
+            // The paragraph and the Open in <source> button came out with it.
+            title={`You can't reply to ${SOURCES[review.source].name} reviews from here`}
           />
         </div>
       ) : replied ? (
@@ -903,39 +1173,35 @@ function ReplyBody({ review, business, draft, onDraft, onAi, aiPending, aiSpent,
               description={
                 <span className="flex flex-col items-start gap-3">
                   <span>{failure.description}</span>
-                  {/* ONE PLACE TO PRESS PER ACTION (Ali, 20 Sep). The alert
-                      only carries a button when the footer cannot: on a
-                      blocking failure the composer is gone, so the footer's
-                      Send goes with it and a retry has nowhere else to
-                      live. On a recoverable failure the composer stays, so
-                      the footer's "Send again" is the retry, which is the
-                      button this copy already points at ("send again",
-                      "send it again"). The terminal one is gone from the
-                      source for good: there is nothing to retry, and the
-                      Skip its copy names is the footer's, the same Skip
-                      every unreplied review has. Before this, a live
-                      "Retry sending" sat 461px above a greyed "Send again",
-                      and the terminal state offered "Skip reply" twice.
-                      No loading state on THIS button: pressing it clears
+                  {/* No loading state on THIS button: pressing it clears
                       sendError, so the alert it lives in unmounts and the
                       footer's Send carries the pending beat. Two spinners a
                       few hundred pixels apart would say the same thing
                       twice. Still disabled while sending, because nothing
                       stops a second click arriving before the re-render. */}
-                  {failure.blocking && !failure.terminal ? (
+                  {failure.terminal ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      dataHook={`skip-failed-${review.id}`}
+                      onClick={onSkip}
+                    >
+                      Skip reply
+                    </Button>
+                  ) : (
                     <Button
                       variant="outline"
                       size="sm"
                       dataHook={`retry-${review.id}`}
                       onClick={onRetry}
-                      // The composer is hidden in this state, so there is no
-                      // visible draft to gate on: the text is still held in
-                      // state and is what a retry sends.
-                      disabled={sending}
+                      // On a blocking failure the composer is hidden, so
+                      // there is no visible draft to gate on — the text is
+                      // still held in state and is what a retry sends.
+                      disabled={sending || (!failure.blocking && !draft.trim())}
                     >
                       Retry sending
                     </Button>
-                  ) : null}
+                  )}
                 </span>
               }
             />
@@ -1018,14 +1284,11 @@ function ReplyBody({ review, business, draft, onDraft, onAi, aiPending, aiSpent,
 
 function ReplyActions({ review, draft, sending, onSend, onSkip, onEdit, onDelete }) {
   if (!review) return null;
-  // SEND GOES WITH THE COMPOSER, so a blocking failure takes it off the
-  // screen rather than greying it out (Ali, 20 Sep). `blocking` hides the
-  // composer, and a Send button under a form that is not there said "you
-  // cannot send" and "send" in the same breath, with the live recovery
-  // 461px above it in the alert. Recovery for these states is the alert's
-  // Retry; for the terminal one there is no recovery at all, only the Skip
-  // below. Skip stays live in every failure, because clearing the review is
-  // the one thing that still works (Ali, 27 Aug).
+  // A terminal failure kills Send: there is no longer anything at the
+  // source to post to, so an enabled Send button would be an invitation to
+  // fail again. Skip stays live, because clearing it is the one thing that
+  // still works (Ali, 27 Aug).
+  // Send goes with the composer. `blocking` covers the terminal case too.
   const blocked = Boolean(sendFailureCopy(review)?.blocking);
   // Send / Skip / Edit / Delete all post to the source. None of them apply
   // to a read-only network, so the panel offers no buttons at all — the
@@ -1052,114 +1315,16 @@ function ReplyActions({ review, draft, sending, onSend, onSkip, onEdit, onDelete
       <Button variant="outline" dataHook={`skip-${review.id}`} onClick={onSkip} disabled={sending}>
         Skip reply
       </Button>
-      {blocked ? null : (
-        <Button
-          variant="primary"
-          dataHook={`send-${review.id}`}
-          onClick={onSend}
-          loading={sending}
-          disabled={sending || !draft.trim()}
-        >
-          {sending ? "Sending…" : review.sendError ? "Send again" : "Send reply"}
-        </Button>
-      )}
-    </>
-  );
-}
-
-// A REPLY THAT LANDS IS THE WHOLE POINT OF THIS SCREEN (Ali, 20 Sep: "do we
-// have a 'You have replied to a review' in the drawer state? This apparently
-// should be a moment for celebration"). A send used to close the drawer, so
-// the one thing the inbox exists for was the only action with no
-// acknowledgement at all: the overlay vanished and a badge changed behind it.
-// The drawer holds instead, says where the reply went, shows what was sent,
-// and points at the next review waiting.
-//
-// IT REPLACES THE SILENT SUCCESS AND NOTHING ELSE. Sending, and every failure
-// in SEND_FAILURES, behave exactly as they did.
-//
-// Type and spacing are the shared EmptyState's own roles, text-heading-
-// subsection over a muted text-body, centred, so the two moments in the
-// product that stop and say something read as one thing. It is not an
-// EmptyState itself: that takes an ICON in a circle, and a moment worth
-// marking wants the illustration.
-// TWO NUMBERS, TWO QUESTIONS. `remaining` is every review still needing
-// action, which is what the Needs action tab and the hub card count and so
-// the only honest number to print. `queued` is the ones this screen can post
-// to, which is the only honest thing to end the queue on: the read-only rows
-// in the gap between them have no Send and no Skip, so an ending measured on
-// `remaining` never arrives.
-function ReplySent({ review, business, remaining, queued }) {
-  if (!review) return null;
-  const source = SOURCES[review.source]?.name ?? "the review site";
-  // Nothing left to write from here, which is this screen's own finish line.
-  const done = queued === 0;
-  // And nothing left anywhere, on an account whose waiting reviews are all on
-  // sources that take replies.
-  const clear = done && remaining === 0;
-  // One illustration, chosen by MEANING rather than by name (lib/
-  // illustrations, which is what that file exists for): applause for a reply
-  // that went, and the confetti kept back for the bigger moment, the reply
-  // box with nothing left to write in it.
-  const Art = pickIllustration(done ? ["milestone", "celebrate"] : ["win", "congratulations"]);
-  return (
-    // ONE COMPOSED BLOCK, ANCHORED TO THE TOP. The leftover height here
-    // cannot be removed, only placed: the drawer is full height on purpose
-    // (see REVIEW_DRAWER_STYLE) and this moment is 232px of content in a
-    // 738px column. my-auto split that leftover into two equal 269px voids,
-    // above and below, which is what left the block reading as a stamp
-    // adrift in a panel that had failed to render (Ali, 20 Sep). Anchored to
-    // the top, the white falls once, below the content, where a panel's
-    // empty space belongs and where the footer's border closes it off.
-    // py-8 over the body's own py-4 puts 48px between the header's divider
-    // and the illustration, which is the shared EmptyState's own py-12: this
-    // block already borrows that component's type and spacing, so it keeps
-    // its vertical rhythm too. max-w-sm so everything in it shares one
-    // narrow column: the reply used to run the full 607px of the panel while
-    // the two lines above it stayed centred, which is what made the block
-    // read as pulled apart (Ali, 20 Sep). mx-auto because a flex child with
-    // a max width otherwise sits against the left edge instead of centring.
-    <div
-      className="mx-auto flex w-full max-w-sm flex-col items-center gap-2 py-8 text-center"
-      data-hook={`reply-sent-${review.id}`}
-    >
-      {/* aria-hidden on a WRAPPER, the way StripArt does it: the illustration
-          renders a light twin and a dark twin and neither svg carries one of
-          its own, so a reader would open on two unlabelled graphics instead of
-          on the line. */}
-      <span aria-hidden>
-        <Art className="size-20" />
-      </span>
-      <p className="text-heading-subsection" data-hook="reply-sent-title">
-        Your reply is on its way to {source}
-      </p>
-      <p
-        className="text-body text-muted-foreground max-w-[52ch] text-pretty"
-        data-hook="reply-sent-next"
+      <Button
+        variant="primary"
+        dataHook={`send-${review.id}`}
+        onClick={onSend}
+        loading={sending}
+        disabled={sending || blocked || !draft.trim()}
       >
-        {clear
-          ? "That was the last one. Nothing else is waiting for a reply."
-          : done
-            // The queue this screen owns is empty and the inbox is not, so
-            // the line says both: the finish, and exactly what is sitting
-            // behind it and why it is not a job for this page. Saying
-            // "nothing else is waiting" here would be a lie about four
-            // reviews, and printing the bare count would be a demand with no
-            // way to meet it.
-            ? `That was the last one you can reply to from here. ${remaining} ${
-                remaining === 1 ? "review is" : "reviews are"
-              } on sources that only take replies on their own site.`
-            : `${remaining} more ${remaining === 1 ? "review needs" : "reviews need"} a reply.`}
-      </p>
-      {/* The same muted box a sent reply gets everywhere else on this panel,
-          so it reads as the reply itself rather than as a receipt for it. */}
-      <div className="mt-2 flex w-full flex-col gap-2 text-left">
-        <span className="text-muted-foreground text-sm">What you sent</span>
-        <p className="bg-muted rounded-md p-3 text-sm" data-hook={`reply-sent-body-${review.id}`}>
-          {resolveVars(review.reply, review, business)}
-        </p>
-      </div>
-    </div>
+        {sending ? "Sending…" : review.sendError ? "Send again" : "Send reply"}
+      </Button>
+    </>
   );
 }
 
@@ -1326,8 +1491,9 @@ function FilterDrawer({
     // a DrawerBody that already carries padding and a max width — three
     // things the Sheet version had hand-set on it.
     //
-    // The review panel uses the same component and the same direction rule,
-    // so the screen has ONE overlay idiom rather than two.
+    // 7 Oct: the review panel has moved to the PaginatedSheet (Figma
+    // Sheet_V2), so this is now the only Drawer on the screen. Same
+    // direction rule as the sheet: bottom on a phone, right from sm up.
     <Drawer open={open} onOpenChange={onOpenChange} direction={side}>
       {/* mt-0 and a 92svh cap on the bottom drawer: the DS's own bottom
           variant is mt-24 + max-h-[80vh], which puts a 96px band of backdrop
@@ -1353,8 +1519,8 @@ function FilterDrawer({
         {/* ONE SHEET HEADER FOR THE WHOLE PRODUCT (Ali, 7 Sep). SheetHeader
             from the registry; py-2 under the bottom sheet's handle is the one
             local nuance it keeps (Ali, 19 Aug: "too much padding at the
-            bottom"). The review panel below keeps its own header because it
-            is a prev/next nav, not a title. */}
+            bottom"). The review panel's pager header lives in the
+            PaginatedSheet shared component. */}
         <SideSheetHeader
           title="Filters"
           dataHook="filters-sheet-header"
@@ -1458,35 +1624,14 @@ function FilterDrawer({
 function ReviewsInbox() {
   const business = useBusinessName();
   const stickyTop = useStickyHeaderOffset("reviews-page-header");
-  // The column headers pin UNDER the sticky tabs-and-filters band, so they
-  // need its height, which changes with the filter row's wrapping.
-  const bandRef = useRef(null);
-  const [bandHeight, setBandHeight] = useState(0);
-  useEffect(() => {
-    const el = bandRef.current;
-    if (!el) return undefined;
-    const measure = () => setBandHeight(Math.round(el.getBoundingClientRect().height));
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
   const persona = usePersona();
   const locationKey = useLocationKey();
-  // The first-run band above this card (ReviewPlanStrip, which renders
-  // FirstRunBand for the empty persona) carries its own "Connect a review
-  // site" button, and only when contextual insights are on. The empty inbox
-  // has to know, or the page asks for the same thing twice (Ali, 17 Sep: "We
-  // dont need to have two empty states").
-  const { settings } = useDemo();
-  // Worked out once from this persona's own rows, and read by the seeded
-  // failure below, by the send handler and by the draft that survives it.
-  const seedRows = seedRowsFor(persona, locationKey);
+  const seedRows = inboxRowsFor(locationKey, persona);
   const demoFailureIds = demoFailureIdsFor(seedRows);
   const simulatedFailures = simulatedFailuresFor(demoFailureIds);
   const seededSendError = seededSendErrorFor(demoFailureIds);
-  const [reviews, setReviews] = useState(() =>
+
+  const seedReviews = () =>
     seedRows.map(([source, name, rating, text, date, status, aiDraft], i) => ({
       id: `r${i}`,
       source,
@@ -1523,8 +1668,8 @@ function ReviewsInbox() {
               at: TODAY.getTime() - seededSendError.hoursBefore * 3600000,
             }
           : null,
-    })),
-  );
+    }));
+  const [reviews, setReviews] = useState(seedReviews);
   // Read-only on this screen: the reply drawer offers these, the Reply
   // Templates page owns editing them.
   const templates = DEFAULT_TEMPLATES;
@@ -1570,14 +1715,21 @@ function ReviewsInbox() {
   // A draft that disappears with the error is the complaint this whole
   // state exists to answer, so the seed has to demonstrate it surviving.
   // It reuses DEFAULT_TEMPLATES[0], same as the pre-replied rows above.
-  const [drafts, setDrafts] = useState(() => {
+  const seedDrafts = () => {
     if (!seededSendError.id) return {};
     const seed = seedRows[Number(seededSendError.id.slice(1))];
     if (!seed) return {};
     return {
       [seededSendError.id]: resolveVars(DEFAULT_TEMPLATES[0].body, { name: seed[1] }, business),
     };
-  });
+  };
+  const [drafts, setDrafts] = useState(seedDrafts);
+  // FIRST RUN (Figma "Empty states › No reviews yet"): an account with no
+  // review sites connected. Reached from the States drawer.
+  const [firstRun, setFirstRun] = useState(() => seedRows.length === 0);
+  // Opens the reply sheet's template menu (Figma "Review sheet › Templates ›
+  // Choosing a template"). A counter so asking twice still opens it.
+  const [openTemplates, setOpenTemplates] = useState(0);
   const [aiSeeded, setAiSeeded] = useState({});
   const [aiRemaining, setAiRemaining] = useState(AI_DRAFT_QUOTA);
   const [aiPending, setAiPending] = useState(false);
@@ -1587,10 +1739,10 @@ function ReviewsInbox() {
   // as sendError, which is what makes it survive the close. One flag rather
   // than a per-id map because only the open review can be sending.
   const [sending, setSending] = useState(false);
-  // THE REVIEW WHOSE REPLY JUST WENT. Held so the drawer can mark the moment
-  // instead of closing on a success. Cleared whenever the open review changes,
-  // which covers Close too, since closing sets activeId to null.
-  const [sentId, setSentId] = useState(null);
+  // The review whose reply has just gone, and when. Figma "Review sheet ›
+  // Sent" (7 Oct): the sheet stays open on a success alert with only Close
+  // in the footer, instead of shutting the moment the reply posts.
+  const [justSent, setJustSent] = useState(null);
   // Attempts per review, so SIMULATED_FAILURES can fail the first send and
   // let the retry through. Demo wiring; a real send would not count.
   const [sendAttempts, setSendAttempts] = useState({});
@@ -1601,21 +1753,10 @@ function ReviewsInbox() {
   };
   useEffect(() => cancelSend, []);
 
-  const counts = useMemo(() => {
-    const c = { all: reviews.length, needs: 0, manual: 0, auto: 0, skipped: 0 };
-    reviews.forEach((r) => {
-      c[r.status] += 1;
-    });
-    return c;
-  }, [reviews]);
-
-  // NOTHING HAS ARRIVED AT ALL, which is not the same thing as nothing
-  // matching (Ali, 20 Sep: "we will actually need an empty state for the
-  // Review Manager homepage as well, no reviews"). This is every new
-  // customer's landing view, so the card says what the page is for instead of
-  // drawing a header row, a pager and five tabs of zeroes over nothing.
-  const inboxEmpty = reviews.length === 0;
-  const firstRunBand = settings.insights !== false && persona.engagement === "empty";
+  const counts = useMemo(
+    () => Object.fromEntries(TABS.map((t) => [t.id, reviews.filter((r) => inTab(t.id, r.status)).length])),
+    [reviews],
+  );
 
   const periodOption = PERIODS.find((p) => p.id === period);
 
@@ -1623,7 +1764,7 @@ function ReviewsInbox() {
     () =>
       reviews.filter(
         (r) =>
-          (tab === "all" || r.status === tab) &&
+          inTab(tab, r.status) &&
           matchesPeriod(periodOption, r.daysAgo),
       ),
     [reviews, tab, periodOption],
@@ -1640,39 +1781,49 @@ function ReviewsInbox() {
   // include a sort though on the pagination row." So it is a small ordering
   // control next to pagination, NOT a fourth facet in the filter row.
   // Date is newest-first; Rating is highest-first with date breaking ties.
-  // SORTING LIVES IN THE TABLE (Ali, 17 Sep: "bring back the table headers
-  // now in Review Manager - its a data table so that automatically includes
-  // sorting"). The DS sortable headers drive it from sm up; the Order menu
-  // stays for phones, where the columns fold into one cell and there is no
-  // header to press, and reads and writes the same sorting state.
+  //
+  // 7 Oct: THE ORDER MENU IS GONE, the column headers sort instead (Figma
+  // shows Source, Rating, Status and Date with sort arrows; Review does not
+  // sort). Sorting stays MANUAL on the table and is applied here, to `data`,
+  // so `data` is still exactly the order on screen and the sheet's up/down
+  // pager walks the same list the table shows. Default is newest first.
+  // Ties always break newest first.
   const [sorting, setSorting] = useState([{ id: "date", desc: true }]);
-  const ORDER_SORTING = {
-    "date-desc": [{ id: "date", desc: true }],
-    "date-asc": [{ id: "date", desc: false }],
-    "rating-desc": [{ id: "rating", desc: true }],
-    "rating-asc": [{ id: "rating", desc: false }],
+  const SORT_KEYS = {
+    // daysAgo counts BACKWARDS from today, so negate it to sort by date.
+    date: (r) => -r.daysAgo,
+    rating: (r) => ratingValue(r.rating),
+    source: (r) => SOURCES[r.source].name,
+    status: (r) => STATUS_ORDER[r.status] ?? 9,
   };
-  const order =
-    Object.keys(ORDER_SORTING).find(
-      (id) => ORDER_SORTING[id][0].id === sorting[0]?.id && ORDER_SORTING[id][0].desc === sorting[0]?.desc,
-    ) ?? "date-desc";
-  const setOrder = (id) => setSorting(ORDER_SORTING[id]);
+  const sortCompare = (a, b) => {
+    const s = sorting[0];
+    const key = (s && SORT_KEYS[s.id]) || SORT_KEYS.date;
+    const va = key(a);
+    const vb = key(b);
+    const c = va < vb ? -1 : va > vb ? 1 : 0;
+    return (s && !s.desc ? c : -c) || a.daysAgo - b.daysAgo;
+  };
   const data = useMemo(
-    () => base.filter((r) => matchesSource(r) && matchesRating(r)),
-    [base, sourceFilter, ratingFilter],
+    () =>
+      base
+        .filter((r) => matchesSource(r) && matchesRating(r))
+        .slice()
+        .sort(sortCompare),
+    [base, sourceFilter, ratingFilter, sorting],
   );
-  // ASSUMPTION: a recommendation sorts among the stars, Recommended as 5 and
-  // Not recommended as 1, so Highest rated puts praise first either way.
-  const ratingRank = (rating) => (rating === "up" ? 5 : rating === "down" ? 1 : Number(rating) || 0);
-  const STATUS_RANK = { needs: 0, manual: 1, auto: 2, skipped: 3 };
 
   const columns = useMemo(
     () => [
       {
         accessorKey: "source",
         enableGlobalFilter: false,
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Source" dataHook="col-source" />,
-        sortingFn: (a, b) => SOURCES[a.original.source].name.localeCompare(SOURCES[b.original.source].name),
+        // Column widths are Figma's (7 Oct): 140 / 104 / flexible / 127 / 112,
+        // plus the 16px row inset on the first and last columns.
+        meta: { width: "156px" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Source" dataHook="th-source" />
+        ),
         cell: ({ row }) => (
           <div onClick={() => setActiveId(row.original.id)}>
             <span className="flex items-center gap-2">
@@ -1681,20 +1832,7 @@ function ReviewsInbox() {
                   which site this is; the word is the fallback for anyone who
                   does not read logos, so it should sit under the review text
                   rather than level with it. */}
-              {/* ONE LINE, WITH A CEILING (Ali, 17 Sep: "is this wrapping on
-                  purpose?", then "the provider would have to have a max width").
-                  It was not on purpose. No width is set on this column, so the
-                  table sized it to about 110px and "Apple Maps" broke onto two
-                  lines at every width. Nowrap alone would let one long site name
-                  push the whole column out, and BrightLocal lists 80-plus sites,
-                  so it stops at 120px and ellipsises past that, with the full
-                  name on hover. Every site currently in the data fits. */}
-              <span
-                className="hidden max-w-[7.5rem] truncate text-xs lg:inline"
-                title={SOURCES[row.original.source].name}
-              >
-                {SOURCES[row.original.source].name}
-              </span>
+              <span className="hidden text-sm lg:inline">{SOURCES[row.original.source].name}</span>
             </span>
           </div>
         ),
@@ -1702,8 +1840,10 @@ function ReviewsInbox() {
       {
         accessorKey: "rating",
         enableGlobalFilter: false,
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Rating" dataHook="col-rating" />,
-        sortingFn: (a, b) => ratingRank(a.original.rating) - ratingRank(b.original.rating),
+        meta: { width: "104px" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Rating" dataHook="th-rating" />
+        ),
         cell: ({ row }) => (
           <div onClick={() => setActiveId(row.original.id)}>
             <RatingValue rating={row.original.rating} hook={`stars-${row.id}`} />
@@ -1716,8 +1856,8 @@ function ReviewsInbox() {
         // rendered inside another cell, so it has no accessor of its own.
         // The cell reads row.original, so this is invisible to rendering.
         accessorFn: (r) => `${r.name} ${r.text}`,
-        header: () => "Review",
         enableSorting: false,
+        header: () => <span>Review</span>,
         cell: ({ row }) => (
           // Carries the open-row marker that the select cell used to. This
           // is the only column visible at every width — source/rating/
@@ -1760,8 +1900,10 @@ function ReviewsInbox() {
       {
         accessorKey: "status",
         enableGlobalFilter: false,
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" dataHook="col-status" />,
-        sortingFn: (a, b) => (STATUS_RANK[a.original.status] ?? 9) - (STATUS_RANK[b.original.status] ?? 9),
+        meta: { width: "127px" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Status" dataHook="th-status" />
+        ),
         cell: ({ row }) => (
           <div onClick={() => setActiveId(row.original.id)}>
             <StatusChip
@@ -1774,9 +1916,10 @@ function ReviewsInbox() {
       {
         accessorKey: "date",
         enableGlobalFilter: false,
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Date" dataHook="col-date" />,
-        // daysAgo counts back from today, so a smaller number is newer.
-        sortingFn: (a, b) => b.original.daysAgo - a.original.daysAgo,
+        meta: { width: "128px" },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Date" dataHook="th-date" />
+        ),
         cell: ({ row }) => (
           <div onClick={() => setActiveId(row.original.id)}>
             <span className="text-muted-foreground text-sm whitespace-nowrap">
@@ -1794,9 +1937,11 @@ function ReviewsInbox() {
     data,
     getRowId: (row) => row.id,
     enableGlobalFiltering: true,
+    enablePagination: true,
+    // Header sort drives `sorting`; `data` arrives already sorted.
+    manualSorting: true,
     sorting,
     onSortingChange: setSorting,
-    enablePagination: true,
     // TWENTY (Ali, 6 Sep). Twelve was the number that happened to fill the
     // first screen; twenty is a page you scroll once, and it matches the
     // pagination rule the campaigns table already follows.
@@ -1820,11 +1965,6 @@ function ReviewsInbox() {
     (period !== "all" ? 1 : 0) +
     (table.getState().globalFilter ? 1 : 0);
 
-  // TWO DIFFERENT SENTENCES, and the filters win over the tab: clearing them
-  // is the way back, and the button under the table offers exactly that.
-  const noResultsMessage =
-    activeFilters > 0 ? "No reviews match these filters." : TAB_EMPTY[tab] ?? "No reviews match.";
-
   const clearFilters = () => {
     table.resetGlobalFilter();
     setSourceFilter([]);
@@ -1833,61 +1973,7 @@ function ReviewsInbox() {
   };
 
   const pagination = table.getState().pagination;
-  // ROWS THE TABLE IS ACTUALLY SHOWING, which is not data.length. The search
-  // is the table's own global filter, so `data` still counts the rows a search
-  // has just hidden, and a search is the commonest way to empty this list.
-  // getRowCount is the filtered, pre-pagination count: the same number the
-  // filter sheet reads for "Show n reviews".
-  const shownRows = table.getRowCount();
-  // The list is narrowed down to nothing, which the table's own no-results row
-  // covers. Kept separate from inboxEmpty because the answer is different: one
-  // is "undo that", the other is "here is what this page is for".
-  const noMatches = !inboxEmpty && shownRows === 0;
-
-  // WHAT IS LEFT TO REPLY TO ON THE ACCOUNT: still needing action, on a
-  // source this screen can post to. The review just answered counts itself
-  // out, because setStatus has already moved it to "manual".
-  // SCOPED TO THE INBOX, not to the rows on screen. A tab or a facet is a way
-  // of looking at the work, not a statement about how much of it is left:
-  // scoped to the view, a reply sent from the Skipped tab (where a queue is
-  // empty by construction) would throw the confetti for an empty queue with
-  // twenty reviews still waiting on Needs action. So "3 more reviews need a
-  // reply" means three anywhere in the inbox.
-  const replyQueue = useMemo(
-    () => reviews.filter((r) => r.status === "needs" && canReply(r)),
-    [reviews],
-  );
-
-  // WHAT IS LEFT THAT THIS SCREEN CANNOT ANSWER: still needing action, on a
-  // source that only takes replies on its own site. Four rows on the engaged
-  // account, on Apple Maps, Yahoo! Local and TripAdvisor. They have no Send
-  // and no Skip, by the design of the read-only panel, so nothing a person
-  // does here ever moves them out of Needs action.
-  const waitingElsewhere = useMemo(
-    () => reviews.filter((r) => r.status === "needs" && !canReply(r)),
-    [reviews],
-  );
-
-  // HOW MANY ARE WAITING, in the terms the rest of the product uses: every
-  // row still needing action, on any source. replyQueue is narrower on
-  // purpose, because it is what Next opens and Next cannot land on a review
-  // this screen has no way to post to, but COUNTING by that narrower rule
-  // made the panel say 21 while the Needs action tab right behind it, and
-  // the hub card in front of it, both said 25 (Ali, 20 Sep). The gap was the
-  // four Needs action rows on read-only sources. The count and the queue
-  // answer two different questions, so they are two different things.
-  //
-  // THE COUNT IS ALL IT DECIDES. Letting it decide "that was the last one"
-  // too broke the state machine: the four read-only rows can never leave
-  // Needs action, so the total floored at four, the final state was
-  // unreachable, and the last reply on the account landed on a panel saying
-  // four still needed answering with only Close under it. The sentence
-  // counts every waiting review; whether this was the last one is settled by
-  // replyQueue, which is the work this screen can actually do.
-  const needsReply = useMemo(
-    () => reviews.filter((r) => r.status === "needs").length,
-    [reviews],
-  );
+  const total = data.length;
 
   const active = activeId ? reviews.find((r) => r.id === activeId) : null;
   const activeIndex = activeId ? data.findIndex((r) => r.id === activeId) : -1;
@@ -1897,34 +1983,6 @@ function ReviewsInbox() {
     setActiveId(data[i].id);
     const targetPage = Math.floor(i / pagination.pageSize);
     if (targetPage !== pagination.pageIndex) table.setPageIndex(targetPage);
-  };
-
-  // The open review, once its reply has gone. Null the rest of the time, and
-  // null again the moment the person moves to another review or closes.
-  const sent = active && sentId === active.id ? active : null;
-  // THE TOP OF THE QUEUE, not the row after this one: the review just
-  // answered may have left the list already (the Needs action tab drops it
-  // the moment it is replied to), so "the one below" is not a position that
-  // survives the send. An inbox is worked from the top, so the top is where
-  // Reply to the next one goes.
-  const nextNeeds = replyQueue[0] ?? null;
-  // WHERE THE REST OF THE WORK IS once this screen has run out of its own:
-  // the first Needs action row on a read-only source. Only offered when
-  // there is no next reply to write, and it is the whole reason the last
-  // reply no longer dead-ends. A panel that says four are still waiting owes
-  // the person a door to them, and the read-only panel is that door: it
-  // names the source and carries Open in Apple Maps.
-  const nextElsewhere = nextNeeds ? null : (waitingElsewhere[0] ?? null);
-  const openInQueue = (review) => {
-    if (!review) return;
-    // NEXT LANDS ON A ROW THE TABLE IS SHOWING. The top of the queue can sit
-    // behind the tab you are standing on or a facet you set, so the view goes
-    // back to the top of Needs action before the review opens, rather than
-    // putting a row in the drawer that is not in the table behind it.
-    setTab("needs");
-    clearFilters();
-    table.setPageIndex(0);
-    setActiveId(review.id);
   };
 
   const draft = activeId && drafts[activeId] !== undefined ? drafts[activeId] : "";
@@ -1995,10 +2053,7 @@ function ReviewsInbox() {
         return;
       }
       setStatus(id, "manual", text);
-      // THE DRAWER STAYS OPEN ON A SUCCESS. It used to close here, which made
-      // a reply that landed the quietest event on the screen: the overlay
-      // went and a badge changed behind it.
-      setSentId(id);
+      setJustSent({ id, at: new Date() });
     }, 900);
   };
 
@@ -2008,10 +2063,9 @@ function ReviewsInbox() {
   useEffect(() => {
     cancelSend();
     setSending(false);
-    setSentId(null);
+    setJustSent(null);
   }, [activeId]);
 
-  const orderLabel = ORDERS.find((o) => o.id === order)?.label ?? "Newest first";
 
   const sourceLabel =
     sourceFilter.length === 0
@@ -2074,85 +2128,111 @@ function ReviewsInbox() {
 
   const renderInbox = () => (
     <Card dataHook="review-inbox" density="condensed" className="max-w-none gap-0 p-0">
-      {/* White (Ali, 10 Sep: "table header area white?"): tabs, filters and
-          the order row sit on the card's own surface, divided by borders. */}
-      <div ref={bandRef} className="bg-[var(--ds-tailwind-colors-base-white)] sticky z-30 rounded-t-[inherit]" style={{ top: stickyTop }}>
-        {/* ROW 1, TITLE AND TABS (Ali, 17 Sep: the tabs "are almost a filter -
-            can we move them to the right and include a title in the table
-            called Reviews"). "Reviews" on the left, like every other card's
-            title; the status tabs on the right, where the filters live, so
-            the band reads as a title, then ways to narrow the list. py-3: the
-            row holds a 36px strip, and 12px either side gives the title the
-            room a card header has (the old tabs-only row was py-2, 53px).
-            px-4 keeps the title on the table's first-column edge. On a phone
-            the tabs wrap under the title and scroll sideways.
-            The tabs are the DS Tabs AS SHIPPED (Ali, 17 Sep: "use the default
-            tabs"): only layout classes on them. */}
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3">
-          <CardTitle size="small" dataHook="review-inbox-title">
-            Reviews
-          </CardTitle>
-          {/* NO TABS WITH NOTHING TO SORT INTO. Five counts reading zero
-              describe the furniture, not the account, and every one of them
-              leads to the same nothing. The title stays, so the card is still
-              a card with a name. */}
-          {inboxEmpty ? null : (
-          <Tabs
-            dataHook="review-tabs"
-            value={tab}
-            onValueChange={(next) => {
-              setTab(next);
-              setActiveId(null);
-            }}
-            className="min-w-0 max-w-full"
+      {/* CARD TITLE (Figma "Layout decisions › Card", 7 Oct): the DS data
+          card as on Local Rank Tracker. Title, then controls, then the table
+          edge to edge. Sits OUTSIDE the sticky band so it scrolls away and
+          only the controls stay pinned. */}
+      <div className="px-6 py-4">
+        <TypographyHeading level={2} variant="subsection" dataHook="reviews-card-title">
+          Reviews
+        </TypographyHeading>
+      </div>
+      <div className="bg-card sticky z-30" style={{ top: stickyTop }}>
+        {/* ROW 1 — TABS. Real DS Tabs: role="tablist", roving tabindex and
+            arrow-key navigation, none of which the hand-rolled buttons had.
+            
+            The className overrides exist because BrightLocal Tabs ships ONE
+            look — a pill strip on bg-muted (TabsList is `bg-muted rounded-lg
+            h-9 w-fit`, TabsTrigger goes `data-[state=active]:bg-background
+            + shadow-sm`). This screen needs the underlined strip: full
+            width, flush on the border-b, active marked by border-primary.
+            There is no `variant` prop to ask for that, so every class below
+            is neutralising a baked-in one. THIS IS THE ARGUMENT FOR
+            Tabs variant="underlined" — Grade's own Tabs already has it.
+            Behaviour is the DS's; only the paint is ours. */}
+        <Tabs
+          dataHook="review-tabs"
+          value={tab}
+          onValueChange={(next) => {
+            setTab(next);
+            setActiveId(null);
+          }}
+        >
+          <TabsList
+            dataHook="review-tabs-list"
+            // p-0 FIRST, then the padding we actually want — written the other way
+            // round tailwind-merge drops px-4 and the strip loses its inset.
+            // px-2 + the trigger's own px-2 puts the first label on the same
+            // 16px edge as the filter row and the table below it.
+            // overflow-x-auto keeps the strip swipeable on narrow screens, but the
+            // scrollbar itself is chrome we do not want: on mobile it paints a
+            // grey gutter under the tabs and eats vertical space. Hidden, not
+            // disabled — the strip still scrolls.
+            className="h-auto w-full justify-start gap-6 overflow-x-auto overflow-y-hidden rounded-none border-b bg-transparent p-0 px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
-            <TabsList
-              dataHook="review-tabs-list"
-              className="max-w-full justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {TABS.map((t) => (
-                <TabsTrigger key={t.id} value={t.id} dataHook={`tab-${t.id}`} className="shrink-0">
-                  {t.label}
-                  <Badge dataHook={`tab-count-${t.id}`} variant="secondary" data-number="true">
-                    {counts[t.id]}
-                  </Badge>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-          )}
-        </div>
+            {TABS.map((t) => (
+              <TabsTrigger
+                key={t.id}
+                value={t.id}
+                dataHook={`tab-${t.id}`}
+                className="text-muted-foreground hover:text-foreground data-[state=active]:text-foreground data-[state=active]:border-b-primary -mb-px shrink-0 gap-2 rounded-none border-b-2 border-transparent px-0 py-[5px] font-medium whitespace-nowrap data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:bg-transparent"
+              >
+                {t.label}
+                <Badge dataHook={`tab-count-${t.id}`} variant="primary" data-number="true">
+                  {counts[t.id]}
+                </Badge>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
 
-        {/* NEITHER ROW EARNS ITS PLACE WITH AN EMPTY INBOX. Both of them
-            narrow a list, and a search field over no reviews invites typing
-            into nothing. */}
-        {inboxEmpty ? null : (
-          <>
         {/* ROW 2 — FILTERS, own surface, always visible. Search leads, per
             the DS's own DataTablePage recipe (Toolbar > ToolbarLeft >
             DataTableSearch). */}
-        <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
+        <div className="flex flex-wrap items-center gap-3 px-6 py-4">
           <DataTableSearch
             table={table}
             dataHook="search-reviews"
-            // size="sm" is the DS's own prop, per its DataTableToolbarLeft recipe,
-            // so the field matches the sm filter buttons beside it.
-            size="sm"
             placeholder="Search reviews"
             ariaLabel="Search reviews"
-            // THE DS SEARCH AS SHIPPED (Ali, 17 Sep: "make sure our search input
-            // is the default input out of DS"). The border-colour and type-size
-            // overrides are gone; what is left is layout only. Below lg the
-            // field grows into the row (basis-0 min-w-0 so it never pushes the
-            // Filters button onto a second line); from lg it is a fixed 12rem
-            // on the left of the filters.
-            className="min-w-0 grow basis-0 lg:w-48 lg:grow-0 lg:basis-auto"
+            // 16px on mobile, 14px from sm up. The 16px is not cosmetic:
+            // iOS Safari zooms the viewport when a focused input is under
+            // 16px. The DS contradicts itself here — InputGroup sets
+            // text-sm on the wrapper while Input sets text-base on the
+            // control, and the control wins — so at size="sm" you get a
+            // 16px field beside 12px buttons on every breakpoint.
+            // rounded-full + px-3: InputGroup is rounded-md (6px) while
+            // Button is rounded-full, so the DS's own "search + sm filter
+            // buttons" toolbar puts a rounded RECTANGLE in a row of PILLS.
+            // Matching the pills is what makes the row read as one control
+            // group rather than two.
+            // No px-* here: DataTableSearch already pads internally (its
+            // icon addon is pl-3 and the input carries px-3), so adding
+            // more just pushes the icon off the left edge.
+            // No radius override: the field keeps DataTableSearch's own shape
+            // now that the facets sit at the DS's field radius rather than
+            // Button's pill. Only the type size is corrected — Input sets
+            // text-base on every control, and 16px beside 14px triggers reads
+            // wrong, but 16px on mobile is what stops iOS zooming on focus.
+            // border-border to match the facet triggers beside it. The DS uses
+            // TWO different border tokens for field-shaped controls —
+            // InputGroup is border-input (216,227,218) and Button outline is
+            // border-border (230,237,232) — so a search field and a filter
+            // button sat next to each other never agree. The focus ring is
+            // untouched: has-[input:focus-visible]:border-ring is a separate
+            // variant and survives the merge.
+            // grow on mobile, fixed from sm up: below sm the facets have
+            // folded into one trigger, so the row has room and a 192px
+            // field beside a 100px button leaves a dead gap. From sm up the
+            // facets are back and the field must not push them around.
+            // basis-0 min-w-0, not just grow: in a flex-wrap row the items
+            // are PLACED at their base width before anything grows, and this
+            // field's intrinsic width plus the Filters button exceeds 293px
+            // at 375, so the button wrapped to a second line and the row was
+            // still two high. A zero basis lets it always fit, then grow
+            // takes what is left of the line (185px).
+            className="min-w-0 grow basis-0 border-border lg:w-60 lg:grow-0 lg:basis-auto [&_input]:text-base sm:[&_input]:text-sm"
           />
-
-          {/* SEARCH LEFT, FILTERS RIGHT (Ali, 17 Sep). The spacer sits between
-              them from sm up; below sm the search field takes the row and
-              the facets fold into the one Filters button. */}
-          {compactFilters ? null : <div className="grow" />}
 
           {compactFilters ? (
             // ONE trigger for three facets. matchMedia, not a
@@ -2178,7 +2258,7 @@ function ReviewsInbox() {
           {compactFilters ? null : (
           <FacetedFilterMenu
             dataHook="facet-sources"
-            align="right"
+            fieldWidth="w-40"
             label={sourceLabel}
             {...menuState("sources")}
             options={sourceOptions}
@@ -2198,7 +2278,7 @@ function ReviewsInbox() {
           {compactFilters ? null : (
           <FacetedFilterMenu
             dataHook="facet-ratings"
-            align="right"
+            fieldWidth="w-40"
             label={ratingLabel}
             {...menuState("ratings")}
             options={ratingOptions}
@@ -2217,10 +2297,7 @@ function ReviewsInbox() {
           {compactFilters ? null : (
           <SingleSelectMenu
             dataHook="facet-period"
-            // Last control on the right of the filter row, and the panel is
-            // wider than the trigger, so it hangs from the trigger's right
-            // edge like the sources and ratings menus beside it.
-            align="right"
+            fieldWidth="w-40"
             label={periodLabel}
             {...menuState("period")}
             options={PERIODS}
@@ -2241,87 +2318,35 @@ function ReviewsInbox() {
             </Button>
           ) : null}
 
+          {/* The spacer pushes desktop's controls left of the free space. On
+              mobile it would SHARE that space with the search field — two
+              grow items split it 50/50, which left the field at 96px — so
+              below sm the field takes the row on its own. */}
+          {compactFilters ? null : <div className="grow" />}
         </div>
 
-        {/* ROW 3, ORDER: phones only (Ali, 17 Sep). From sm up the column
-            headers sort; below it the columns fold into one cell, so this
-            menu is the way to sort there. Pagination moved under the table. */}
-        <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2 sm:hidden">
-          {/* Order takes the slot the "n of N selected" summary had. The
-              label is a plain <span>, not a <Label>: there is no form
-              control with an id to point at — the trigger is a popover
-              button, and htmlFor pointing at it would be a lie to a screen
-              reader. SingleSelectMenu already carries its own name. */}
-          <span className="text-muted-foreground text-sm" data-hook="order-label">
-            Order
-          </span>
-          <SingleSelectMenu
-            dataHook="facet-order"
-            label={orderLabel}
-            {...menuState("order")}
-            options={ORDERS}
-            value={order}
-            onSelect={(id) => {
-              setOrder(id);
-              setMenu(null);
-            }}
-          />
-
-        </div>
-          </>
-        )}
       </div>
 
-      {/* THE DEFAULT VIEW FOR EVERY NEW CUSTOMER (Ali, 20 Sep: "we will
-          actually need an empty state for the Review Manager homepage as
-          well, no reviews"). The shared EmptyState, the same one the Reply
-          templates page uses, in place of the table: a header row over
-          nothing, a pager reading 0 of 0 and five zero counts say what the
-          furniture is rather than what the account is.
-          The two actions are the product's own first two steps, connect then
-          ask, pointed at the screens lib/first-run.ts already sends a
-          first-run account to. They stand down when the "Why it matters"
-          band is above the card, because that band carries the same primary
-          action and the page should not ask twice. */}
-      {inboxEmpty ? (
-        <EmptyState
-          icon={Star}
-          dataHook="inbox-empty-state"
-          title="No reviews yet"
-          description={
-            // The band above says this at length and in nearly these words,
-            // so with it on screen the card only has to say the list is
-            // empty. With it off, this line is the only explanation there is.
-            firstRunBand
-              ? "Connected review sites fill this list on their own."
-              : "Every review from the sites you connect lands here, ready to answer. Connect one and anything already written about you appears within a day."
-          }
-          action={
-            firstRunBand ? null : (
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                {/* data-grade-goto sits on a WRAPPER, not on the Button: see
-                    the page header's actions for why. */}
-                <span className="inline-flex" data-grade-goto={CONNECT_GOTO}>
-                  <Button variant="primary" dataHook="inbox-empty-connect">
-                    Connect a review site
-                  </Button>
-                </span>
-                <span className="inline-flex" data-grade-goto={ASK_GOTO}>
-                  <Button variant="outline" dataHook="inbox-empty-ask">
-                    Ask customers for reviews
-                  </Button>
-                </span>
-              </div>
-            )
-          }
-        />
-      ) : (
-      <>
-      <div style={{ "--th-top": `${stickyTop + bandHeight}px` }}>
       <DataTable
         table={table}
         dataHook="reviews-table"
-        noResultsMessage={noResultsMessage}
+        // Figma "Review Manager · States › Empty states" (7 Oct): one line,
+        // muted, centred under the header row, worded by WHY it is empty.
+        noResultsMessage={
+          <div className="text-muted-foreground py-8 text-center text-sm font-normal" data-hook="reviews-empty">
+            {activeFilters > 0
+              ? "No reviews match these filters."
+              : tab === "needs"
+                ? "Nothing here needs a reply."
+                : tab === "skipped"
+                  ? "No reviews have been skipped."
+                  : tab === "replied"
+                    ? "No reviews have been replied to."
+                    : tab === "removal"
+                      ? "No reviews are being removed."
+                      : "No reviews match these filters."}
+          </div>
+        }
         // The open-row highlight rides TableRow's own `transition-colors
         // duration-fast`, so it fades in and out for free as you page.
         // first-child pl-4 replaces the left inset the select column used
@@ -2330,49 +2355,25 @@ function ReviewsInbox() {
         // 8px, 8px short of the toolbars above, which are all px-4. Keyed off
         // :first-child rather than the source cell because source/rating/
         // status/date all collapse when narrow and `text` becomes column one.
-        // HEADERS SHOWN AND PINNED (Ali, 17 Sep). The row that was sr-only is
-        // the DS header again, sortable, and sticks under the tabs-and-filters
-        // band at --th-top. Sticky needs the page to be the scroller, so the
-        // DataTable's own overflow wrappers are cleared, and a <th> only
-        // sticks with separated borders, so the row rules move onto the
-        // cells. Below sm the columns fold into one cell and the header row
-        // hides: there is nothing in it to sort.
-        className="rounded-none border-0 overflow-visible [&>div]:overflow-visible [&_table]:border-separate [&_table]:border-spacing-0 [&_thead_th]:sticky [&_thead_th]:top-[var(--th-top,0px)] [&_thead_th]:z-20 [&_thead_th]:border-b [&_tbody_td]:border-b [&_tbody_tr:last-child_td]:border-b-0 max-sm:[&_thead]:hidden [&_thead_th:first-child]:pl-4 [&_tbody_tr]:cursor-pointer [&_tbody_tr:hover]:bg-muted/50 [&_tbody_tr:has([data-open-row])]:bg-accent [&_tbody_tr:last-child]:border-0 [&_tbody_td:first-child]:pl-4"
+        // 7 Oct: headers are VISIBLE again (Ali: "we need datatable
+        // headers"). The h-0/p-0 that collapsed the thead are gone; the
+        // header keeps the DS bg-muted band Figma draws. First th gets the
+        // same pl-4 as the first td so labels sit over their columns.
+        className="rounded-none border-0 [&_thead_th:first-child]:pl-6 [&_thead_th:last-child]:pr-6 [&_tbody_td:last-child]:pr-6 [&_tbody_td]:h-13 [&_tbody_tr]:cursor-pointer [&_tbody_tr:hover]:bg-muted/50 [&_tbody_tr:has([data-open-row])]:bg-accent [&_tbody_tr:last-child]:border-0 [&_tbody_td:first-child]:pl-6"
       />
-      </div>
 
-      {/* THE WAY BACK, AND ONLY WHERE THERE IS NOT ONE ALREADY. From lg the
-          filter row carries "Clear all" with its count, in view above the
-          short empty table; below lg the facets fold into a sheet and that
-          button goes with them, so the message would be left with no control
-          anywhere on screen. One action, one place. */}
-      {compactFilters && noMatches && activeFilters > 0 ? (
-        <div className="flex justify-center px-4 pb-4">
-          <Button
-            variant="outline"
-            size="sm"
-            dataHook="clear-filters-empty"
-            onClick={clearFilters}
-          >
-            Clear filters
-          </Button>
-        </div>
-      ) : null}
-      </>
-      )}
-
-      {/* PAGINATION PINNED TO THE BOTTOM (Ali, 17 Sep: "I want the same on
-          Review Manager", the Internal feedback table's bar). position:
-          sticky at bottom 0: while the card's end is below the fold the bar
-          holds the bottom of the screen, and once the end scrolls into view
-          it rests there. White and bordered like the top band, above the
-          rows. It moved out of the Order row, so the count and the pages
-          sit where you finish reading the page of reviews.
-          It stands down over no rows, whichever kind of nothing it is: "1 to 0
-          of 0" beside a disabled pair of arrows is counting for the sake of
-          it. */}
-      {shownRows === 0 ? null : (
-      <div className="bg-[var(--ds-tailwind-colors-base-white)] sticky bottom-0 z-20 rounded-b-[inherit] border-t px-4 py-2">
+      {/* PAGINATION AT THE BOTTOM, STICKY AT 0 (Ali, 7 Oct; Figma shows
+          "1 to 20 of 60" left and the page buttons right, under the table).
+          Sticky so the controls are always in reach on a long page; it
+          settles into place at the end of the card. bg-card so rows do not
+          show through while it is stuck. */}
+      {/* No pager under an empty table: Figma's empty states end at the
+          message (7 Oct). */}
+      {data.length === 0 ? null : (
+      <div
+        className="bg-card sticky bottom-0 z-20 rounded-b-[inherit] border-t px-4 py-3"
+        data-hook="reviews-pagination-bar"
+      >
         <DataTablePagination
           table={table}
           dataHook="reviews-pagination"
@@ -2386,9 +2387,184 @@ function ReviewsInbox() {
     </Card>
   );
 
+  // ─── STATES DRAWER (Ali, 7 Oct: "a states thing somewhere in the
+  // prototype that pulls out a sheet and allows us to get to empty states",
+  // on the standard BrightLocal Drawer). Every state Figma draws for this
+  // page, one click each. A state resets the inbox to its seed first, so the
+  // list is repeatable in any order. Prototype chrome, not product.
+  const resetInbox = () => {
+    cancelSend();
+    setReviews(seedReviews());
+    setDrafts(seedDrafts());
+    setTab("all");
+    setSourceFilter([]);
+    setRatingFilter([]);
+    setPeriod("all");
+    setMenu(null);
+    setActiveId(null);
+    setAiSeeded({});
+    setAiRemaining(AI_DRAFT_QUOTA);
+    setAiPending(false);
+    setSending(false);
+    setJustSent(null);
+    setSendAttempts({});
+    setFirstRun(false);
+    setOpenTemplates(0);
+    table.resetGlobalFilter();
+  };
+  const seeded = seedReviews();
+  // Null-safe: an account with no reviews (the empty persona) has none to
+  // pick, and the review-sheet states simply open nothing there.
+  const pickId = (test) => (seeded.find(test) ?? seeded[0])?.id ?? null;
+  const replyableId = pickId(
+    (r) => r.source === "google" && r.status === "needs" && !r.sendError && !simulatedFailures[r.id],
+  );
+  const readOnlyId = pickId((r) => !SOURCES[r.source].canReply && r.status === "needs");
+  // Open one review, then set what it needs AFTER the sheet has mounted:
+  // opening a review clears sending/justSent (the effect on activeId).
+  const openThen = (id, then) => {
+    if (!id) return;
+    setTimeout(() => setActiveId(id), 30);
+    if (then) setTimeout(then, 120);
+  };
+  const STATES = [
+    ["Status filter", [
+      ["All", () => {}],
+      ["Needs action", () => setTab("needs")],
+      ["Replied", () => setTab("replied")],
+      ["Skipped", () => setTab("skipped")],
+      ["Removal", () => setTab("removal")],
+    ]],
+    ["Empty states", [
+      ["No matches", () => table.setGlobalFilter("no review says this")],
+      ["Inbox zero", () => {
+        setReviews((rs) => rs.map((r) => (r.status === "needs" ? { ...r, status: "manual", sendError: null } : r)));
+        setTab("needs");
+      }],
+      ["Nothing skipped", () => {
+        setReviews((rs) => rs.map((r) => (r.status === "skipped" ? { ...r, status: "manual" } : r)));
+        setTab("skipped");
+      }],
+      ["No reviews yet (first run)", () => setFirstRun(true)],
+    ]],
+    ["Filters", [
+      ["Sources open", () => setTimeout(() => setMenu("sources"), 350)],
+      ["Ratings open", () => setTimeout(() => setMenu("ratings"), 350)],
+      ["Time open", () => setTimeout(() => setMenu("period"), 350)],
+      ["2 sources, 2 ratings applied", () => {
+        setSourceFilter(["google", "facebook"]);
+        setRatingFilter(["5", "4"]);
+      }],
+    ]],
+    ["Review sheet", [
+      ["Default", () => openThen(replyableId)],
+      ["Sending", () => openThen(replyableId, () => {
+        setDrafts((d) => ({ ...d, [replyableId]: resolveVars(DEFAULT_TEMPLATES[0].body, seeded.find((r) => r.id === replyableId), business) }));
+        setSending(true);
+      })],
+      ["Read-only source", () => openThen(readOnlyId)],
+      ["Sent", () => openThen(replyableId, () => {
+        setStatus(replyableId, "manual", resolveVars(DEFAULT_TEMPLATES[0].body, seeded.find((r) => r.id === replyableId), business));
+        setJustSent({ id: replyableId, at: new Date(2026, 7, 17, 10, 42) });
+      })],
+    ]],
+    ["AI drafts", [
+      ["3 of 3 left", () => openThen(replyableId)],
+      ["Generating a draft", () => openThen(replyableId, () => setAiPending(true))],
+      ["Draft ready, 2 left", () => openThen(replyableId, () => {
+        const r = seeded.find((x) => x.id === replyableId);
+        setAiSeeded({ [replyableId]: true });
+        setAiRemaining(AI_DRAFT_QUOTA - 1);
+        setDrafts((d) => ({ ...d, [replyableId]: resolveVars(r.aiDraft, r, business) }));
+      })],
+      ["1 left", () => openThen(replyableId, () => setAiRemaining(1))],
+      ["Used up", () => openThen(replyableId, () => setAiRemaining(0))],
+    ]],
+    ["Templates", [
+      ["Choosing a template", () => openThen(replyableId, () => setOpenTemplates((n) => n + 1))],
+      ["Template applied", () => openThen(replyableId, () => {
+        setDrafts((d) => ({ ...d, [replyableId]: resolveVars(DEFAULT_TEMPLATES[0].body, seeded.find((r) => r.id === replyableId), business) }));
+      })],
+    ]],
+    ["Send failures", [
+      ["Recoverable (rate limited)", "rate-limited"],
+      ["Unknown", "unknown"],
+      ["Blocking (disconnected)", "disconnected"],
+      ["Permission", "permission"],
+      ["Terminal (deleted)", "deleted"],
+    ].map(([label, code]) => [label, () => openThen(replyableId, () => {
+      setDrafts((d) => ({ ...d, [replyableId]: resolveVars(DEFAULT_TEMPLATES[0].body, seeded.find((r) => r.id === replyableId), business) }));
+      failSend(replyableId, code);
+    })])],
+  ];
+  const [statesOpen, setStatesOpen] = useState(false);
+
   return (
     <div className="pb-10">
-      {renderInbox()}
+      {firstRun ? (
+        // Figma "Empty states › No reviews yet · first run". Where the two
+        // buttons go is Product's call (the Figma legend says so): Ask goes
+        // to the Review Builder; Connect has no Location Manager screen in
+        // this prototype yet, so it goes nowhere.
+        <EmptyState
+          dataHook="reviews-first-run"
+          size="md"
+          align="center"
+          icon={<Star />}
+          title="No reviews yet"
+          description="Reviews from the sites you connect will show here."
+        >
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button variant="primary" dataHook="first-run-connect">
+              Connect a review site
+            </Button>
+            <span className="inline-flex" data-grade-goto="screen:dmt094j963aye">
+              <Button variant="outline" dataHook="first-run-ask">
+                Ask customers for reviews
+              </Button>
+            </span>
+          </div>
+        </EmptyState>
+      ) : (
+        renderInbox()
+      )}
+
+      <div className="fixed right-4 bottom-20 z-40" data-hook="states-launcher">
+        <Button variant="outline" size="sm" dataHook="open-states" onClick={() => setStatesOpen(true)}>
+          <Layers className="size-4" />
+          States
+        </Button>
+      </div>
+      <Drawer open={statesOpen} onOpenChange={setStatesOpen} direction="right">
+        <DrawerContent dataHook="states-drawer">
+          <DrawerHeader>
+            <DrawerTitle>Prototype states</DrawerTitle>
+          </DrawerHeader>
+          <DrawerBody className="flex max-w-none flex-col gap-5 overflow-y-auto pb-6">
+            {STATES.map(([group, items]) => (
+              <div key={group} className="flex flex-col gap-1">
+                <p className="text-muted-foreground px-2 text-xs font-medium">{group}</p>
+                {items.map(([label, apply]) => (
+                  <Button
+                    key={label}
+                    variant="ghost"
+                    size="sm"
+                    className="justify-start"
+                    dataHook={`state-${group}-${label}`.toLowerCase().replace(/[^a-z0-9]+/g, "-")}
+                    onClick={() => {
+                      resetInbox();
+                      setStatesOpen(false);
+                      apply();
+                    }}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            ))}
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
 
       <FilterDrawer
         side={isNarrow ? "bottom" : "right"}
@@ -2409,190 +2585,38 @@ function ReviewsInbox() {
         resultCount={table.getRowCount()}
       />
 
-      {/* THE REVIEW PANEL IS A DRAWER TOO (Ali, 19 Aug: "I like the drawer
-          close for the filters — can we have the same for opening up an
-          individual item?"). Same direction rule as the filters: a bottom
-          drawer on a phone, a right-hand one from sm up. One overlay idiom
-          on the screen now, which is the earlier open question closed. */}
-      <Drawer
+      {/* THE REVIEW PANEL IS THE PAGINATED SHEET (7 Oct, Figma "Review
+          Manager · Review sheet" and the Sheet_V2 library component). It was
+          a Drawer (Ali, 19 Aug); Figma moves it onto the DS Sheet with the
+          pager in its own band above the details. Still a bottom sheet on a
+          phone. Width is the DS 384, which is what Figma draws; the old
+          half-page DRAWER_WIDTH stays with the filter drawer only.
+          The title is screen-reader only, as before: the pager already says
+          which review you are on. bodyKey remounts the body per review, so
+          scroll resets and the entrance fade replays. */}
+      <PaginatedSheet
         open={active !== null}
         onOpenChange={(o) => (o ? null : setActiveId(null))}
-        direction={isNarrow ? "bottom" : "right"}
-      >
-        {/* WIDTH. The DS right-hand drawer is a flat 384px
-            (data-[direction=right]:sm:max-w-sm), which is 30% of a 1280
-            canvas and was cramped once the panel carried a review, a
-            composer and a failure alert. Now half the page, floored at
-            today's 384 so smaller desktops never LOSE width, capped at
-            640 because a reply box wider than that runs the line length
-            past comfortable (Ali, 27 Aug).
-            The override has to repeat the data-[direction=right] variant:
-            the DS class is data-[...]:sm:max-w-sm, and a plain sm:max-w-*
-            loses on specificity to an attribute-qualified one. Matching
-            the variant chain also lets tailwind-merge displace it rather
-            than emit both. */}
-        <DrawerContent
-          dataHook="review-panel"
-          className={`flex flex-col ${isNarrow ? BOTTOM_DRAWER_HANDLE : `h-full ${DRAWER_WIDTH}`}`}
-          style={isNarrow ? REVIEW_DRAWER_STYLE : undefined}
-        >
-          {/* Same header shape as the filter drawer: nav on the left, a real
-              close Button on its centre line. The title stays screen-reader
-              only — the panel's subject is the review itself, and PanelNav
-              already says which one you are on — but Drawer, like Dialog,
-              needs a title in the tree or it warns and leaves the panel
-              unnamed for assistive tech. */}
-          <DrawerHeader
-            className={`max-w-none flex-row items-center justify-between gap-2 border-b px-4 text-left ${
-              isNarrow ? "py-2" : "py-3"
-            }`}
-          >
-            <span className="sr-only">
-              <DrawerTitle>Review</DrawerTitle>
-            </span>
-            {/* The pager stands down for the success moment: the review just
-                answered can have left the list already (the Needs action tab
-                drops it as soon as it is replied to), which would leave the
-                counter reading 0 of N. It hands the slot to a label rather
-                than to an empty span: a strip carrying nothing but the close
-                X reads as a header that failed to render (Ali, 20 Sep), and
-                it read that way on every tab, since the tab that keeps the
-                review would have shown a pager and the tab that drops it
-                would not. A label says the same thing on both. */}
-            {sent ? (
-              <span className="text-muted-foreground text-sm">Reply sent</span>
-            ) : (
-              <PanelNav
-                index={activeIndex}
-                total={data.length}
-                onPrev={() => goTo(activeIndex - 1)}
-                onNext={() => goTo(activeIndex + 1)}
-              />
-            )}
-            <DrawerClose asChild>
-              <Button
-                variant="ghost"
-                iconOnly
-                size="sm"
-                dataHook="close-review"
-                ariaLabel="Close review"
-              >
-                <X className="size-4" />
-              </Button>
-            </DrawerClose>
-          </DrawerHeader>
-          {/* DrawerBody carries the width and padding but NOT scrolling —
-              it is a wrapper, not a scroller — so min-h-0 + overflow-y-auto
-              are still ours. min-h-0 is the load-bearing half: a flex child
-              defaults to min-height:auto and refuses to shrink below its
-              content, so overflow never engages without it.
-              key on the review id: React remounts, so the scroll position
-              resets to the top of the new review AND tw-animate replays the
-              fade. Without the key you land halfway down the next one. */}
-          <DrawerBody
-            // The sent state is a different thing in the same slot, so it
-            // takes its own key: the remount replays the entrance fade, and
-            // the moment arrives rather than appearing.
-            key={sent ? `${active.id}-sent` : active?.id}
-            // py-4: the detail rows sat hard against the header's divider
-            // (Ali, 19 Aug: "The key values are directly next to the
-            // header"). mt-0 kills DrawerBody's own mt-4, which only exists
-            // to space it from a header that has no border.
-            //
-            // animate-entrance-fade, not `animate-in fade-in-0 duration-200`:
-            // the DS published a motion taxonomy on 13 Aug and deprecated
-            // direct tw-animate-css use, and this class IS the documented
-            // replacement for a hand-written fade. It carries the DS's own
-            // 300ms duration-slow, which is their stated ceiling for large
-            // surfaces — the 200ms here was invented.
-            // max-w-none: see the review panel's width note. The DS
-            // drawer slots cap content at 384 and centre it, which left a
-            // 127px gutter each side once the panel went to 640.
-            className="animate-entrance-fade mt-0 flex min-h-0 max-w-none flex-1 flex-col overflow-y-auto py-4"
-          >
-          {sent ? (
-            <ReplySent
-              review={sent}
-              business={business}
-              remaining={needsReply}
-              queued={replyQueue.length}
-            />
-          ) : (
-          <ReplyBody
-            review={active}
-            business={business}
-            draft={draft}
-            onDraft={setDraft}
-            onAi={draftWithAi}
-            aiPending={aiPending}
-            aiSpent={active ? !!aiSeeded[active.id] : false}
-            aiBlocked={active ? aiRemaining <= 0 && !aiSeeded[active.id] : false}
-            aiRemaining={aiRemaining}
-            templates={templates}
-            onTemplate={(t) => setDraft(resolveVars(t.body, active, business))}
-            sending={sending}
-            // Retry is the only action the panel body owns. Skip belongs to
-            // the footer, which has carried it for every unreplied review
-            // all along, failure or not.
-            onRetry={sendReply}
-          />
-          )}
-          </DrawerBody>
-          {/* The package ships NO safe-area handling, and a right-hand
-              drawer is `inset-y-0 h-full`, so on iOS these buttons sit under
-              the home indicator. flex-row because DrawerFooter is flex-col:
-              it is shaped for stacked confirm/cancel buttons, and these are
-              a toolbar. justify-end because the DS SheetFooter right-aligns
-              its buttons (sm:justify-end), and this panel should match it
-              (Ali, 17 Sep). */}
-          {canReply(active) ? (
-          <DrawerFooter className="max-w-none flex-row items-center justify-end border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            {sent ? (
-              <>
-                {/* THE OBVIOUS NEXT STEP AND NOTHING ELSE: the next review
-                    to answer, or, once there is none, the first of the ones
-                    this screen cannot answer. Close takes the primary only
-                    when neither exists, because finishing is the action then
-                    and nothing else is. */}
-                <DrawerClose asChild>
-                  <Button
-                    variant={nextNeeds || nextElsewhere ? "outline" : "primary"}
-                    dataHook={`sent-close-${sent.id}`}
-                  >
-                    Close
-                  </Button>
-                </DrawerClose>
-                {nextNeeds ? (
-                  <Button
-                    variant="primary"
-                    dataHook={`sent-next-${sent.id}`}
-                    onClick={() => openInQueue(nextNeeds)}
-                  >
-                    Reply to the next one
-                  </Button>
-                ) : nextElsewhere ? (
-                  // The reply box is done for the day, the inbox is not. This
-                  // opens the first of the ones only their own site accepts,
-                  // where the panel says which site and offers the way out to
-                  // it, so the count in the line above always has somewhere
-                  // to lead.
-                  <Button
-                    variant="primary"
-                    dataHook={`sent-elsewhere-${sent.id}`}
-                    onClick={() => openInQueue(nextElsewhere)}
-                  >
-                    See the ones left
-                  </Button>
-                ) : null}
-              </>
-            ) : (
+        side={isNarrow ? "bottom" : "right"}
+        style={isNarrow ? { height: "92svh" } : undefined}
+        dataHook="review-panel"
+        index={activeIndex}
+        total={data.length}
+        onPrev={() => goTo(activeIndex - 1)}
+        onNext={() => goTo(activeIndex + 1)}
+        title="Review"
+        hideTitle
+        bodyKey={active?.id}
+        footer={
+          active && justSent && justSent.id === active.id ? (
+            <Button variant="outline" dataHook="reply-sent-close" onClick={() => setActiveId(null)}>
+              Close
+            </Button>
+          ) : canReply(active) ? (
             <ReplyActions
               review={active}
               draft={draft}
               sending={sending}
-              // Send is no longer the whole transaction: sendReply owns the
-              // pending beat, the failure and the close. See it in
-              // ReviewsInbox.
               onSend={sendReply}
               onSkip={() => {
                 setStatus(active.id, "skipped");
@@ -2604,11 +2628,33 @@ function ReviewsInbox() {
               }}
               onDelete={() => setStatus(active.id, "needs", "")}
             />
-            )}
-          </DrawerFooter>
-          ) : null}
-        </DrawerContent>
-      </Drawer>
+          ) : null
+        }
+      >
+        <ReplyBody
+          review={active}
+          openTemplates={openTemplates}
+          sentAt={active && justSent && justSent.id === active.id ? justSent.at : null}
+          business={business}
+          draft={draft}
+          onDraft={setDraft}
+          onAi={draftWithAi}
+          aiPending={aiPending}
+          aiSpent={active ? !!aiSeeded[active.id] : false}
+          aiBlocked={active ? aiRemaining <= 0 && !aiSeeded[active.id] : false}
+          aiRemaining={aiRemaining}
+          templates={templates}
+          onTemplate={(t) => setDraft(resolveVars(t.body, active, business))}
+          sending={sending}
+          onRetry={sendReply}
+          // Terminal failures offer Skip instead of Retry, so the panel
+          // body needs the same handler the footer uses.
+          onSkip={() => {
+            setStatus(active.id, "skipped");
+            setActiveId(null);
+          }}
+        />
+      </PaginatedSheet>
     </div>
   );
 }
@@ -2621,13 +2667,21 @@ export default function RMReviewManagerDataTablePage() {
   return (
     <SidebarProvider>
       <AppLayoutShell
+        // 7 Oct: BrightLocal's own GlobalLayout and Sidebar, as Figma draws
+        // the page ("New Platform - WIP" › 07.10.2026 - Review Manager), with
+        // the app's token fixes. The look props below only steer the
+        // proposal shell, which this engine does not render.
+        engine="native-fixed"
         preset="live-site"
         // Live Site ships the expansive nav. Too loud at this density of
         // page, so the nav steps back one.
         navDensity="comfortable"
-        // Live Site drops the sticky band. These screens keep it: their
-        // card furniture pins below it off --gds-page-header-height.
-        stickyHeader
+        // 7 Oct: THE PAGE HEADER SCROLLS (Ali: "the main page header to
+        // also scroll for now"). Live Site already drops the sticky band;
+        // this screen used to put it back. Forced to a literal false rather
+        // than just removed, so the preset or the tweaker cannot bring it
+        // back. The card's filter band still pins, at top 0.
+        stickyHeader={false}
         flush
         pinnedSidebar
         dataHook="reviews-app-layout"
@@ -2655,30 +2709,17 @@ export default function RMReviewManagerDataTablePage() {
               { label: "Reviews", goto: "screen:dmrotrhbcxk66" },
             ]}
             title="Review Manager"
-            // A SENTENCE, NOT A NUMBER. This used to read
-            // "{seedRowsFor(persona, locationKey).length} reviews" (Ali, 7 Sep:
-            // "our page description can be used to display some information
-            // rather than yet more boring text"), but that count is the raw
-            // seed list for the location, read up here, while the five tabs and
-            // the three facets that narrow it live inside the inbox one level
-            // down. Tick the 1 star facet and the header still said 60 over a
-            // table of 4. The pager under the table already counts the filtered
-            // rows, which is why counts came off the table titles too (Ali, 17
-            // Sep: "we have pagination"), so the description says what the page
-            // is for rather than restating a total it cannot see. Same route
-            // the Review Builder hub took for the identical shape.
+            // A NUMBER, NOT A SENTENCE (Ali, 7 Sep: "for each page header directly off
+            // the hub page, our page description can be used to display some information
+            // rather than yet more boring text"). The figure is read from the same data
+            // the page renders, never typed in, so it moves when the data does.
+            // 7 Oct: the sentence, as Figma draws it (and as the app has
+            // carried since 20 Sep). The count it replaced could not see the
+            // tabs and facets that narrow the table below.
             description="Read and reply to every review for this location."
             // "auto" binds data.aiInsights.lastUpdated, so the line follows a
             // dataset switch instead of hardcoding a date into the screen.
-            // ONLY ONCE THERE ARE REVIEWS. That timestamp is the AI Insights
-            // regeneration date, a flat value in the dataset, and every persona
-            // mounts the same dataset, so on an account that has never connected
-            // a site the header read "Last updated September 9, 2026" next to "0
-            // reviews" (Ali, 20 Sep). Nothing has synced, so we claim nothing.
-            // There is no review sync timestamp in the data to bind instead, and
-            // hiding the line costs no layout: the band stays 88px, the
-            // description already sets that height.
-            lastUpdated={seedRowsFor(persona, locationKey).length ? "auto" : undefined}
+            lastUpdated={inboxRowsFor(locationKey, persona).length ? "auto" : undefined}
             // ONE link where there were two buttons. Templates and auto-reply
             // now share a page, so two triggers would land in the same place.
             // The "(1 rule)" count went with the rules — that state lives on

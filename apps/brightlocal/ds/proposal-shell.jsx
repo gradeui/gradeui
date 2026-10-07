@@ -1606,6 +1606,8 @@ function NativeAppLayoutShell({ sidebar, header, mobileBar, children, dataset, d
   delete look.preset; delete look.flush; delete look.pinnedSidebar; delete look.mobileTone;
   delete look.contentMaxWidth; delete look.sidebarBorder; delete look.headerBackground;
   delete look.tweaker; delete look.tweaks; delete look.onTweaksChange;
+  // Studio screens name their engine; the app's host decides it, so drop it.
+  delete look.engine;
   const shell = (
     <GlobalLayout
       dataHook={dataHook}
