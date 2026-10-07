@@ -303,7 +303,7 @@ function SidebarBody({ active, business, describe, onTrigger, onNavigate }) {
                 <span className="flex min-w-0 flex-col">
                   <span
                     className={cx(
-                      "truncate font-display text-base font-bold leading-5",
+                      "truncate wds-display text-base font-bold leading-5",
                       lit
                         ? "text-[color:var(--wds-sidebar-accent-foreground)]"
                         : "text-[color:var(--wds-sidebar-foreground)]",
@@ -435,6 +435,22 @@ function AppChromeV2({
 
   const [collapsed, setCollapsed] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
+  /* CLOSES ON NAVIGATION (7 Oct evening). In the app the chrome outlives
+     a route change, and the goto bridge's document capture listener stops
+     a goto click before React sees it, so an onClickCapture on the sheet
+     never ran and the menu stayed open over the next page, eating the
+     first press there (a wallet card tap after Menu, Wallets landed on
+     the scrim, not the card). A document listener of our own runs
+     whatever the bridge does: stopPropagation does not stop other
+     listeners on the same node. */
+  React.useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onGoto = (e) => {
+      if (e.target?.closest?.("[data-grade-goto]")) setMenuOpen(false);
+    };
+    document.addEventListener("click", onGoto, true);
+    return () => document.removeEventListener("click", onGoto, true);
+  }, [menuOpen]);
   /* useWebDsType() is Studio only: the app sets the Web DS type in
      app/globals.css and loads the faces with next/font. */
 
@@ -488,16 +504,8 @@ function AppChromeV2({
               >
                 <PanelLeft className="size-4" />
               </IconButton>
-              {/* CLOSES ON NAVIGATION: in the app the sheet outlives a route
-                  change, and the goto bridge stops the click before an
-                  item's own onClick, so the close is caught on the way down. */}
-              <SheetContent
-                side="left"
-                className="w-[264px] max-w-[85vw] gap-0 border-0 p-0"
-                onClickCapture={(e) => {
-                  if (e.target.closest?.("[data-grade-goto]")) setMenuOpen(false);
-                }}
-              >
+              {/* Closes on navigation: see the effect by menuOpen. */}
+              <SheetContent side="left" className="w-[264px] max-w-[85vw] gap-0 border-0 p-0">
                 <SheetTitle className="sr-only">Menu</SheetTitle>
                 <SidebarBody
                   active={active}
@@ -572,7 +580,7 @@ AppChromeV2.Main = function AppChromeV2Main({ children, className }) {
 
 /** The page title: Raleway Bold 24/32. */
 AppChromeV2.Title = function AppChromeV2Title({ children, className }) {
-  return <h1 className={cx("font-display text-2xl font-bold leading-8", className)}>{children}</h1>;
+  return <h1 className={cx("wds-display text-2xl font-bold leading-8", className)}>{children}</h1>;
 };
 
 /** A section heading: Chivo SemiBold 18/28 in foreground. */

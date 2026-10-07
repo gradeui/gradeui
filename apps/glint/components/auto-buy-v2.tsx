@@ -79,8 +79,8 @@ function useSettings() {
 /** The Web DS AutobuyCard (Wallets · Default): 20 all round, 8 between, 16
  *  corners, card with a border. "Auto-buy" in Raleway Bold 20/28 with the
  *  Active badge, a 36 round ghost chevron, the line under it in Chivo
- *  16/24 muted-foreground, a rule, then the metal and its vault in Raleway
- *  Bold 20/28. ASSUMPTION: switched off, the badge reads "Off" in the
+ *  16/24 muted-foreground, a rule, then the vault (pin) and the metal (G)
+ *  in Raleway Bold 20/28, location first (Ali, 7 Oct). ASSUMPTION: switched off, the badge reads "Off" in the
  *  secondary Badge and the metal line goes, since Figma draws only the
  *  Active card. */
 function Card({ className }) {
@@ -88,12 +88,12 @@ function Card({ className }) {
   const [open, setOpen] = React.useState(false);
   return (
     <div
-      className={`flex flex-col gap-2 rounded-[16px] border border-[color:var(--wds-border)] bg-[var(--wds-card)] p-5 ${className ?? ""}`}
+      className={`relative flex flex-col gap-2 rounded-[16px] border border-[color:var(--wds-border)] bg-[var(--wds-card)] p-5 cursor-pointer transition-colors hover:bg-[var(--wds-card-hover)] active:bg-[var(--wds-card-pressed)] ${className ?? ""}`}
     >
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-display text-xl font-bold leading-7 text-[color:var(--wds-foreground)]">
+            <span className="wds-display text-xl font-bold leading-7 text-[color:var(--wds-foreground)]">
               Auto-buy
             </span>
             <WebDsV2.Badge variant={s.on ? "default" : "secondary"}>{s.on ? "Active" : "Off"}</WebDsV2.Badge>
@@ -102,7 +102,7 @@ function Card({ className }) {
             type="button"
             aria-label="Auto-buy settings"
             onClick={() => setOpen(true)}
-            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[var(--wds-accent)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--wds-ring)]"
+            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full outline-none transition-colors after:absolute after:inset-0 after:z-[1] after:rounded-[16px] after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-[color:var(--wds-ring)]"
           >
             <ChevronRight className="size-4" />
           </button>
@@ -115,6 +115,12 @@ function Card({ className }) {
         <div className="mt-auto flex flex-col gap-2">
           <WebDsV2.Divider />
           <div className="flex items-center gap-2">
+            {s.vault ? (
+              <span className="flex items-center gap-1">
+                <MapPin aria-hidden className="size-6 shrink-0" strokeWidth={2} />
+                <span className="wds-display text-xl font-bold leading-7">{VaultsV2.label(s.vault)}</span>
+              </span>
+            ) : null}
             <span className="flex items-center gap-2 py-1">
               <Wordmark
                 lockup="mark"
@@ -122,14 +128,8 @@ function Card({ className }) {
                 className="size-6 shrink-0"
                 style={{ color: `var(--wds-${s.metal}-accent)` }}
               />
-              <span className="font-display text-xl font-bold leading-7">{METAL_LABEL[s.metal]}</span>
+              <span className="wds-display text-xl font-bold leading-7">{METAL_LABEL[s.metal]}</span>
             </span>
-            {s.vault ? (
-              <span className="flex items-center gap-1">
-                <MapPin aria-hidden className="size-6 shrink-0" strokeWidth={2} />
-                <span className="font-display text-xl font-bold leading-7">{VaultsV2.label(s.vault)}</span>
-              </span>
-            ) : null}
           </div>
         </div>
       ) : null}

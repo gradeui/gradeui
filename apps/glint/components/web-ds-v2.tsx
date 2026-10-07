@@ -183,6 +183,15 @@ const SEMANTIC = {
   "chart-5": ["neutral/400", "neutral/500"],
   "switch-track-off": ["neutral/500", "neutral/400"],
   "switch-thumb-off": ["neutral/400", "base/white"],
+  /* ASSUMPTION (Ali, 7 Oct: the card hover was "a bit mega"): a pressable
+     card's hover and pressed surfaces. The Web DS draws no card hover, and
+     the neutral ramp has nothing between card (800) and accent (700) in
+     Dark, where accent also swallowed the secondary Sell button. So the
+     card sinks one step to the page (background: 900 Dark, 50 Light) and
+     pressed goes one step further (950, 100). Surface only: no glow,
+     scale or shadow. */
+  "card-hover": ["neutral/900", "neutral/50"],
+  "card-pressed": ["neutral/950", "neutral/100"],
 };
 
 /** The Grade theme tokens the shipped DS components read ("L C H" for
@@ -229,6 +238,16 @@ const RAW = {
 
 const key = (n) => "--wds-" + n.replace("/", "-");
 
+/* The Web DS display face, Raleway Bold, for titles and figures set in it
+   (card titles, the sidebar labels, drawer titles, OTP digits). A class of
+   its own because Tailwind's font-display utility resolved to the body
+   face on staging (Ali, 7 Oct: "the card titles look like the incorrect
+   font"). next/font's Raleway in the app, Google Fonts' in Studio. Lining
+   tabular figures, as everywhere on web. */
+const DISPLAY_CSS =
+  ".wds-display{font-family:var(--font-raleway, Raleway), Raleway, system-ui, sans-serif;font-weight:700;" +
+  "font-variant-numeric:lining-nums tabular-nums;font-variant-ligatures:none}";
+
 function buildCss() {
   const prim = Object.entries(PRIMITIVES).map(([n, h]) => `${key(n)}:${h};`).join("");
   const sem = (i) =>
@@ -237,7 +256,8 @@ function buildCss() {
   const theme = (i) => Object.entries(THEME).map(([n, pair]) => `--${n}:${pair[i]};`).join("");
   return (
     `:root:root{${prim}${sem(1)}${raw(1)}${theme(1)}}` +
-    `:root:root.dark,:root:root .dark{${sem(0)}${raw(0)}${theme(0)}}`
+    `:root:root.dark,:root:root .dark{${sem(0)}${raw(0)}${theme(0)}}` +
+    DISPLAY_CSS
   );
 }
 const CSS = buildCss();
@@ -378,7 +398,7 @@ WebDsV2.OtpSlot = React.forwardRef(function WebDsV2OtpSlot({ invalid, className,
       inputMode="numeric"
       aria-invalid={invalid || undefined}
       className={cx(
-        "h-14 w-12 rounded-[8px] border bg-[var(--wds-input-background)] p-0 text-center font-display text-2xl font-bold leading-8 text-[color:var(--wds-foreground)] caret-[var(--wds-foreground)]",
+        "h-14 w-12 rounded-[8px] border bg-[var(--wds-input-background)] p-0 text-center wds-display text-2xl font-bold leading-8 text-[color:var(--wds-foreground)] caret-[var(--wds-foreground)]",
         FOCUS,
         invalid ? "border-[color:var(--wds-destructive)]" : "border-[color:var(--wds-input)]",
         className,
@@ -388,7 +408,10 @@ WebDsV2.OtpSlot = React.forwardRef(function WebDsV2OtpSlot({ invalid, className,
   );
 });
 
-/* Web DS Button, Variant=gold / silver (lg): a 999 pill, 40 tall, 20
+/* Web DS Button, Variant=gold / silver (lg): a 999 pill (shape="square"
+   gives the 8 corners of every other Web DS Button, as the wallet cards
+   use it since 7 Oct, so Buy and Sell match; 10 at xl, the drawer size,
+   48 tall with SemiBold 16/24), 40 tall, 20
    sides, Chivo Medium 14/20, a 1px gold/300 (silver/300) edge and the
    face gradient: gold/200 to 60%, gold/400 at 85%, gold/600 at 100%
    (silver/50, silver/400, silver/600). Hover moves the stops (gold/200 to
@@ -415,7 +438,7 @@ const METAL_BTN = {
 };
 
 WebDsV2.MetalButton = React.forwardRef(function WebDsV2MetalButton(
-  { metal = "gold", className, children, type = "button", style, ...props },
+  { metal = "gold", shape = "pill", size = "lg", className, children, type = "button", style, ...props },
   ref,
 ) {
   const m = METAL_BTN[metal] ?? METAL_BTN.gold;
@@ -427,7 +450,9 @@ WebDsV2.MetalButton = React.forwardRef(function WebDsV2MetalButton(
       onPointerEnter={() => setHover(true)}
       onPointerLeave={() => setHover(false)}
       className={cx(
-        "relative inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full border px-5 text-sm font-medium leading-5 disabled:cursor-not-allowed disabled:opacity-50",
+        "relative inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 overflow-hidden whitespace-nowrap border disabled:cursor-not-allowed disabled:opacity-50",
+        size === "xl" ? "h-12 px-6 text-base font-semibold leading-6" : "h-10 px-5 text-sm font-medium leading-5",
+        shape !== "square" ? "rounded-full" : size === "xl" ? "rounded-[10px]" : "rounded-[8px]",
         FOCUS,
         className,
       )}

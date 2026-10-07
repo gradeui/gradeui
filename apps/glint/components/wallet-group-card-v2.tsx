@@ -29,12 +29,22 @@
 //     pin and Raleway Bold 20/28 ("Zurich", "Zurich, Miami" or "2 vaults").
 //   - a border rule, the holding's dollar value (Chivo 16/24
 //     muted-foreground), another rule, then the actions: Buy Gold (the
-//     Web DS gold Button) and Sell (secondary), both lg. USD: "$X
+//     Web DS gold Button, with the DS button's 8 corners rather than the
+//     pill, so it matches Sell: Ali, 7 Oct) and Sell (secondary), both lg. USD: "$X
 //     available" with 6 above and below, then Deposit and Withdraw
 //     (secondary, lg).
 //
 // THE PLACE: Figma writes "2 vaults" for the gold held in two. Here one
 // vault reads "Zurich", two read "2 vaults", as the slide does.
+//
+// THE WHOLE CARD IS THE LINK (Ali, 7 Oct: "the whole card should be a hot
+// area ... as well as having buttons in there"): the chevron is the link,
+// and its ::after stretches over the card, so a press anywhere opens the
+// wallet's page; the buttons sit above it (relative, z-10) and work on
+// their own. Hover is a one-step surface change, card-hover, and pressed
+// one step further, card-pressed (WebDsV2 explains the pair; the Web DS
+// card has no hover of its own); the focus ring draws
+// round the card. Tab reaches the link, then each button.
 //
 // ACTIONS: Buy and Sell open TradeFlowV2; Deposit and Withdraw open the
 // TransferV2 drawers, so every USD card (Wallets and the USD page) works
@@ -112,6 +122,7 @@ function WalletGroupCardV2({
         "relative flex flex-col gap-2 rounded-[16px] p-5",
         surface === "solid" ? "border border-[color:var(--wds-border)] bg-[var(--wds-card)]" : "",
         surface === "subtle" ? "bg-[var(--wds-card)]" : "",
+        link && !face ? "cursor-pointer transition-colors hover:bg-[var(--wds-card-hover)] active:bg-[var(--wds-card-pressed)]" : "",
         className,
       )}
       style={face ? { background: METAL_FACE[metal], color: "#141b3d" } : undefined}
@@ -119,11 +130,11 @@ function WalletGroupCardV2({
       {surface === "subtle" ? <SubtleEdge metal={metal} /> : null}
 
       {/* row */}
-      <div className="relative flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 py-1">
           <Wordmark lockup="mark" tone="current" className="size-6 shrink-0" style={{ color: face ? ink : accent }} />
           <span
-            className={cx("font-display text-xl font-bold leading-7", face ? "" : "text-[color:var(--wds-card-foreground)]")}
+            className={cx("wds-display text-xl font-bold leading-7", face ? "" : "text-[color:var(--wds-card-foreground)]")}
           >
             {label}
           </span>
@@ -133,7 +144,7 @@ function WalletGroupCardV2({
             type="button"
             data-grade-goto={link}
             aria-label={`Open ${label}`}
-            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[var(--wds-accent)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--wds-ring)]"
+            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full outline-none transition-colors after:absolute after:inset-0 after:z-[1] after:rounded-[16px] after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-[color:var(--wds-ring)]"
           >
             <ChevronRight className="size-4" />
           </button>
@@ -154,7 +165,7 @@ function WalletGroupCardV2({
         {place ? (
           <span className="flex items-center gap-1">
             <MapPin aria-hidden className="size-6 shrink-0" strokeWidth={2} />
-            <span className="font-display text-xl font-bold leading-7">{place}</span>
+            <span className="wds-display text-xl font-bold leading-7">{place}</span>
           </span>
         ) : null}
       </div>
@@ -173,11 +184,15 @@ function WalletGroupCardV2({
       {actions ? (
         <>
           <WebDsV2.Divider className="relative" />
-          <div className="relative flex items-center gap-2">
+          {/* The row rides above the card's stretched link, but only the
+              buttons take the press: the gaps and the space beside them
+              fall through to the card (7 Oct evening: the row was a dead
+              strip across the card). */}
+          <div className="pointer-events-none relative z-10 flex items-center gap-2 [&>*]:pointer-events-auto">
             {metal ? (
               <>
                 <TradeFlowV2 metal={metal}>
-                  <WebDsV2.MetalButton metal={metal}>Buy {label}</WebDsV2.MetalButton>
+                  <WebDsV2.MetalButton metal={metal} shape="square">Buy {label}</WebDsV2.MetalButton>
                 </TradeFlowV2>
                 <TradeFlowV2 metal={metal} direction="sell">
                   <WebDsV2.Button variant="secondary" size="lg" aria-label={`Sell ${label}`}>
@@ -225,7 +240,7 @@ WalletGroupCardV2.Vaults = function WalletGroupCardV2Vaults({ asset = "gold", cl
         className,
       )}
     >
-      <span className="font-display text-xl font-bold leading-7 text-[color:var(--wds-foreground)]">Vaults</span>
+      <span className="wds-display text-xl font-bold leading-7 text-[color:var(--wds-foreground)]">Vaults</span>
       {vaults.map((v) => (
         <div key={v.vault} className="flex items-center justify-between gap-4 py-2.5">
           <span className="flex flex-col gap-0.5">
