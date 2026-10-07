@@ -76,7 +76,7 @@ SideDrawer.Header = function SideDrawerHeader({ icon, title, description, onBack
             </button>
           ) : null}
           {icon ? <span className="flex shrink-0">{icon}</span> : null}
-          <SheetTitle className="truncate font-display text-2xl font-bold leading-8 text-[color:var(--wds-popover-foreground)]">
+          <SheetTitle className="truncate wds-display text-2xl font-bold leading-8 text-[color:var(--wds-popover-foreground)]">
             {title}
           </SheetTitle>
         </div>

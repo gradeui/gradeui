@@ -23,8 +23,10 @@
 // BUY (Buy Gold · Amount · Default, Over balance; Review · 30s hold, Price
 // refreshed; Success):
 //   - Vault: Web DS OptionRows (the same radio row Auto-buy uses), one per
-//     vault, "X g held here" under the name, "Latest" on the vault of the
-//     most recent trade in this metal, which is preselected.
+//     vault, "Latest" on the vault of the most recent trade in this metal,
+//     which is preselected. No grams line under the name in Buy or Sell
+//     (Ali, 7 Oct: the "X g held here" line goes; Figma follows); the
+//     OptionRow's description prop is simply not passed.
 //   - Amount: Web DS FormField, the default Input with a "USD" suffix,
 //     "$X in your USD wallet" under it. Over the balance the field turns
 //     destructive and says "$X more than your USD wallet holds, with the
@@ -33,7 +35,9 @@
 //     Total. Review (xl) in the footer.
 //   - Review order: Vault, Amount, You get, Rate, Fee 0.9%, rule, Total;
 //     the footer holds "Rate held for" with the seconds and a Progress,
-//     Back (secondary) and Buy Gold (primary), and "By clicking “Buy
+//     Back (secondary) and Buy Gold, the metal button with the DS corners
+//     (Ali, 7 Oct: the Buy confirm is gold or silver, like the card's Buy;
+//     Review stays the DS primary), and "By clicking “Buy
 //     Gold”, you authorise Glint to execute the market order detailed
 //     above." When the 30 seconds run out the rate refreshes and an info
 //     Alert says "Rate refreshed / Gold is now 1 g = $X. Check the order
@@ -273,7 +277,6 @@ function TradeFlowV2({ metal = "gold", direction = "buy", children }) {
           selected={v === vault}
           title={VaultsV2.label(v)}
           badge={v === latest ? "Latest" : undefined}
-          description={`${qtyText(heldQty(v), unit)} held here`}
           onSelect={() => setVaultChoice(v)}
         />
       ))}
@@ -291,7 +294,7 @@ function TradeFlowV2({ metal = "gold", direction = "buy", children }) {
   if (step === "done" && order) {
     body = (
       <div className="flex flex-col gap-4">
-        <h3 className="font-display text-2xl font-bold leading-8 text-[color:var(--wds-foreground)]">
+        <h3 className="wds-display text-2xl font-bold leading-8 text-[color:var(--wds-foreground)]">
           {selling ? `${money(order.total)} added to your USD wallet` : `${qtyText(order.qty, order.unit)} added`}
         </h3>
         <WebDsV2.Summary>
@@ -389,9 +392,15 @@ function TradeFlowV2({ metal = "gold", direction = "buy", children }) {
           >
             Back
           </WebDsV2.Button>
-          <WebDsV2.Button size="xl" className="flex-1" onClick={confirm}>
-            {title}
-          </WebDsV2.Button>
+          {selling ? (
+            <WebDsV2.Button size="xl" className="flex-1" onClick={confirm}>
+              {title}
+            </WebDsV2.Button>
+          ) : (
+            <WebDsV2.MetalButton metal={metal} shape="square" size="xl" className="flex-1" onClick={confirm}>
+              {title}
+            </WebDsV2.MetalButton>
+          )}
         </div>
         {selling ? null : authorise}
       </div>

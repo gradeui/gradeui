@@ -159,7 +159,7 @@ function ErrorPageV2({ code = "404", onRetry }) {
         <div className="mt-12 text-[112px] leading-[112px] md:text-[144px] md:leading-[144px]" style={FIGURE} aria-hidden>
           {code}
         </div>
-        <h1 className="mt-3 font-display text-2xl font-bold leading-8 md:text-3xl md:leading-9">
+        <h1 className="mt-3 wds-display text-2xl font-bold leading-8 md:text-3xl md:leading-9">
           <span className="sr-only">{code} </span>
           {copy.title}
         </h1>
