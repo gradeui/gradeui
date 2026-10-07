@@ -535,6 +535,17 @@ export const BRIGHTLOCAL_CONTRACTS: Readonly<
   "AppLayoutShell": {
     "name": "AppLayoutShell",
     "props": {
+      "engine": {
+        "kind": "enum",
+        "values": [
+          "modified",
+          "native",
+          "native-fixed"
+        ],
+        "design": "knob",
+        "optional": true,
+        "description": "Which shell renders. \"modified\" is the proposal shell every look prop below steers. \"native\" is BrightLocal's own GlobalLayout and Sidebar exactly as shipped (look props ignored); \"native-fixed\" is native plus the app's proposed token fixes (280px sidebar, white bordered cards, content max width), the apps/brightlocal default and what Figma is drawn from. Unset follows the host (window.__gdsLayoutEngine), else \"modified\". ProposalSidebar and PageHeader follow the shell automatically. (default host, else \"modified\")"
+      },
       "preset": {
         "kind": "enum",
         "values": [
