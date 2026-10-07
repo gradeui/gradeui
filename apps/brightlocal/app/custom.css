@@ -654,3 +654,58 @@ nextjs-portal {
   line-height: 1.5rem;
   font-weight: var(--ds-font-weight-semibold, 600);
 }
+
+/* FIGMA PARITY, native-fixed (7 Oct 2026, New Platform - WIP > 07.10.2026 - Review Manager).
+   The same rules as NATIVE_FIXED_CSS in packages/studio/registries/brightlocal/lib/proposal-shell.jsx,
+   so Studio and the app render the same shell. Change both together.
+   Geometry: a 288 sidebar with rows 24 in and 260 wide, the content column 16 off it (cards still at 304),
+   the header 16 from the top, the description 4 under the title, the body 36 below. */
+[data-slot="sidebar-provider"]:has([data-gds-layout-engine="native-fixed"]) {
+  --sidebar-width: 288px !important;
+}
+[data-gds-layout-engine="native-fixed"] [data-slot="content-header-region"],
+[data-gds-layout-engine="native-fixed"] [data-slot="content-body-region"] {
+  padding-left: 16px !important;
+}
+[data-gds-layout-engine="native-fixed"] [data-slot="content-wrapper"] {
+  padding-top: 16px !important;
+  row-gap: 36px !important;
+}
+[data-gds-layout-engine="native-fixed"] [data-slot="content-header-subtitle"] {
+  margin-top: -4px;
+}
+/* In @layer base ON PURPOSE: the DS sets the sidebar padding with LAYERED !important utilities, and for
+   !important declarations an earlier layer beats a later one and any layer beats unlayered CSS.
+   Type: Figma draws 0% tracking, an Inter page title, a Regular description and crumbs, Medium buttons
+   and date. ASSUMPTION pending Ali: Figma wins over DS 3.0.0 on the native-fixed engine. */
+@layer base {
+  [data-slot="sidebar-provider"]:has([data-gds-layout-engine="native-fixed"]) [data-slot="sidebar-container"] [data-slot="scroll-area-viewport"] {
+    padding-left: 23px !important;
+    padding-right: 4px !important;
+    padding-top: 0 !important;
+  }
+  [data-slot="sidebar-provider"]:has([data-gds-layout-engine="native-fixed"]) [data-slot="sidebar-footer"] {
+    margin-left: -12px !important;
+    margin-right: 13px !important;
+    margin-bottom: 28px !important;
+    translate: 0 -9px;
+  }
+  body:has([data-gds-layout-engine="native-fixed"]) * {
+    letter-spacing: 0 !important;
+  }
+  body:has([data-gds-layout-engine="native-fixed"]) [data-slot="content-header"] h1 {
+    font-family: var(--font-sans), Inter, ui-sans-serif, system-ui, sans-serif !important;
+  }
+  body:has([data-gds-layout-engine="native-fixed"]) [data-slot="content-header-subtitle"] {
+    font-weight: 400 !important;
+  }
+  body:has([data-gds-layout-engine="native-fixed"]) [data-slot="button"] {
+    font-weight: 500 !important;
+  }
+  body:has([data-gds-layout-engine="native-fixed"]) [data-slot="content-header"] :is([data-slot="breadcrumb-list"], [data-slot="breadcrumb-link"], [data-slot="breadcrumb-item"]) {
+    font-weight: 400 !important;
+  }
+  body:has([data-gds-layout-engine="native-fixed"]) [data-slot="content-header"] [data-hook$="last-updated"] {
+    font-weight: 500 !important;
+  }
+}

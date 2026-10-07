@@ -1533,7 +1533,35 @@ export function layoutEngineRaw() {
 }
 
 const NATIVE_FIXED_CSS =
-  '[data-slot="sidebar-provider"]:has([data-gds-layout-engine="native-fixed"]){--sidebar-width:280px !important}' +
+  // Figma geometry (New Platform - WIP, 07.10.2026 - Review Manager, 7 Oct):
+  // a 288 sidebar whose rows sit 24 in and run 260 wide, the content column
+  // 16 off the sidebar (so cards still start at 304), the header 16 from the
+  // top with the description 4 under the title, and the body 36 below it.
+  '[data-slot="sidebar-provider"]:has([data-gds-layout-engine="native-fixed"]){--sidebar-width:288px !important}' +
+  // In @layer base ON PURPOSE: the DS sets this padding with LAYERED
+  // !important utilities (pl-*!, pr-3!), and for !important declarations an
+  // earlier layer beats a later one and any layer beats unlayered CSS, so an
+  // unlayered !important here loses. base precedes utilities, so it wins.
+  '@layer base{[data-slot="sidebar-provider"]:has([data-gds-layout-engine="native-fixed"]) [data-slot="sidebar-container"] [data-slot="scroll-area-viewport"]{padding-left:23px !important;padding-right:4px !important;padding-top:0 !important}' +
+  // The account footer keeps Figma's own 16 inset rather than the rows' 24,
+  // and sits 24 off the bottom (the account button ends at 864).
+  '[data-slot="sidebar-provider"]:has([data-gds-layout-engine="native-fixed"]) [data-slot="sidebar-footer"]{margin-left:-12px !important;margin-right:13px !important;margin-bottom:28px !important;translate:0 -9px}' +
+  // FIGMA TYPE (7 Oct). The WIP Figma draws every label at 0% tracking, the
+  // page title in Inter (not DS-714's Poppins page role), the description at
+  // Regular and button labels at Medium; the 3.0.0 code DS tracks text-sm at
+  // 1%, titles in Poppins and buttons at semibold. ASSUMPTION, pending Ali:
+  // Figma wins on the native-fixed engine. body:has() so sheets, dialogs and
+  // menus portalled out of the shell follow too; base layer + !important for
+  // the reason above.
+  'body:has([data-gds-layout-engine="native-fixed"]) *{letter-spacing:0 !important}' +
+  'body:has([data-gds-layout-engine="native-fixed"]) [data-slot="content-header"] h1{font-family:var(--font-sans),Inter,ui-sans-serif,system-ui,sans-serif !important}' +
+  'body:has([data-gds-layout-engine="native-fixed"]) [data-slot="content-header-subtitle"]{font-weight:400 !important}' +
+  'body:has([data-gds-layout-engine="native-fixed"]) [data-slot="button"]{font-weight:500 !important}' +
+  'body:has([data-gds-layout-engine="native-fixed"]) [data-slot="content-header"] :is([data-slot="breadcrumb-list"],[data-slot="breadcrumb-link"],[data-slot="breadcrumb-item"]){font-weight:400 !important}' +
+  'body:has([data-gds-layout-engine="native-fixed"]) [data-slot="content-header"] [data-hook$="last-updated"]{font-weight:500 !important}}' +
+  '[data-gds-layout-engine="native-fixed"] [data-slot="content-header-region"],[data-gds-layout-engine="native-fixed"] [data-slot="content-body-region"]{padding-left:16px !important}' +
+  '[data-gds-layout-engine="native-fixed"] [data-slot="content-wrapper"]{padding-top:16px !important;row-gap:36px !important}' +
+  '[data-gds-layout-engine="native-fixed"] [data-slot="content-header-subtitle"]{margin-top:-4px}' +
   '[data-slot="sidebar-provider"]:has([data-gds-layout-engine="native-fixed"]) [data-slot="sidebar-container"]{width:var(--sidebar-width) !important}' +
   '[data-gds-layout-engine="native-fixed"] aside{border-left:1px solid transparent}' +
   '[data-gds-layout-engine="native-fixed"]{--card:var(--ds-tailwind-colors-base-white);--card-border:var(--border)}' +
