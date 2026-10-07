@@ -196,7 +196,7 @@ export function FacetPopover({
   // fixed width at the field height (h-9) with the label left and the
   // chevron right, as Figma's Review Manager toolbar does (7 Oct). Left
   // unset, the trigger hugs its label at size sm, as before.
-  fieldWidth,
+  fieldWidth = undefined,
   children,
 }) {
   const commandRef = React.useRef(null);
@@ -289,7 +289,7 @@ export function FacetedFilterMenu({
   // "left" | "right": which edge of the trigger the panel hangs from.
   // Right-aligned for menus pinned to a card's right edge.
   align = "left",
-  fieldWidth,
+  fieldWidth = undefined,
   dataHook,
 }) {
   // The list itself is FacetOptions, shared with the mobile sheet. No local
@@ -321,7 +321,7 @@ export function FacetedFilterMenu({
   );
 }
 
-export function SingleSelectMenu({ label, open, onOpenChange, options, value, onSelect, dataHook, panelWidth = "w-44", align = "left", fieldWidth }) {
+export function SingleSelectMenu({ label, open, onOpenChange, options, value, onSelect, dataHook, panelWidth = "w-44", align = "left", fieldWidth = undefined }) {
   return (
     <FacetPopover
       label={label}
