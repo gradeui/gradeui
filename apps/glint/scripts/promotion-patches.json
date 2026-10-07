@@ -193,8 +193,18 @@
     },
     {
       "why": "Settings helpers typed (7 Oct)",
+      "find": "function DisplayControl({ label, note, value, onValueChange, options }) {",
+      "replace": "function DisplayControl({\n  label,\n  note,\n  value,\n  onValueChange,\n  options,\n}: {\n  label: string;\n  note: string;\n  value: string;\n  onValueChange: (v: any) => void;\n  options: { value: string; label: string }[];\n}) {"
+    },
+    {
+      "why": "Settings helpers typed (7 Oct)",
       "find": "onValueChange={(u) => {",
       "replace": "onValueChange={(u: \"g\" | \"oz\") => {"
+    },
+    {
+      "why": "Settings helpers typed (7 Oct)",
+      "find": "  return [mode, set];",
+      "replace": "  return [mode, set] as const;"
     }
   ]
 }

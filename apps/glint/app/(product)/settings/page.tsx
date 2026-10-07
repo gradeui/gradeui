@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Settings v2"
-// (design dmuyhn3548vjg, version 1791400560887). Registry: lib/screens.ts;
+// (design dmuyhn3548vjg, version 1791408417297). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: a76a4bce3b11
+// source-hash: 61e2520aedee
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -13,18 +13,19 @@
 // Default). Reached from the avatar menu's Settings (the only entry point
 // the designs show: the sidebar's Help item is hidden in every slide).
 //
-// LAYOUT: the title, Raleway Bold 24/32; then three rows of two sections,
-// 24 apart across and 32 down; a section is its heading (Chivo SemiBold
+// LAYOUT (re-read 7 Oct evening, after Ali changed the slide): the title,
+// Raleway Bold 24/32; then two columns 32 apart, the content 640 wide and
+// a 296 side column. The content is Business profile (the name on a muted
+// panel, 12 corners, 20 and 16 in: Figma's 8 and 16 round a row with 12
+// above and below, and the note under it), Help and legal
+// (Contact support, Fees, Terms and privacy) and Documents (Statements,
+// Tax documents), 32 apart; a section is its heading (Chivo SemiBold
 // 18/28) and its rows 12 under it, Web DS OptionRows (chevron) 8 apart.
-//   - Auto-buy: one row with the gold G, "Auto-buy" and its state, which
-//     opens the Auto-buy drawer.
-//   - Business profile: the name on a muted panel (12 corners, 8 and 16
-//     in), and the note under it.
-//   - Documents: Statements, Tax documents.
-//   - Help and legal: Contact support, Fees, Terms and privacy.
-//   - Display: Units (g, oz t) and Appearance (System, Light, Dark), Web DS
-//     segmented controls the full width of their half, each with its note.
-//   - Close account: one row.
+// The side column is Display: Units (g, oz t) and Appearance (System,
+// Light, Dark), each a label, a full-width Web DS segmented control and a
+// note, 4 apart. The Auto-buy and Close account sections are gone from the
+// slide, so they are gone here. On mobile the side column follows the
+// content.
 //
 // A DEMO: Units writes the persona's unit preferences for the tab, so the
 // wallet cards change with it; Appearance switches the page's mode for the
@@ -32,8 +33,6 @@
 // nowhere for them to go), and nothing is saved anywhere real.
 //
 // ASSUMPTIONS:
-//   - the Auto-buy line is composed from the settings: "On. Buying Gold in
-//     Zurich with every deposit." as Figma writes it; off reads "Off.";
 //   - Figma shows "Acme Corp" (sample data); this shows the persona's
 //     business, Ridgeline Construction;
 //   - Appearance opens on the mode the page is in (staging is dark by
@@ -42,10 +41,7 @@
 import * as React from "react";
 import { AppChromeV2 } from "@/components/layouts/app-chrome-v2";
 import { Persona } from "@/lib/persona";
-import { AutoBuyV2 } from "@/components/auto-buy-v2";
-import { Wordmark } from "@/components/wordmark";
 import { WebDsV2 } from "@/components/web-ds-v2";
-import { VaultsV2 } from "@/lib/vaults-v2";
 
 const UNITS = [
   { value: "g", label: "g" },
@@ -69,7 +65,7 @@ function useAppearance() {
       next === "dark" || (next === "system" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
     document.documentElement.classList.toggle("dark", Boolean(dark));
   };
-  return [mode, set];
+  return [mode, set] as const;
 }
 
 function SettingsSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -81,37 +77,42 @@ function SettingsSection({ title, children }: { title: string; children: React.R
   );
 }
 
+/** A Display control: label, full-width segmented, note, 4 apart. */
+function DisplayControl({
+  label,
+  note,
+  value,
+  onValueChange,
+  options,
+}: {
+  label: string;
+  note: string;
+  value: string;
+  onValueChange: (v: any) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-sm font-medium leading-5 text-[color:var(--wds-foreground)]">{label}</span>
+      <WebDsV2.Segmented aria-label={label} stretch value={value} onValueChange={onValueChange} options={options} />
+      <span className="text-xs leading-4 text-[color:var(--wds-muted-foreground)]">{note}</span>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
-  const s = AutoBuyV2.useSettings();
-  const [autoBuyOpen, setAutoBuyOpen] = React.useState(false);
   const [goldUnit, setGoldUnit] = Persona.usePreference("unit.gold");
   const [, setSilverUnit] = Persona.usePreference("unit.silver");
   const [mode, setMode] = useAppearance();
-  const autoBuyLine = s.on
-    ? `On. Buying ${AutoBuyV2.METAL_LABEL[s.metal]}${s.vault ? ` in ${VaultsV2.label(s.vault)}` : ""} with every deposit.`
-    : "Off.";
 
   return (
     <>
       <AppChromeV2.Main>
         <AppChromeV2.Title>Settings</AppChromeV2.Title>
-        <div className="flex flex-col gap-8">
-          <div className="grid items-start gap-8 md:grid-cols-2 md:gap-6">
-            <SettingsSection title="Auto-buy">
-              <WebDsV2.OptionRow
-                trailing="chevron"
-                tile="lg"
-                logo={
-                  <Wordmark lockup="mark" tone="current" className="size-6" style={{ color: "var(--wds-gold-accent)" }} />
-                }
-                title="Auto-buy"
-                description={autoBuyLine}
-                onSelect={() => setAutoBuyOpen(true)}
-              />
-              <AutoBuyV2.Drawer open={autoBuyOpen} onOpenChange={setAutoBuyOpen} />
-            </SettingsSection>
+        <div className="flex flex-col gap-8 md:flex-row">
+          <div className="flex min-w-0 flex-1 flex-col gap-8 md:max-w-[640px]">
             <SettingsSection title="Business profile">
-              <div className="flex flex-col gap-0.5 rounded-[12px] bg-[var(--wds-muted)] px-4 py-2">
+              <div className="flex flex-col gap-0.5 rounded-[12px] bg-[var(--wds-muted)] px-4 py-5">
                 <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">Business name</span>
                 <span className="text-base font-medium leading-6 text-[color:var(--wds-foreground)]">
                   {Persona.DEFAULT.business}
@@ -120,15 +121,6 @@ export default function SettingsPage() {
               <p className="text-xs leading-4 text-[color:var(--wds-muted-foreground)]">
                 This is the name on your account. Contact us to change it.
               </p>
-            </SettingsSection>
-          </div>
-
-          <div className="grid items-start gap-8 md:grid-cols-2 md:gap-6">
-            <SettingsSection title="Documents">
-              <div className="flex flex-col gap-2">
-                <WebDsV2.OptionRow trailing="chevron" title="Statements" description="Monthly account statements" />
-                <WebDsV2.OptionRow trailing="chevron" title="Tax documents" description="Annual tax forms" />
-              </div>
             </SettingsSection>
             <SettingsSection title="Help and legal">
               <div className="flex flex-col gap-2">
@@ -141,39 +133,31 @@ export default function SettingsPage() {
                 />
               </div>
             </SettingsSection>
-          </div>
-
-          <div className="grid items-start gap-8 md:grid-cols-2 md:gap-6">
-            <SettingsSection title="Display">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="flex flex-col gap-2">
-                  <span className="text-sm font-medium leading-5 text-[color:var(--wds-foreground)]">Units</span>
-                  <WebDsV2.Segmented
-                    aria-label="Units"
-                    stretch
-                    value={goldUnit}
-                    onValueChange={(u: "g" | "oz") => {
-                      setGoldUnit(u);
-                      setSilverUnit(u);
-                    }}
-                    options={UNITS}
-                  />
-                  <span className="text-xs leading-4 text-[color:var(--wds-muted-foreground)]">
-                    Troy ounces, the standard for precious metals.
-                  </span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <span className="text-sm font-medium leading-5 text-[color:var(--wds-foreground)]">Appearance</span>
-                  <WebDsV2.Segmented aria-label="Appearance" stretch value={mode} onValueChange={setMode} options={APPEARANCE} />
-                  <span className="text-xs leading-4 text-[color:var(--wds-muted-foreground)]">System follows your device.</span>
-                </div>
+            <SettingsSection title="Documents">
+              <div className="flex flex-col gap-2">
+                <WebDsV2.OptionRow trailing="chevron" title="Statements" description="Monthly account statements" />
+                <WebDsV2.OptionRow trailing="chevron" title="Tax documents" description="Annual tax forms" />
               </div>
             </SettingsSection>
-            <SettingsSection title="Close account">
-              <WebDsV2.OptionRow
-                trailing="chevron"
-                title="Close account"
-                description="Talk to our team about closing your account."
+          </div>
+          <div className="flex w-full flex-col gap-8 md:w-[296px] md:shrink-0">
+            <SettingsSection title="Display">
+              <DisplayControl
+                label="Units"
+                note="Troy ounces, the standard for precious metals."
+                value={goldUnit}
+                onValueChange={(u: "g" | "oz") => {
+                  setGoldUnit(u);
+                  setSilverUnit(u);
+                }}
+                options={UNITS}
+              />
+              <DisplayControl
+                label="Appearance"
+                note="System follows your device."
+                value={mode}
+                onValueChange={setMode}
+                options={APPEARANCE}
               />
             </SettingsSection>
           </div>

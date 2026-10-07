@@ -42,8 +42,9 @@
 // and its ::after stretches over the card, so a press anywhere opens the
 // wallet's page; the buttons sit above it (relative, z-10) and work on
 // their own. Hover is a one-step surface change, card-hover, and pressed
-// one step further, card-pressed (WebDsV2 explains the pair; the Web DS
-// card has no hover of its own); the focus ring draws
+// one step further, card-pressed, but not while one of its buttons is the
+// thing pressed (WebDsV2 explains the pair; the Web DS card has no hover
+// of its own); the focus ring draws
 // round the card. Tab reaches the link, then each button.
 //
 // ACTIONS: Buy and Sell open TradeFlowV2; Deposit and Withdraw open the
@@ -122,7 +123,7 @@ function WalletGroupCardV2({
         "relative flex flex-col gap-2 rounded-[16px] p-5",
         surface === "solid" ? "border border-[color:var(--wds-border)] bg-[var(--wds-card)]" : "",
         surface === "subtle" ? "bg-[var(--wds-card)]" : "",
-        link && !face ? "cursor-pointer transition-colors hover:bg-[var(--wds-card-hover)] active:bg-[var(--wds-card-pressed)]" : "",
+        link && !face ? "cursor-pointer transition-colors hover:bg-[var(--wds-card-hover)] [&:active:not(:has(.z-10_*:active))]:bg-[var(--wds-card-pressed)]" : "",
         className,
       )}
       style={face ? { background: METAL_FACE[metal], color: "#141b3d" } : undefined}

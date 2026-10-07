@@ -199,8 +199,8 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/settings",
     name: "Settings v2",
     id: "dmuyhn3548vjg",
-    promotedAt: 1791400560887,
-    sourceHash: "a76a4bce3b11",
+    promotedAt: 1791408417297,
+    sourceHash: "61e2520aedee",
   },
   /* Staging, 2 Oct 2026: the signed-out pages. New screens rather than v2
      copies (production has no log in and no error pages), named "v2" to
