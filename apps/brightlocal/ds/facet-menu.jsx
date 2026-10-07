@@ -192,6 +192,11 @@ export function FacetPopover({
   dataHook,
   search = false,
   searchPlaceholder = "Find…",
+  // fieldWidth (e.g. "w-40"): draw the trigger as a DS Select field, a
+  // fixed width at the field height (h-9) with the label left and the
+  // chevron right, as Figma's Review Manager toolbar does (7 Oct). Left
+  // unset, the trigger hugs its label at size sm, as before.
+  fieldWidth,
   children,
 }) {
   const commandRef = React.useRef(null);
@@ -212,7 +217,7 @@ export function FacetPopover({
           // trigger IS a select, so it should read as one — Button's
           // rounded-full pill is the wrong default for a field, and the
           // product's real selects are not fully rounded either.
-          className="rounded-sm text-sm font-normal"
+          className={fieldWidth ? `rounded-sm text-sm font-normal h-9 justify-between px-3 ${fieldWidth}` : "rounded-sm text-sm font-normal"}
         >
           {label}
           <ChevronDown className="size-3.5 opacity-60" />
@@ -284,6 +289,7 @@ export function FacetedFilterMenu({
   // "left" | "right": which edge of the trigger the panel hangs from.
   // Right-aligned for menus pinned to a card's right edge.
   align = "left",
+  fieldWidth,
   dataHook,
 }) {
   // The list itself is FacetOptions, shared with the mobile sheet. No local
@@ -299,6 +305,7 @@ export function FacetedFilterMenu({
       dataHook={dataHook}
       search={search}
       searchPlaceholder={searchPlaceholder}
+      fieldWidth={fieldWidth}
     >
       <FacetOptions
         options={options}
@@ -314,7 +321,7 @@ export function FacetedFilterMenu({
   );
 }
 
-export function SingleSelectMenu({ label, open, onOpenChange, options, value, onSelect, dataHook, panelWidth = "w-44", align = "left" }) {
+export function SingleSelectMenu({ label, open, onOpenChange, options, value, onSelect, dataHook, panelWidth = "w-44", align = "left", fieldWidth }) {
   return (
     <FacetPopover
       label={label}
@@ -328,6 +335,7 @@ export function SingleSelectMenu({ label, open, onOpenChange, options, value, on
       align={align === "right" ? "end" : "start"}
       panelWidth={panelWidth}
       dataHook={dataHook}
+      fieldWidth={fieldWidth}
     >
       <CommandGroup>
         {options.map((option) => (

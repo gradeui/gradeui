@@ -845,7 +845,7 @@ export function ShellTweakerPanel({ preset, authored, tweaks, setTweaks }) {
 // Cancels GlobalLayout's baked-in p-section-sm + viewport p-1 (string
 // literals in the dist, not prop-overridable — rules/90-audit.md) and
 // exposes the layout explorations as props.
-export function AppLayoutShell({
+function ModifiedAppLayoutShell({
   // Named LOOK bundle (LOOK_PRESETS): "subtle-depth" | "heavy-depth" |
   // "live-site". The AUTHORED counterpart of the tweaker's preset
   // dropdown, reading the same table, so a screen can OPEN in a look
@@ -1500,3 +1500,84 @@ export function AppLayoutShell({
   );
 }
 
+
+
+// ─── LAYOUT ENGINE (ported from apps/brightlocal/ds, 7 Oct) ────────────
+// "modified" is the proposal shell above. "native" is BrightLocal's own
+// GlobalLayout and Sidebar exactly as shipped; "native-fixed" is the same
+// with the app's proposed token fixes (app/custom.css), carried here as a
+// style block because Studio's preview CSS does not include custom.css.
+// The app's host names the engine on window.__gdsLayoutEngine; in Studio a
+// screen asks with <AppLayoutShell engine="native-fixed">. The choice
+// travels to ProposalSidebar and PageHeader through context, so it never
+// leaks from one screen into the next in the same sandbox.
+const LayoutEngineContext = React.createContext(null);
+function globalEngineRaw() {
+  try {
+    const raw = window.__gdsLayoutEngine;
+    return raw === "native" || raw === "native-fixed" ? raw : "modified";
+  } catch {
+    return "modified";
+  }
+}
+export function useLayoutEngineRaw() {
+  const ctx = React.useContext(LayoutEngineContext);
+  return ctx ?? globalEngineRaw();
+}
+export function layoutEngine() {
+  const raw = globalEngineRaw();
+  return raw === "modified" ? "modified" : "native";
+}
+export function layoutEngineRaw() {
+  return globalEngineRaw();
+}
+
+const NATIVE_FIXED_CSS =
+  '[data-slot="sidebar-provider"]:has([data-gds-layout-engine="native-fixed"]){--sidebar-width:280px !important}' +
+  '[data-slot="sidebar-provider"]:has([data-gds-layout-engine="native-fixed"]) [data-slot="sidebar-container"]{width:var(--sidebar-width) !important}' +
+  '[data-gds-layout-engine="native-fixed"] aside{border-left:1px solid transparent}' +
+  '[data-gds-layout-engine="native-fixed"]{--card:var(--ds-tailwind-colors-base-white);--card-border:var(--border)}' +
+  '.dark [data-gds-layout-engine="native-fixed"]{--card:var(--ds-tailwind-colors-neutral-900)}' +
+  '[data-gds-layout-engine="native-fixed"] [data-slot="content-body"]{max-width:var(--content-max-width) !important}' +
+  '[data-gds-layout-engine="native-fixed"] [data-radix-collection-item][data-variant]:is([aria-checked="true"],[aria-pressed="true"]){background:var(--ds-tailwind-colors-neutral-200);color:var(--foreground)}' +
+  '[data-gds-layout-engine="native-fixed"] [data-radix-collection-item][data-variant]:is([aria-checked="false"],[aria-pressed="false"]){color:var(--muted-foreground)}';
+
+function NativeAppLayoutShell({ engineRaw, sidebar, header, mobileBar, children, dataset, dataHook = "app-layout", className, ...rest }) {
+  const look = { ...rest };
+  for (const key of LOOK_KEYS) delete look[key];
+  for (const key of ["preset", "flush", "pinnedSidebar", "mobileTone", "contentMaxWidth", "sidebarBorder", "headerBackground", "tweaker", "tweaks", "onTweaksChange", "stickyHeader", "navDensity"]) delete look[key];
+  const shell = (
+    <GlobalLayout
+      dataHook={dataHook}
+      data-gds-layout-engine={engineRaw}
+      className={className}
+      // Nothing is sticky above the content in the DS layout, so screens that
+      // offset their sticky rows by the page header's height get 0 here.
+      style={{ "--gds-page-header-height": "0px" }}
+      {...look}
+    >
+      {engineRaw === "native-fixed" ? <style>{NATIVE_FIXED_CSS}</style> : null}
+      <GlobalLayoutSidebar dataHook={`${dataHook}-sidebar`}>{sidebar}</GlobalLayoutSidebar>
+      <GlobalLayoutContent dataHook={`${dataHook}-content`}>
+        {mobileBar}
+        {header}
+        {children}
+      </GlobalLayoutContent>
+    </GlobalLayout>
+  );
+  const effectiveDataset = loadSessionDataset() ?? dataset;
+  return effectiveDataset && effectiveDataset !== "default" ? (
+    <ProposalDataProvider dataset={effectiveDataset}>{shell}</ProposalDataProvider>
+  ) : (
+    shell
+  );
+}
+
+export function AppLayoutShell({ engine, ...props }) {
+  const raw = engine === "native" || engine === "native-fixed" || engine === "modified" ? engine : globalEngineRaw();
+  return (
+    <LayoutEngineContext.Provider value={raw}>
+      {raw === "modified" ? <ModifiedAppLayoutShell {...props} /> : <NativeAppLayoutShell engineRaw={raw} {...props} />}
+    </LayoutEngineContext.Provider>
+  );
+}

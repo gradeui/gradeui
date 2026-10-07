@@ -32,6 +32,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
+  SidebarFooter,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarMenuSubVariant,
@@ -57,6 +58,7 @@ import {
   TrendingUp,
 } from "@brightlocal/icons";
 import { PROPOSAL_ACCOUNTS, useProposalData } from "@brightlocal/proposal-data";
+import { useLayoutEngineRaw } from "@brightlocal/proposal-shell";
 
 // ─── Nav + account data (the proposal's default IA) ──────────────────
 // Screens can pass their own `sections` / `accounts` to ProposalSidebar;
@@ -361,7 +363,7 @@ function NavSection({ section, activeId }) {
 // SECTIONS-driven three-level nav, and the STUCK footer (account
 // switcher + signed-in dropdown). Wrap in the DS's SidebarProvider at
 // the screen root — the provider is per-screen state, not lib chrome.
-export function ProposalSidebar({
+function ModifiedProposalSidebar({
   // Default nav is DATA-DRIVEN: built from the proposal data context
   // (keywords feed the Local Search Grid rows; data.navLinks wires goto
   // targets by row id), so a dataset switch re-writes the left nav too.
@@ -567,3 +569,141 @@ export function ProposalSidebar({
   );
 }
 
+// ─── NATIVE SIDEBAR (8 Sep, Ali: "use their exact navigation sidebar",
+// "as close to production as we can") ────────────────────────────────
+// The same rows (nav model v2: hub-page links, contextual sub rows, no
+// accordions) on the DS's Sidebar parts EXACTLY as shipped: default
+// sizes, default gaps, the DS SidebarFooter, no className on anything.
+// What differs from the modified sidebar above is only what the
+// proposal added on top: the tightened rhythm, the location mini card,
+// the stuck footer, the density variables. Rendered when the layout
+// engine is "native" (see proposal-shell.jsx).
+function NativeSubRows({ items, activeId }) {
+  return items.map((item) => (
+    <SidebarMenuSubItem key={item.id} dataHook={`sub-item-${item.id}`}>
+      <SidebarMenuSubButton
+        dataHook={`sub-btn-${item.id}`}
+        isActive={activeId ? item.id === activeId || subtreeHas(item, activeId) : item.active}
+        data-grade-goto={item.goto}
+        data-grade-transition={item.transition}
+      >
+        <span>{item.label}</span>
+      </SidebarMenuSubButton>
+    </SidebarMenuSubItem>
+  ));
+}
+
+function NativeNavSection({ section, activeId }) {
+  const inSection = activeId
+    ? section.id === activeId || subtreeHas(section, activeId)
+    : Boolean(section.active);
+  return (
+    <SidebarMenuItem dataHook={`nav-item-${section.id}`}>
+      <SidebarMenuButton
+        dataHook={`nav-${section.id}`}
+        isActive={inSection}
+        data-grade-goto={section.goto}
+        data-grade-transition={section.transition}
+      >
+        <section.icon />
+        <span>{section.label}</span>
+      </SidebarMenuButton>
+      {section.sub && inSection ? (
+        <SidebarMenuSub>
+          <NativeSubRows items={section.sub} activeId={activeId} />
+        </SidebarMenuSub>
+      ) : null}
+    </SidebarMenuItem>
+  );
+}
+
+function NativeProposalSidebar({
+  sections,
+  activeId,
+  locationHomeGoto = "screen:dmrurue2wmp9u",
+  allLocationsGoto = "screen:dmrotrgstba3l",
+  userName,
+  userMeta,
+  userInitials,
+  // Account Details opens the in-product subscription page for now (Ali, 11 Sep).
+  userMenuGroups = [[{ label: "Account Details" }], [{ label: "Logout" }]],
+  dataHook = "app-sidebar",
+  // Look-only props the modified sidebar takes; dropped here.
+  accounts, accountLabel,
+  ...rest
+}) {
+  const data = useProposalData();
+  sections = sections ?? buildProposalSections(data);
+  userName = userName ?? data.user.name;
+  userMeta = userMeta ?? data.user.meta;
+  userInitials = userInitials ?? data.user.initials;
+  const isAllLocations = activeId === "all-locations";
+  const hasSwitcher = false;
+  return (
+    <Sidebar {...rest} dataHook={dataHook} data-gds-layout-engine="native">
+      <SidebarHeader dataHook="sidebar-header">
+        <Logo dataHook="sidebar-logo" />
+      </SidebarHeader>
+      <SidebarContent dataHook="sidebar-content">
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem dataHook="nav-item-all-locations-top">
+                <SidebarMenuButton
+                  dataHook="nav-all-locations-top"
+                  isActive={isAllLocations}
+                  data-grade-goto={allLocationsGoto}
+                >
+                  <LayoutGrid />
+                  <span>All Locations</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {isAllLocations ? null : (
+                <>
+                  {hasSwitcher ? null : (
+                    <SidebarMenuItem dataHook="nav-item-current-location">
+                      <SidebarMenuButton
+                        dataHook="nav-current-location"
+                        data-grade-goto={locationHomeGoto}
+                      >
+                        <House />
+                        <span>{data.location.name}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                  {sections.map((section) => (
+                    <NativeNavSection key={section.id} section={section} activeId={activeId} />
+                  ))}
+                </>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter dataHook="sidebar-footer">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarAccountDropdown
+              dataHook="sidebar-account-dropdown"
+              name={userName}
+              email={userMeta}
+              avatar={
+                <Avatar dataHook="sidebar-user-avatar">
+                  <AvatarFallback>{userInitials}</AvatarFallback>
+                </Avatar>
+              }
+              menuGroups={userMenuGroups}
+              side="top"
+              align="end"
+            />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
+
+export function ProposalSidebar(props) {
+  const raw = useLayoutEngineRaw();
+  return raw === "modified" ? <ModifiedProposalSidebar {...props} /> : <NativeProposalSidebar {...props} />;
+}

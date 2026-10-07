@@ -54,6 +54,8 @@ import {
   Skeleton,
   TypographyHeading,
   TypographyText,
+  GlobalLayoutSubtitle,
+  GlobalLayoutContentActions,
 } from "@brightlocal/ui-components";
 import {
   ArrowLeft,
@@ -83,7 +85,7 @@ import {
   GlobeyCalmClosed,
 } from "@brightlocal/illustrations";
 import { useProposalData } from "@brightlocal/proposal-data";
-import { selectSessionDataset } from "@brightlocal/proposal-shell";
+import { selectSessionDataset, useLayoutEngineRaw } from "@brightlocal/proposal-shell";
 
 // ─── formatDate — just the date, no time/UTC noise ────────────────────
 // The dataset stores a pre-formatted string ("1st Jul 2026 at 9:52 AM
@@ -391,7 +393,7 @@ function DsTrailList({ trail, dataHook, onCrumbClick, locationName }) {
 // and the root never drops. It was "ancestors only, max four" from 27 Aug,
 // clamped to the deepest four, which could drop the root. `meta` renders in the
 // muted row under the title; `actions` right-aligns (buttons, menus).
-export function PageHeader({
+function ModifiedPageHeader({
   // ANCESTORS ONLY (see DsTrailList). `[]` keeps the row's FOOTPRINT (invisible
   // spacer) so the band is the same height on every page; `false`
   // removes the row entirely — see the utility-row note below.
@@ -1703,4 +1705,140 @@ export function RankGrid({
       <div className="relative">{body}</div>
     </div>
   );
+}
+
+// The DS's own GlobalLayoutContentHeader, fed from the same props every
+// screen already passes to PageHeader. It slots direct children by
+// type: Breadcrumb before the title, GlobalLayoutSubtitle under it,
+// GlobalLayoutContentActions in the title row. What it can take:
+//   breadcrumbs  the DS Breadcrumb (ours binds the location and
+//                navigates by screen id through data-grade-goto)
+//   title        the header's own children
+//   description  GlobalLayoutSubtitle
+//   date         lastUpdated / statusRight, muted, under the actions
+//                (the DS has no status row; this is the nearest slot)
+//   actions      GlobalLayoutContentActions (buttons at their own size)
+// What it cannot: the utility slot (help), the reserved status row that
+// keeps page heights equal, actionSize normalising, meta. Help is left
+// out for now (Ali: "just ignore help for now").
+function NativePageHeader({
+  breadcrumbs = [],
+  title,
+  description,
+  lastUpdated,
+  statusRight,
+  actions,
+  dataHook = "page-header",
+}) {
+  const data = useProposalData();
+  const bindLastUpdated = lastUpdated === "auto" || lastUpdated === true;
+  const lastUpdatedValue = bindLastUpdated
+    ? (data.aiInsights?.lastUpdated ?? null)
+    : lastUpdated || null;
+  // No clamp (it kept the deepest four and could drop the root);
+  // DsTrailList collapses a deep trail instead.
+  const trail = (breadcrumbs === false ? [] : breadcrumbs)
+    .map((crumb) =>
+      crumb.bind === "location" ? { ...crumb, label: data.location.name } : crumb,
+    );
+  // The nearest ancestor is what the phone trail collapses to.
+  const backCrumb = trail[trail.length - 1];
+  // preventDefault because a crumb with no handler is still an <a href="#">,
+  // and letting it through scrolls the page to the top on the way out.
+  const crumbClick = (crumb) =>
+    crumb.onClick
+      ? (event) => {
+          event.preventDefault();
+          crumb.onClick();
+        }
+      : crumb.href
+        ? undefined
+        : (event) => event.preventDefault();
+  const date = lastUpdatedValue ? (
+    <DateStamp label="Last updated" value={lastUpdatedValue} dataHook={`${dataHook}-last-updated`} />
+  ) : statusRight ? (
+    <span className="text-muted-foreground text-xs" data-hook={`${dataHook}-status`}>{statusRight}</span>
+  ) : null;
+  return (
+    <GlobalLayoutContentHeader dataHook={dataHook} data-gds-layout-engine="native">
+      {/* PHONE: the nearest ancestor only, as a back link.
+          The deepest trail here is five items (four ancestors plus the page),
+          and the DS's BreadcrumbList is flex-nowrap AND whitespace-nowrap with
+          no min-w-0 or truncate on the items, so under its intrinsic width it
+          cannot wrap, cannot shrink and cannot ellipsize: it can only spill.
+          On the template editor at 390 the ol measured 278 wide holding 551 of
+          content, and WizardShell's overflow-hidden cut it mid word, "Reviews
+          > Re". Measured the sweep: the five crumbs only stop overhanging
+          their own column at about 695, so md is the first breakpoint where
+          the whole trail is honest, and below it the one crumb that gets you
+          home is the one worth showing. Same answer the composed header above
+          already gives, which is where the pattern comes from (Ali on this
+          screen: "I dont want weird back links like this", the trail itself is
+          the way back).
+          Two sibling conditionals rather than one fragment: the DS header slots
+          its children BY TYPE, and React.Children does not see through a
+          fragment, so a wrapped pair would land in the title slot. */}
+      {trail.length ? (
+        <Breadcrumb dataHook={`${dataHook}-breadcrumbs-back`} className="min-w-0 md:hidden">
+          <BreadcrumbList>
+            {/* min-w-0 on the li as well as the link: the li is a flex item of
+                the ol, and min-width:auto would hold it at its content width,
+                so the truncate below would never fire. */}
+            <BreadcrumbItem className="min-w-0">
+              <BreadcrumbLink
+                href={backCrumb.href ?? "#"}
+                data-grade-goto={backCrumb.goto}
+                data-grade-transition={backCrumb.transition}
+                onClick={crumbClick(backCrumb)}
+                className="inline-flex min-w-0 items-center gap-1.5"
+              >
+                <ArrowLeft className="size-4 shrink-0" />
+                <span className="truncate">{backCrumb.label}</span>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      ) : null}
+      {/* md+: the trail on the DS rules (DsTrailList): ancestors only, the
+          page title below is the current page, at most three crumbs. This
+          used to end with the page itself as a BreadcrumbPage, which the DS
+          keeps for standalone breadcrumbs, never a page header's. */}
+      {trail.length ? (
+        <Breadcrumb dataHook={`${dataHook}-breadcrumbs`} className="hidden min-w-0 md:block">
+          <DsTrailList
+            trail={trail}
+            dataHook={`${dataHook}-breadcrumbs`}
+            onCrumbClick={crumbClick}
+            locationName={data.location?.name}
+          />
+        </Breadcrumb>
+      ) : null}
+      {/* The DS header slots its children but styles none of them: a bare
+          string renders at body size. Its docs (3.0.0) name the title:
+          TypographyHeading level 1 on the page role, text-heading-page,
+          Poppins 24/32 semibold and exactly one per screen, which tokens
+          1.0.0 now ships (DS-714). */}
+      <TypographyHeading level={1} variant="page" dataHook={`${dataHook}-title`}>
+        {title}
+      </TypographyHeading>
+      {description ? (
+        <GlobalLayoutSubtitle dataHook={`${dataHook}-description`}>{description}</GlobalLayoutSubtitle>
+      ) : null}
+      {/* The date goes UNDER the buttons, right-aligned with them (Ali, 17 Sep:
+          "it should be below"). The DS actions slot is one flex row, so the
+          date used to sit to the left of the buttons as if it were one. On
+          narrow screens the slot drops under the title and both left-align. */}
+      {date || actions ? (
+        <GlobalLayoutContentActions dataHook={`${dataHook}-actions`} className="flex-col items-start gap-2 md:items-end">
+          {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+          {date}
+        </GlobalLayoutContentActions>
+      ) : null}
+    </GlobalLayoutContentHeader>
+  );
+}
+
+export function PageHeader(props) {
+  const raw = useLayoutEngineRaw();
+  return raw === "modified" ? <ModifiedPageHeader {...props} /> : <NativePageHeader {...props} />;
 }
