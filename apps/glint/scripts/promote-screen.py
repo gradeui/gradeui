@@ -119,6 +119,8 @@ COMPONENT_MODULES = {
     "RingLattice": "@/components/ring-lattice",
     "LoginTemplateV2": "@/components/login-template-v2",
     "ErrorPageV2": "@/components/error-page-v2",
+    # Staging, 7 Oct 2026: the Web DS parts and colour, value for value.
+    "WebDsV2": "@/components/web-ds-v2",
 }
 
 # BuyFlow is deliberately absent. TradeFlow superseded it and there is no

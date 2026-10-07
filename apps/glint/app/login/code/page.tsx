@@ -1,44 +1,54 @@
 "use client";
 
 // Promoted from Studio screen "Log in code v2"
-// (design dmur2qa05uort, version 1790952286682). Registry: lib/screens.ts;
+// (design dmur2qa05uort, version 1791396768570). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: e05e2515d3b3
+// source-hash: 11b82577475f
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
 
-// Log in code v2 (2 Oct 2026): the business portal's sign in, step two of
-// two: the one-time code. Web DS LoginTemplate with the CodeForm in it, as
-// the Web Portal file's Login slides set it. Continue goes to Wallets.
+// Log in code v2 (2 Oct 2026): step two of the business portal's sign in,
+// the one-time code. Six digits; the sixth continues on its own to the
+// Wallets page, as the Web Portal file's Login · Code slides describe.
 //
-// ASSUMPTION, A DEMO, NOT AUTH: ANY six digits work. No code was sent, so
-// none is checked, and nothing typed here is sent or stored. That is also
-// why the CodeForm's error state ("That code doesn't match") never shows.
-// The mobile it names is the demo persona's (Persona applicant, ending
-// 0166, as in the slides), never the number typed on the step before,
-// which is not kept anywhere.
+// ASSUMPTION, A DEMO, NOT AUTH: no code is sent and none is checked. Any
+// six digits continue, except 000000, which is the demo's wrong code so
+// the Code · Error state can be shown (7 Oct). The digits are never stored.
+// "Send a new code" is inert. "Back to sign in" returns to the number.
 //
-// Six DS Inputs, one digit each: typing moves to the next cell (a digit
-// typed over a filled cell replaces it), Backspace on an empty cell moves
-// back, and pasting or autofilling a code fills the row. The sixth digit
-// continues on its own, as the production form does; Continue is there
-// too, and with cells still empty it puts the cursor in the first empty
-// one. "Send a new code" is inert. "Back to sign in" returns to "Log in v2".
+// 7 OCT, MATCHED TO "Glint - Web Portal - Full New" (Login · Code ·
+// Default, Error): the title is Raleway Bold 36/40 (the CodeForm's own
+// title, larger than the phone step's 30/36 headline); the lead is Chivo
+// 16/24; the code is the Web DS OTPInput (48 x 56 slots, 8 apart, Raleway
+// Bold 24/32); Continue is the Web DS Button at lg; the help line and Back
+// to sign in sit 12 apart under it. The error turns every slot's border
+// destructive and reads "That code doesn't match. Check it and try again,
+// or send a new one."
+//
+// The mobile number's last four come from Persona (the applicant's
+// mobile), so the copy matches the persona rather than a hard-coded
+// number.
 import * as React from "react";
-import { Field, FieldLabel, Input, Button } from "@gradeui/ui";
+import { Field, FieldLabel, FieldError } from "@gradeui/ui";
 import { LoginTemplateV2 } from "@/components/login-template-v2";
 import { Persona } from "@/lib/persona";
+import { WebDsV2 } from "@/components/web-ds-v2";
 
 const WALLETS = "Dashboard — logged-in home v2";
 const SIGN_IN = "Log in v2";
 const LENGTH = 6;
+/** The demo's wrong code (see the header). */
+const WRONG = "000000";
 
 export default function LogInCodePage() {
   const [digits, setDigits] = React.useState<string[]>(Array(LENGTH).fill(""));
+  const [invalid, setInvalid] = React.useState(false);
   const cells = React.useRef<(HTMLInputElement | null)[]>([]);
   const continueRef = React.useRef<HTMLButtonElement>(null);
-  const complete = digits.every((d) => d !== "");
+  const code = digits.join("");
+  const complete = code.length === LENGTH;
+  const ok = complete && code !== WRONG;
   const ending = String(Persona.DEFAULT.applicant?.mobile ?? "")
     .replace(/\D/g, "")
     .slice(-4);
@@ -53,6 +63,7 @@ export default function LogInCodePage() {
   const fill = (from: number, text: string) => {
     const incoming = text.replace(/\D/g, "").slice(0, LENGTH - from).split("");
     if (!incoming.length) return;
+    setInvalid(false);
     setDigits((prev) => {
       const next = [...prev];
       incoming.forEach((d: string, k: number) => (next[from + k] = d));
@@ -61,42 +72,50 @@ export default function LogInCodePage() {
     cells.current[Math.min(from + incoming.length, LENGTH - 1)]?.focus();
   };
 
-  const clear = (i: number) =>
+  const clear = (i: number) => {
+    setInvalid(false);
     setDigits((prev) => {
       const next = [...prev];
       next[i] = "";
       return next;
     });
+  };
 
+  /* The goto is on the button only while the code is right, so a wrong
+     code falls through to here and shows the error. */
   const next = () => {
-    if (complete) return;
+    if (complete) {
+      if (!ok) setInvalid(true);
+      return;
+    }
     cells.current[digits.findIndex((d) => d === "")]?.focus();
   };
 
   return (
     <LoginTemplateV2>
-      <h1 className="text-3xl" style={{ lineHeight: "36px" }}>
+      <h1 className="text-4xl" style={{ lineHeight: "40px" }}>
         Check your phone.
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2 text-base leading-6 text-muted-foreground">
         Enter the code we sent to your mobile ending {ending}.
       </p>
 
-      <Field className="mt-8">
-        <FieldLabel htmlFor="login-code-0">Sign-in code</FieldLabel>
-        <div className="flex gap-2">
+      <Field className="mt-8 gap-2" data-invalid={invalid || undefined}>
+        <FieldLabel htmlFor="login-code-0" className="leading-5">
+          Sign-in code
+        </FieldLabel>
+        <WebDsV2.OtpGroup>
           {digits.map((d, i) => (
-            <Input
+            <WebDsV2.OtpSlot
               key={i}
               id={`login-code-${i}`}
               ref={(el: HTMLInputElement | null) => {
                 cells.current[i] = el;
               }}
-              size="lg"
-              inputMode="numeric"
               autoComplete={i === 0 ? "one-time-code" : "off"}
               aria-label={`Digit ${i + 1} of ${LENGTH}`}
               autoFocus={i === 0}
+              invalid={invalid}
               value={d}
               onChange={(e) => {
                 let v = e.target.value.replace(/\D/g, "");
@@ -124,23 +143,27 @@ export default function LogInCodePage() {
                 fill(i, e.clipboardData.getData("text"));
               }}
               onFocus={(e) => e.target.select()}
-              className="w-12 px-0 text-center text-lg"
             />
           ))}
-        </div>
+        </WebDsV2.OtpGroup>
+        {invalid ? (
+          <FieldError className="text-sm leading-5">
+            That code doesn't match. Check it and try again, or send a new one.
+          </FieldError>
+        ) : null}
       </Field>
 
-      <Button
+      <WebDsV2.Button
         ref={continueRef}
         size="lg"
         className="mt-8 w-full"
-        data-grade-goto={complete ? WALLETS : undefined}
+        data-grade-goto={ok ? WALLETS : undefined}
         onClick={next}
       >
         Continue
-      </Button>
-      <p className="mt-4 text-center text-sm text-muted-foreground">
-        Didn’t get it?{" "}
+      </WebDsV2.Button>
+      <p className="mt-3 text-center text-sm leading-5 text-muted-foreground">
+        Didn't get it?{" "}
         <button type="button" className="cursor-pointer font-medium text-primary hover:underline">
           Send a new code
         </button>
@@ -148,7 +171,7 @@ export default function LogInCodePage() {
       <button
         type="button"
         data-grade-goto={SIGN_IN}
-        className="mx-auto mt-3 cursor-pointer text-sm font-medium text-primary hover:underline"
+        className="mx-auto mt-3 cursor-pointer text-sm font-medium leading-5 text-primary hover:underline"
       >
         Back to sign in
       </button>

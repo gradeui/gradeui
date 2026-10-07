@@ -15,6 +15,25 @@
 //     ...the form...
 //   </LoginTemplateV2>
 //
+// 7 OCT, MATCHED TO "Glint - Web Portal - Full New" (Login page), value
+// for value:
+//   - the ground is page-deep (primary/950 dark, neutral/50 light), and
+//     the colour is the Web DS's (<WebDsV2 />, mounted here);
+//   - the wordmark is one flat colour, the wordmark token (gold/300 dark,
+//     primary/500 light), as the Figma Wordmark is filled;
+//   - desktop: the card sits 40 under the wordmark; it is filled with
+//     background and carries BOTH effects in both modes: the Card
+//     surface's gold/400 glow (56 blur, 20%) and the card's drop shadow
+//     (0 30 40 at 45%, Figma's own effect colour);
+//   - the frame is the Card surface's own gradient: #e3e5bc, #d0b26d,
+//     #a48544, #7f6124 along the diagonal, 1.5 inside;
+//   - Privacy policy and Terms of use are Chivo 13/20, 24 apart,
+//     neutral/400 at the foot of the desktop page and muted-foreground in
+//     the mobile sheet;
+//   - the chat button is a 48 circle in primary with a 24 icon in
+//     primary-foreground, 32 in from the corner on desktop and 20 on
+//     mobile.
+//
 // DESKTOP (md up): ground with the lattice cleared in the middle, the
 // wordmark (30 tall) over a 480 wide card, the legal links at the foot of
 // the page and the chat button in the corner.
@@ -23,45 +42,33 @@
 // bottom: rounded top corners, gold frame on three sides and no bottom
 // stroke (Web DS "Card surface", Shape=Sheet), the legal links inside it.
 //
-// THE CARD SURFACE (Web DS "Card surface", Frame=Gold, Glow=20%,
-// Pattern=Plain, the one Ali chose on 30 Sep): a 1.5px inside border in
-// the metal face gradient along the diagonal, and in dark a gold/400 glow
-// at 20% with a 56 blur. In light it takes the drop shadow instead
-// (neutral/950 at 35%), as the LoginTemplate's Light mode does.
-//
-// WORDMARK: champagne gold in dark; the primary blue in light, as the
-// LoginTemplate's Light mode draws it.
-//
 // THE CHAT BUTTON, Privacy policy, Terms of use and Contact support are
 // inert: the prototype has nowhere for them to go.
 //
 // No useWebDsType here: the app sets the Web DS type tokens in
 // app/globals.css. The Studio copy sets them while it is mounted.
-
 import * as React from "react";
-import { Button } from "@gradeui/ui";
 import { MessageCircle } from "lucide-react";
-import { Wordmark, METALS, metalRing } from "@/components/wordmark";
+import { Wordmark } from "@/components/wordmark";
 import { RingLattice } from "@/components/ring-lattice";
+import { WebDsV2 } from "@/components/web-ds-v2";
 
-const G = METALS.gold;
+/** Web DS Card surface, Frame=Gold: the frame's own gradient stops. */
+const FRAME = "linear-gradient(135deg, #e3e5bc 0%, #d0b26d 33%, #a48544 67%, #7f6124 100%)";
 
-/** The metal face gradient along the card's diagonal (Web DS Card surface,
- *  Frame=Gold): the same polished ring the trade receipts use. */
-const FRAME = metalRing("gold");
-
-/** Shadows are the one other place transparency is allowed. */
-const GLOW = `0 0 56px oklch(${G[400]} / 0.2)`;
-const DROP = "0 24px 56px -24px oklch(var(--ramp-neutral-950) / 0.35)";
+/** Shadows are the one place transparency is allowed: the Card surface's
+ *  glow (gold/400 at 20%, 56 blur) and the card's drop (Figma's effect
+ *  colour, 0 30 40 at 45%, set as the card's md:shadow class). */
+const GLOW = "0 0 56px rgb(188 155 85 / 0.2)";
 
 /** The legal links. Inert. */
 function Legal({ className = "" }: { className?: string }) {
   return (
-    <div className={`flex items-center gap-4 text-xs ${className}`}>
-      <button type="button" className="cursor-pointer text-muted-foreground hover:text-foreground">
+    <div className={`flex items-center gap-6 text-[13px] leading-5 ${className}`}>
+      <button type="button" className="cursor-pointer hover:text-[color:var(--wds-foreground)]">
         Privacy policy
       </button>
-      <button type="button" className="cursor-pointer text-muted-foreground hover:text-foreground">
+      <button type="button" className="cursor-pointer hover:text-[color:var(--wds-foreground)]">
         Terms of use
       </button>
     </div>
@@ -70,7 +77,8 @@ function Legal({ className = "" }: { className?: string }) {
 
 export function LoginTemplateV2({ children }: { children?: React.ReactNode }) {
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-background text-foreground">
+    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--wds-page-deep)] text-[color:var(--wds-foreground)]">
+      <WebDsV2 />
       {/* The lattice: a band that fades out under the sheet on mobile,
           cleared in the middle on desktop. */}
       <RingLattice fade="bottom" className="md:hidden" />
@@ -79,49 +87,41 @@ export function LoginTemplateV2({ children }: { children?: React.ReactNode }) {
       <main className="relative flex flex-1 flex-col md:items-center md:justify-center md:px-6 md:py-16">
         {/* The wordmark. On mobile this is the band, and it takes the
             height the sheet leaves. */}
-        <div className="flex flex-1 items-center justify-center py-10 md:flex-none md:pb-8 md:pt-0">
-          <Wordmark cut="champagne" className="hidden dark:block" style={{ height: 30 }} />
-          <Wordmark tone="current" className="text-primary dark:hidden" style={{ height: 30 }} />
+        <div className="flex flex-1 items-center justify-center py-10 md:flex-none md:pb-10 md:pt-0">
+          <Wordmark tone="current" style={{ height: 30, color: "var(--wds-wordmark)" }} />
         </div>
 
         {/* The card surface: a card on desktop, a sheet on mobile. */}
-        <div className="relative -mb-1 w-full md:mb-0" style={{ maxWidth: 480 }}>
-          <div
-            aria-hidden
-            className="absolute inset-0 hidden rounded-t-3xl dark:block md:rounded-3xl"
-            style={{ boxShadow: GLOW }}
-          />
-          <div
-            aria-hidden
-            className="absolute inset-0 rounded-t-3xl dark:hidden md:rounded-3xl"
-            style={{ boxShadow: DROP }}
-          />
+        <div
+          className="relative -mb-1 w-full rounded-t-3xl md:mb-0 md:rounded-3xl md:shadow-[0_30px_40px_rgb(5_5_18/0.45)]"
+          style={{ maxWidth: 480 }}
+        >
           <div
             className="relative flex flex-col rounded-t-3xl px-5 pb-7 pt-8 md:rounded-3xl md:p-10"
             style={{
               border: "1.5px solid transparent",
-              background: `linear-gradient(oklch(var(--card)), oklch(var(--card))) padding-box, ${FRAME} border-box`,
+              background: `linear-gradient(var(--wds-background), var(--wds-background)) padding-box, ${FRAME} border-box`,
+              boxShadow: GLOW,
             }}
           >
             {children}
-            <Legal className="mt-8 md:hidden" />
+            <Legal className="mt-8 text-[color:var(--wds-muted-foreground)] md:hidden" />
           </div>
         </div>
       </main>
 
       <footer className="relative hidden justify-center pb-10 md:flex">
-        <Legal />
+        <Legal className="text-[color:var(--wds-neutral-400)]" />
       </footer>
 
       {/* The chat button. Inert. */}
-      <Button
-        iconOnly
-        size="lg"
+      <button
+        type="button"
         aria-label="Chat with us"
-        className="fixed bottom-5 right-5 z-10 rounded-full md:bottom-6 md:right-6"
+        className="fixed bottom-5 right-5 z-10 flex size-12 cursor-pointer items-center justify-center rounded-full bg-[var(--wds-primary)] text-[color:var(--wds-primary-foreground)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--wds-ring)] md:bottom-8 md:right-8"
       >
-        <MessageCircle className="size-5" />
-      </Button>
+        <MessageCircle className="size-6" />
+      </button>
     </div>
   );
 }

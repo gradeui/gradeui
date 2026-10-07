@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Log in v2"
-// (design dmur2ps41k9hh, version 1790952229118). Registry: lib/screens.ts;
+// (design dmur2ps41k9hh, version 1791396768570). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: eca92e5722b9
+// source-hash: c5921446ba85
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -20,24 +20,38 @@
 // off so the browser does not offer a real number. The only check is that
 // it has at least seven digits, so the error state can be shown.
 //
-// Copy is the Web Portal file's, verbatim (Login slides, 1 Oct). The
-// countries are PhoneField's three (United States first), so the two
-// phone fields in the demo offer the same list.
+// 7 OCT, MATCHED TO "Glint - Web Portal - Full New" (Login · Phone ·
+// Default, Filled, Error): the lead is Chivo 16/24; the country select
+// and the number are the Web DS Select and Input at lg (48 tall, 10
+// corners, input-background), 128 and the rest, 12 apart; Send code is
+// the Web DS Button at lg (40, 8 corners, Chivo Medium 14/20 on
+// button-primary). Heading, fields and actions are 32 apart, the help line
+// 16 under the button.
+//
+// ASSUMPTION, THE COUNTRY: Figma's Default slide shows "🇬🇧 +44" with a
+// "(555) 000-0000" placeholder, but its Filled and Error slides show
+// "🇺🇸 +1" and a US number, and the web portal is for US business
+// accounts only (Ali, 1 Oct). So United States stays the default here, and
+// the placeholder is PhoneField's US one. If the Default slide's +44 is
+// meant, set the initial countryId to "uk".
+//
+// Copy is the Web Portal file's, verbatim. The countries are PhoneField's
+// three (United States first), so the two phone fields in the demo offer
+// the same list.
 import * as React from "react";
 import {
   Field,
   FieldLabel,
   FieldError,
-  Input,
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-  Button,
 } from "@gradeui/ui";
 import { LoginTemplateV2 } from "@/components/login-template-v2";
 import { PhoneField } from "@/components/phone-field";
+import { WebDsV2 } from "@/components/web-ds-v2";
 
 const CODE_SCREEN = "Log in code v2";
 
@@ -59,15 +73,17 @@ export default function LogInPage() {
   return (
     <LoginTemplateV2>
       <LoginTemplateV2.Headline />
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2 text-base leading-6 text-muted-foreground">
         Enter your phone number and we’ll text you a code.
       </p>
 
-      <Field className="mt-8" data-invalid={invalid || undefined}>
-        <FieldLabel htmlFor="login-phone">Phone number</FieldLabel>
-        <div className="flex gap-2">
+      <Field className="mt-8 gap-2" data-invalid={invalid || undefined}>
+        <FieldLabel htmlFor="login-phone" className="leading-5">
+          Phone number
+        </FieldLabel>
+        <div className="flex gap-3">
           <Select value={countryId} onValueChange={setCountryId}>
-            <SelectTrigger aria-label="Country calling code" className="h-11 w-28 shrink-0">
+            <SelectTrigger aria-label="Country calling code" className={`${WebDsV2.SELECT_TRIGGER} w-32 shrink-0`}>
               <SelectValue>{`${country.flag} ${country.dial}`}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -80,14 +96,13 @@ export default function LogInPage() {
               ))}
             </SelectContent>
           </Select>
-          <Input
+          <WebDsV2.Input
             id="login-phone"
-            size="lg"
             type="tel"
             inputMode="tel"
             autoComplete="off"
             placeholder={country.placeholder}
-            aria-invalid={invalid || undefined}
+            invalid={invalid}
             value={number}
             onChange={(e) => {
               setNumber(e.target.value);
@@ -99,13 +114,13 @@ export default function LogInPage() {
                 sendRef.current?.click();
               }
             }}
-            className="min-w-0 flex-1"
+            className="flex-1"
           />
         </div>
-        {invalid ? <FieldError>Check the number and try again.</FieldError> : null}
+        {invalid ? <FieldError className="text-sm leading-5">Check the number and try again.</FieldError> : null}
       </Field>
 
-      <Button
+      <WebDsV2.Button
         ref={sendRef}
         size="lg"
         className="mt-8 w-full"
@@ -113,8 +128,8 @@ export default function LogInPage() {
         onClick={send}
       >
         Send code
-      </Button>
-      <p className="mt-4 text-center text-sm text-muted-foreground">
+      </WebDsV2.Button>
+      <p className="mt-4 text-center text-sm leading-5 text-muted-foreground">
         Having trouble signing in?{" "}
         <button type="button" className="cursor-pointer font-medium text-primary hover:underline">
           Contact support
@@ -123,3 +138,4 @@ export default function LogInPage() {
     </LoginTemplateV2>
   );
 }
+
