@@ -1,67 +1,42 @@
 "use client";
 
 /**
- * Route layout for the logged-in product area: mounts the AppChrome
- * shell ONCE (AppChromeV2 on glint-staging: no rail on mobile) so the sidebar rail and toolbar persist across product
+ * Route layout for the logged-in product area: mounts the AppChromeV2
+ * shell ONCE so the sidebar and header persist across product
  * navigations. The route group keeps URLs clean (/wallets, /activity,
- * /wallets/gold, ...) while sharing one chrome, mirroring the onboarding
- * wizard's layout pattern. The active nav item and the toolbar's
- * leading slot (subpage back affordance) derive from the pathname.
+ * /wallets/gold, ...) while sharing one chrome.
+ *
+ * Promotion strips each Studio screen's <AppChromeV2 active crumbs>
+ * wrapper, so its two props are rebuilt here from the pathname: the lit
+ * nav item and the header's breadcrumb (7 Oct 2026, the Web DS Header,
+ * which replaced the old toolbar's Back button with "Wallets > Gold").
+ * Keep these in step with each screen's own props in Studio.
  */
 
 import { usePathname } from "next/navigation";
-import { Button } from "@gradeui/ui";
-import { ChevronLeft } from "lucide-react";
 import { AppChromeV2 } from "@/components/layouts/app-chrome-v2";
 
-/* Pathname -> sidebar nav label. Grows a row per promoted product
-   screen (keep in step with lib/screens.ts and AppChrome's NAV). */
-const ACTIVE_BY_PATH: Record<string, string> = {
-  "/wallets": "Wallets",
-  "/activity": "Activity",
-  /* A wallet detail keeps Wallets lit: it is a child of that section. */
-  "/wallets/gold": "Wallets",
-  "/wallets/silver": "Wallets",
-  "/wallets/usd": "Wallets",
-  "/bank-accounts": "Bank Accounts",
+const WALLETS = { label: "Wallets", target: "Dashboard — logged-in home v2" };
+
+type Crumb = { label: string; target?: string };
+
+/* Pathname -> sidebar nav label and breadcrumb. A wallet page keeps
+   Wallets lit: it is a child of that section. */
+const CHROME_BY_PATH: Record<string, { active: string; crumbs: Crumb[] }> = {
+  "/wallets": { active: "Wallets", crumbs: [{ label: "Wallets" }] },
+  "/wallets/gold": { active: "Wallets", crumbs: [WALLETS, { label: "Gold" }] },
+  "/wallets/silver": { active: "Wallets", crumbs: [WALLETS, { label: "Silver" }] },
+  "/wallets/usd": { active: "Wallets", crumbs: [WALLETS, { label: "USD" }] },
+  "/activity": { active: "Activity", crumbs: [{ label: "Activity" }] },
+  "/bank-accounts": { active: "Bank accounts", crumbs: [{ label: "Bank accounts" }] },
+  "/settings": { active: "Settings", crumbs: [{ label: "Settings" }] },
 };
 
-function BackToWallets() {
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="rounded-full text-muted-foreground hover:text-foreground"
-      data-grade-goto="Dashboard — logged-in home v2"
-    >
-      {/* CHEVRON, not an arrow (Ali, 11 Aug: "back arrows on the wallet
-          screens should also use chevrons"), matching the onboarding back
-          button. THIS is the copy that renders in the app: promotion
-          strips the wrapper's props, so each Studio screen's own
-          toolbarLeading is what you see in Studio and this is what you see
-          here. Both were changed. */}
-      <ChevronLeft className="size-4" />
-      Back
-    </Button>
-  );
-}
-
-/* Subpages get the Back affordance in the toolbar's leading slot. */
-const LEADING_BY_PATH: Record<string, React.ReactNode> = {
-  "/wallets/gold": <BackToWallets />,
-  "/wallets/silver": <BackToWallets />,
-  "/wallets/usd": <BackToWallets />,
-};
-
-export default function ProductChrome({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ProductChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const active = ACTIVE_BY_PATH[pathname] ?? "Wallets";
+  const chrome = CHROME_BY_PATH[pathname] ?? CHROME_BY_PATH["/wallets"];
   return (
-    <AppChromeV2 active={active} toolbarLeading={LEADING_BY_PATH[pathname] ?? null}>
+    <AppChromeV2 active={chrome.active} crumbs={chrome.crumbs}>
       {children}
     </AppChromeV2>
   );

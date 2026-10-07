@@ -1,42 +1,34 @@
+// @ts-nocheck: a MECHANICAL twin (7 Oct 2026). The body is the Studio
+// JSX byte for byte; only the imports and the export line are rewritten
+// (scripts/mechanical-twin.py), so the pair cannot drift by
+// hand-porting.
 "use client";
 
 // SideDrawer (1 Oct 2026): THE drawer for the Glint business portal v2.
-// One spec, used by Buy and Sell (TradeFlowV2) and by the transaction
-// detail (ActivityTableV2), so the two can no longer disagree (Ali, 1 Oct,
-// from the layout audit: "Buy and Sell become a side drawer, not a
-// centred modal", matching the transaction detail, sharing one spec).
+// One spec, used by Buy and Sell (TradeFlowV2), the transaction detail
+// (ActivityListV2), Auto-buy, Deposit and Withdraw, so they cannot
+// disagree.
 //
-// TWIN: the Studio shared component "SideDrawer" (cmupuqcst0zy87).
-// Editing one does not touch the other. Keep the pair in sync.
+// TWIN: the Studio shared component "SideDrawer" (cmupuqcst0zy87). Editing one does
+// not touch the other. Keep the pair in sync.
 //
-// THE SPEC, all of it the DS Sheet as shipped except where noted:
-//   - Panel: from the right, full height, 448 wide from 640 up
-//     (sm:max-w-md), the full screen below 640 (w-full). Padding 24 (the
-//     Sheet's p-6), the Sheet's scrim and border.
-//   - Header: never scrolls. SheetTitle (18/28, 600), SheetDescription
-//     (14/20 muted) 8 under it, left-aligned at every size (the DS header
-//     centres below 640). An optional 20px icon sits 8 before the title,
-//     centred on the title's 28px line, and the description starts under
-//     the title TEXT, not under the icon (Ali, 1 Oct: line them up).
-//   - FIGMA WINS (Ali, 1 Oct, Web DS over this code): the title is 30/36
-//     Raleway 700 (the family through the theme's display token), the
-//     close is square (the DS button radius, not a circle), and the
-//     footer buttons are full width and 48 tall, stacked with the primary
-//     on top at every size.
-//   - Close: a 40 by 40 ghost button with a 20px X (Ali, 1 Oct: the DS
-//     Sheet's 16px X read small on desktop), centred on the title's line,
-//     at the header's right. The Sheet's own close is hidden for it, so
-//     there is exactly one, and every drawer has the same one.
-//   - Body: the only part that scrolls, taking the height the header and
-//     footer leave. 24 under the header (gap-6 on the panel). Its content
-//     fills at least the body's height, so a group can be pushed to the
-//     bottom with mt-auto, next to the footer it belongs to.
-//   - Footer: pinned to the bottom edge. The buttons stack full width at
-//     every size, primary on top (the last in source order), 8 APART.
-//     Before Figma won, from 640 they sat right-aligned in a row. The DS footer only spaces them
-//     from 640 (sm:space-x-2), so stacked buttons touched; gap-2 here,
-//     with the margin dropped from 640 so the gap is not doubled. The
-//     permanent fix is gap-2 in the DS SheetFooter and DialogFooter.
+// 7 OCT, THE WEB DS Sheet, Side=right, Width=sm, as "Glint - Web Portal -
+// Full New" draws its drawers (Drawer · Buy Gold on the Auto-buy, Buy,
+// Sell and Withdraw slides). This settles the 1 Oct A/B question in
+// Figma's favour of B:
+//   - Panel: from the right, full height, 384 wide from 640 up, the full
+//     screen below. popover, a border on its open edge, the Sheet's two
+//     drop shadows; the scrim is the overlay token.
+//   - Header (never scrolls): 16 from the top, 24 sides, 8 under; a 40
+//     row with the title in Raleway Bold 24/32 and a 40 square Close (8
+//     corners, a 24 X). An optional description, Chivo 16/24
+//     muted-foreground, 8 under the title; an optional icon before the
+//     title; an optional Back (onBack) before that.
+//   - Body (the only part that scrolls): 24 sides, 16 under the header,
+//     16 at the foot. Its content fills at least its height, so a group
+//     can sit at the bottom with mt-auto, by the footer it belongs to.
+//   - Footer (pinned): 16 above, 24 sides and below; full-width buttons
+//     (Web DS Button xl, 48), 12 apart, primary first.
 //
 //   <SideDrawer open={open} onOpenChange={setOpen} trigger={<Button>Buy</Button>}>
 //     <SideDrawer.Header icon={...} title="Buy Gold" description="From your USD wallet" />
@@ -44,38 +36,20 @@
 //     <SideDrawer.Footer>...</SideDrawer.Footer>
 //   </SideDrawer>
 import * as React from "react";
-import {
-  Sheet,
-  SheetTrigger,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-  Stack,
-  Row,
-  Button,
-} from "@gradeui/ui";
-import { X } from "lucide-react";
+import { Sheet, SheetTrigger, SheetClose, SheetContent, SheetTitle, SheetDescription } from "@gradeui/ui";
+import { X, ChevronLeft } from "lucide-react";
 
-export function SideDrawer({
-  open,
-  onOpenChange,
-  trigger,
-  children,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  trigger?: React.ReactNode;
-  children: React.ReactNode;
-}) {
+const FOCUS =
+  "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--wds-ring)]";
+
+function SideDrawer({ open, onOpenChange, trigger, children }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       {trigger ? <SheetTrigger asChild>{trigger}</SheetTrigger> : null}
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-6 sm:max-w-md"
+        className="flex w-full flex-col gap-0 border-l border-[color:var(--wds-border)] bg-[var(--wds-popover)] p-0 text-[color:var(--wds-popover-foreground)] shadow-[0_10px_15px_-3px_var(--wds-shadow),0_4px_6px_-4px_var(--wds-shadow)] sm:max-w-[384px]"
+        overlayClassName="bg-[var(--wds-overlay)]"
         closeClassName="hidden"
       >
         {children}
@@ -84,67 +58,61 @@ export function SideDrawer({
   );
 }
 
-SideDrawer.Header = function SideDrawerHeader({
-  icon,
-  title,
-  description,
-}: {
-  icon?: React.ReactNode;
-  title: React.ReactNode;
-  description?: React.ReactNode;
-}) {
+SideDrawer.Header = function SideDrawerHeader({ icon, title, description, onBack }) {
   return (
-    <SheetHeader className="shrink-0 text-left">
-      <Row justify="between" align="start" gap="sm">
-        <Row gap="sm" align="start" className="min-w-0">
-          {/* mt-2: a 20px icon centred on the title's 36px line. */}
-          {icon ? <span className="mt-2 flex shrink-0">{icon}</span> : null}
-          <Stack gap="sm" className="min-w-0">
-            <SheetTitle className="text-3xl font-bold">{title}</SheetTitle>
-            {description ? <SheetDescription>{description}</SheetDescription> : null}
-          </Stack>
-        </Row>
-        {/* -mt-0.5 centres the 40px button on the title's 36px line;
-            -mr-2 keeps the X where the panel's padding puts it. Square:
-            the DS button radius, as the Web DS draws it. */}
+    <div className="flex shrink-0 flex-col gap-2 px-6 pb-2 pt-4 text-left">
+      <div className="flex h-10 items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          {onBack ? (
+            <button
+              type="button"
+              aria-label="Back"
+              onClick={onBack}
+              className={`flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[color:var(--wds-border)] text-[color:var(--wds-foreground)] hover:bg-[var(--wds-accent)] ${FOCUS}`}
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+          ) : null}
+          {icon ? <span className="flex shrink-0">{icon}</span> : null}
+          <SheetTitle className="truncate font-display text-2xl font-bold leading-8 text-[color:var(--wds-popover-foreground)]">
+            {title}
+          </SheetTitle>
+        </div>
         <SheetClose asChild>
-          <Button
-            variant="ghost"
-            size="lg"
-            iconOnly
+          <button
+            type="button"
             aria-label="Close"
-            className="-mr-2 -mt-0.5 shrink-0"
+            className={`-mr-2 flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-[8px] text-[color:var(--wds-foreground)] hover:bg-[var(--wds-accent)] ${FOCUS}`}
           >
-            <X />
-          </Button>
+            <X className="size-6" />
+          </button>
         </SheetClose>
-      </Row>
-    </SheetHeader>
+      </div>
+      {description ? (
+        <SheetDescription className="text-base leading-6 text-[color:var(--wds-muted-foreground)]">
+          {description}
+        </SheetDescription>
+      ) : (
+        <SheetDescription className="sr-only">{title}</SheetDescription>
+      )}
+    </div>
   );
 };
 
-SideDrawer.Body = function SideDrawerBody({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  /* The negative margin plus matching padding is a gutter for focus
-     rings, which an overflow container would otherwise clip. */
+SideDrawer.Body = function SideDrawerBody({ children }) {
+  /* The inner padding is also a gutter for focus rings, which the
+     overflow container would otherwise clip. */
   return (
-    <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+    <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-4 pt-2">
       <div className="flex min-h-full flex-col">{children}</div>
     </div>
   );
 };
 
-SideDrawer.Footer = function SideDrawerFooter({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <SheetFooter className="shrink-0 gap-2 sm:flex-col-reverse sm:justify-start sm:space-x-0">
-      {children}
-    </SheetFooter>
-  );
+SideDrawer.Footer = function SideDrawerFooter({ children }) {
+  return <div className="flex shrink-0 flex-col gap-3 px-6 pb-6 pt-4">{children}</div>;
 };
+
+/* Exported untyped: the body is plain JSX (see the header). */
+const __SideDrawer: any = SideDrawer;
+export { __SideDrawer as SideDrawer };

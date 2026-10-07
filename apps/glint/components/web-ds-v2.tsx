@@ -1,11 +1,15 @@
+// @ts-nocheck: a MECHANICAL twin (7 Oct 2026). The body is the Studio
+// JSX byte for byte; only the imports and the export line are rewritten
+// (scripts/mechanical-twin.py), so the pair cannot drift by
+// hand-porting.
 "use client";
 
 // WebDsV2 (7 Oct 2026): the Glint Web DS, for the business portal v2 on
 // staging. Ali, 7 Oct: "I want it identical to Figma as much as possible",
 // and "if you need to make any components from scratch, obviously do so".
 //
-// TWIN: the Studio shared component "WebDsV2" (cmuyfaxb7ab7c2). Editing
-// one does not touch the other. Keep the pair in sync.
+// TWIN: the Studio shared component "WebDsV2" (cmuyfaxb7ab7c2). Editing one does
+// not touch the other. Keep the pair in sync.
 //
 // WHY A V2 MODULE AND NOT @gradeui/ui: the shipped Grade components are
 // close to the Web DS but not the same (Button lg is 18px text with 6px
@@ -30,10 +34,36 @@
 //   <WebDsV2.Input invalid>                       Web DS Input (lg, filled)
 //   WebDsV2.SELECT_TRIGGER                        classes for a DS SelectTrigger
 //   <WebDsV2.OtpGroup><WebDsV2.OtpSlot invalid>   Web DS OTPInput + OTPSlot
+//   <WebDsV2.MetalButton metal>                   Web DS Button gold / silver
+//   <WebDsV2.Badge variant>                       Web DS Badge
+//   <WebDsV2.Segmented value options onValueChange>  Web DS ToggleGroup, segmented sm
+//   <WebDsV2.TxIcon type>                         Web DS TransactionIcon
+//   <WebDsV2.ListItem leading title subtitle value subValue onClick>  Web DS ListItem
+//   <WebDsV2.DescriptionItem label value copy emphasis>  Web DS DescriptionItem
+//   <WebDsV2.Divider />                           the 1px border rule
+//   <WebDsV2.Switch checked /> <WebDsV2.Radio checked />  Web DS Switch, Radio (visual)
+//   <WebDsV2.OptionRow trailing selected disabled title description logo onSelect>  Web DS OptionRow
+//   <WebDsV2.Alert tone title>body</WebDsV2.Alert>   Web DS Alert
 //   WebDsV2.v("input-background")                 "var(--wds-input-background)"
 import * as React from "react";
+import {
+  Plus,
+  Minus,
+  CreditCard,
+  ArrowDown,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Landmark,
+  Repeat,
+  Clock,
+  Check,
+  CircleAlert,
+  X,
+  Copy,
+  Info,
+} from "lucide-react";
 
-const PRIMITIVES: Record<string, string> = {
+const PRIMITIVES = {
   "neutral/50": "#f8fafe",
   "neutral/100": "#f2f4fb",
   "neutral/200": "#e3e7f4",
@@ -90,7 +120,7 @@ const PRIMITIVES: Record<string, string> = {
 };
 
 /** Semantic token: [Dark, Light] primitive. */
-const SEMANTIC: Record<string, [string, string]> = {
+const SEMANTIC = {
   "body-background": ["neutral/950", "neutral/200"],
   "background": ["neutral/900", "neutral/50"],
   "foreground": ["base/white", "neutral/950"],
@@ -155,7 +185,7 @@ const SEMANTIC: Record<string, [string, string]> = {
 
 /** The Grade theme tokens the shipped DS components read ("L C H" for
  *  oklch()), re-pointed at the Web DS values: [Dark, Light]. */
-const THEME: Record<string, [string, string]> = {
+const THEME = {
   "chart-1": ["0.7037 0.1359 264.09", "0.5859 0.1884 264.01"],
   "chart-2": ["0.8707 0.0750 83.93", "0.5541 0.0972 83.32"],
   "chart-3": ["0.7029 0.1636 151.11", "0.5528 0.1446 151.00"],
@@ -184,25 +214,41 @@ const THEME: Record<string, [string, string]> = {
   "warning": ["0.8692 0.1050 72.13", "0.5528 0.1178 72.02"],
 };
 
-const key = (n: string) => "--wds-" + n.replace("/", "-");
+/** Web · Colour tokens Figma sets as raw values rather than primitives
+ *  (alpha included, as Figma holds them): [Dark, Light]. */
+const RAW = {
+  "metal-foreground": ["#141b3d", "#141b3d"],
+  "metal-muted-foreground": ["rgb(20 27 61 / 0.66)", "rgb(20 27 61 / 0.66)"],
+  "metal-border": ["rgb(255 255 255 / 0.45)", "rgb(255 255 255 / 0.45)"],
+  "metal-chip": ["rgb(255 255 255 / 0.4)", "rgb(255 255 255 / 0.4)"],
+  shadow: ["rgb(0 0 0 / 0.8)", "rgb(0 0 0 / 0.1)"],
+  overlay: ["rgb(5 6 17 / 0.7)", "rgb(2 2 36 / 0.5)"],
+};
+
+const key = (n) => "--wds-" + n.replace("/", "-");
 
 function buildCss() {
   const prim = Object.entries(PRIMITIVES).map(([n, h]) => `${key(n)}:${h};`).join("");
-  const sem = (i: number) =>
+  const sem = (i) =>
     Object.entries(SEMANTIC).map(([n, pair]) => `--wds-${n}:var(${key(pair[i])});`).join("");
-  const theme = (i: number) => Object.entries(THEME).map(([n, pair]) => `--${n}:${pair[i]};`).join("");
+  const raw = (i) => Object.entries(RAW).map(([n, pair]) => `--wds-${n}:${pair[i]};`).join("");
+  const theme = (i) => Object.entries(THEME).map(([n, pair]) => `--${n}:${pair[i]};`).join("");
   return (
-    `:root:root{${prim}${sem(1)}${theme(1)}}` +
-    `:root:root.dark,:root:root .dark{${sem(0)}${theme(0)}}`
+    `:root:root{${prim}${sem(1)}${raw(1)}${theme(1)}}` +
+    `:root:root.dark,:root:root .dark{${sem(0)}${raw(0)}${theme(0)}}`
   );
 }
 const CSS = buildCss();
 
-function WebDsV2Root() {
+function WebDsV2() {
   return <style data-glint-web-ds="">{CSS}</style>;
 }
 
-const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
+/** "var(--wds-<token>)" for a Web DS token or primitive ("gold/300"). */
+WebDsV2.v = (n) => `var(${key(n)})`;
+WebDsV2.CSS = CSS;
+
+const cx = (...c) => c.filter(Boolean).join(" ");
 
 /** The focus ring every Web DS control draws: ring, 2px, 4px outside the
  *  control (Figma's focus-ring frame is 8 wider and taller, r+4). */
@@ -210,10 +256,11 @@ const FOCUS =
   "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--wds-ring)]";
 
 /* Web DS Button (page Button, 7 Oct): Chivo Medium 14/20 on every size
-   but xl (SemiBold 16/24), 8 corners (xl 10), 16 icons. */
-export type WebDsButtonSize = "sm" | "default" | "lg" | "xl" | "icon" | "icon-lg";
-export type WebDsButtonVariant = "default" | "secondary" | "outline" | "ghost" | "link" | "destructive";
-const BUTTON_SIZE: Record<WebDsButtonSize, string> = {
+   but xl (SemiBold 16/24), 8 corners (xl 10), 16 icons. The default
+   variant's Disabled state (secondary, muted-foreground) also shows for
+   aria-disabled, for a button that must look disabled but still answer a
+   press (Auto-buy's Save without a vault). */
+const BUTTON_SIZE = {
   sm: "h-8 gap-1.5 rounded-[8px] px-3 text-sm leading-5 font-medium",
   default: "h-9 gap-2 rounded-[8px] px-4 text-sm leading-5 font-medium",
   lg: "h-10 gap-2 rounded-[8px] px-5 text-sm leading-5 font-medium",
@@ -221,9 +268,9 @@ const BUTTON_SIZE: Record<WebDsButtonSize, string> = {
   icon: "size-9 rounded-[8px]",
   "icon-lg": "size-10 rounded-[8px]",
 };
-const BUTTON_VARIANT: Record<WebDsButtonVariant, string> = {
+const BUTTON_VARIANT = {
   default:
-    "bg-[var(--wds-button-primary)] text-[color:var(--wds-button-primary-foreground)] hover:bg-[var(--wds-button-primary-hover)] disabled:bg-[var(--wds-secondary)] disabled:text-[color:var(--wds-muted-foreground)]",
+    "bg-[var(--wds-button-primary)] text-[color:var(--wds-button-primary-foreground)] hover:bg-[var(--wds-button-primary-hover)] disabled:bg-[var(--wds-secondary)] disabled:text-[color:var(--wds-muted-foreground)] aria-disabled:cursor-not-allowed aria-disabled:bg-[var(--wds-secondary)] aria-disabled:text-[color:var(--wds-muted-foreground)]",
   secondary:
     "bg-[var(--wds-secondary)] text-[color:var(--wds-secondary-foreground)] hover:bg-[var(--wds-secondary-hover)] disabled:opacity-50",
   outline:
@@ -234,11 +281,7 @@ const BUTTON_VARIANT: Record<WebDsButtonVariant, string> = {
     "bg-[var(--wds-destructive)] text-[color:var(--wds-destructive-foreground)] hover:bg-[var(--wds-destructive-hover)] disabled:opacity-50",
 };
 
-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: WebDsButtonVariant;
-  size?: WebDsButtonSize;
-};
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function WebDsV2Button(
+WebDsV2.Button = React.forwardRef(function WebDsV2Button(
   { variant = "default", size = "default", className, type = "button", ...props },
   ref,
 ) {
@@ -264,11 +307,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function WebDsV2
 const INPUT =
   "h-12 w-full min-w-0 rounded-[10px] border bg-[var(--wds-input-background)] px-4 text-base leading-6 text-[color:var(--wds-foreground)] placeholder:text-[color:var(--wds-muted-foreground)] disabled:cursor-not-allowed disabled:opacity-50";
 
-type InputProps = React.InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean };
-const Input = React.forwardRef<HTMLInputElement, InputProps>(function WebDsV2Input(
-  { invalid, className, ...props },
-  ref,
-) {
+WebDsV2.Input = React.forwardRef(function WebDsV2Input({ invalid, className, ...props }, ref) {
   return (
     <input
       ref={ref}
@@ -288,19 +327,16 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(function WebDsV2Inp
    corners, 16 sides, Chivo 16/24 in foreground, input-background. The
    dark: twins replace the trigger's own dark tint, so the closed control
    is the Web DS one in both modes. */
-const SELECT_TRIGGER =
+WebDsV2.SELECT_TRIGGER =
   "h-12 gap-3 rounded-[10px] border-[color:var(--wds-input)] bg-[var(--wds-input-background)] dark:bg-[var(--wds-input-background)] px-4 py-1.5 text-base leading-6 text-[color:var(--wds-foreground)]";
 
 /* Web DS OTPInput: OTPSlots 48 x 56, 8 apart, 8 corners, the digit in
    Raleway Bold 24/32. Focus draws the ring 4px outside; invalid turns the
    slot's border destructive. The screen owns the digits and the keys. */
-function OtpGroup({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+WebDsV2.OtpGroup = function WebDsV2OtpGroup({ className, ...props }) {
   return <div className={cx("flex gap-2", className)} {...props} />;
-}
-const OtpSlot = React.forwardRef<HTMLInputElement, InputProps>(function WebDsV2OtpSlot(
-  { invalid, className, ...props },
-  ref,
-) {
+};
+WebDsV2.OtpSlot = React.forwardRef(function WebDsV2OtpSlot({ invalid, className, ...props }, ref) {
   return (
     <input
       ref={ref}
@@ -317,14 +353,413 @@ const OtpSlot = React.forwardRef<HTMLInputElement, InputProps>(function WebDsV2O
   );
 });
 
-/** The module's namespace, as the Studio copy builds it with statics. */
-export const WebDsV2 = Object.assign(WebDsV2Root, {
-  /** "var(--wds-<token>)" for a Web DS token or primitive ("gold/300"). */
-  v: (n: string) => `var(${key(n)})`,
-  CSS,
-  Button,
-  Input,
-  SELECT_TRIGGER,
-  OtpGroup,
-  OtpSlot,
+/* Web DS Button, Variant=gold / silver (lg): a 999 pill, 40 tall, 20
+   sides, Chivo Medium 14/20, a 1px gold/300 (silver/300) edge and the
+   face gradient: gold/200 to 60%, gold/400 at 85%, gold/600 at 100%
+   (silver/50, silver/400, silver/600). Hover moves the stops (gold/200 to
+   70%, gold/300 at 90%, gold/500) and sweeps the sheen, a 60 wide band of
+   gold/200, from off the left edge (x -60) to x 89, where the Hover
+   variant draws it. The label is
+   metal-foreground (#141b3d) on gold and silver/900 on silver, as the Web
+   Portal slides set them. */
+const METAL_BTN = {
+  gold: {
+    rest: "linear-gradient(115deg, var(--wds-gold-200) 0%, var(--wds-gold-200) 60%, var(--wds-gold-400) 85%, var(--wds-gold-600) 100%)",
+    hover: "linear-gradient(115deg, var(--wds-gold-200) 0%, var(--wds-gold-200) 70%, var(--wds-gold-300) 90%, var(--wds-gold-500) 100%)",
+    edge: "var(--wds-gold-300)",
+    sheen: "var(--wds-gold-200)",
+    ink: "var(--wds-metal-foreground)",
+  },
+  silver: {
+    rest: "linear-gradient(115deg, var(--wds-silver-50) 0%, var(--wds-silver-50) 60%, var(--wds-silver-400) 85%, var(--wds-silver-600) 100%)",
+    hover: "linear-gradient(115deg, var(--wds-silver-50) 0%, var(--wds-silver-50) 70%, var(--wds-silver-300) 90%, var(--wds-silver-500) 100%)",
+    edge: "var(--wds-silver-300)",
+    sheen: "var(--wds-silver-50)",
+    ink: "var(--wds-silver-900)",
+  },
+};
+
+WebDsV2.MetalButton = React.forwardRef(function WebDsV2MetalButton(
+  { metal = "gold", className, children, type = "button", style, ...props },
+  ref,
+) {
+  const m = METAL_BTN[metal] ?? METAL_BTN.gold;
+  const [hover, setHover] = React.useState(false);
+  return (
+    <button
+      ref={ref}
+      type={type}
+      onPointerEnter={() => setHover(true)}
+      onPointerLeave={() => setHover(false)}
+      className={cx(
+        "relative inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full border px-5 text-sm font-medium leading-5 disabled:cursor-not-allowed disabled:opacity-50",
+        FOCUS,
+        className,
+      )}
+      style={{ background: hover ? m.hover : m.rest, borderColor: m.edge, color: m.ink, ...style }}
+      {...props}
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-0 w-[60px] transition-transform duration-500 ease-out motion-reduce:transition-none"
+        style={{ background: m.sheen, transform: hover ? "translateX(89px)" : "translateX(-60px)" }}
+      />
+      <span className="relative">{children}</span>
+    </button>
+  );
 });
+
+/* Web DS Badge: 20 tall, 8 sides, a full pill, Chivo Medium 12/16. */
+const BADGE = {
+  default: "bg-[var(--wds-primary)] text-[color:var(--wds-primary-foreground)]",
+  secondary: "bg-[var(--wds-secondary)] text-[color:var(--wds-secondary-foreground)]",
+  destructive: "bg-[var(--wds-destructive)] text-[color:var(--wds-destructive-foreground)]",
+  outline: "border border-[color:var(--wds-border)] text-[color:var(--wds-foreground)]",
+  success: "bg-[var(--wds-success)] text-[color:var(--wds-success-foreground)]",
+  warning: "bg-[var(--wds-warning)] text-[color:var(--wds-warning-foreground)]",
+};
+WebDsV2.Badge = function WebDsV2Badge({ variant = "default", className, ...props }) {
+  return (
+    <span
+      className={cx(
+        "inline-flex h-5 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 text-xs font-medium leading-4",
+        BADGE[variant],
+        className,
+      )}
+      {...props}
+    />
+  );
+};
+
+/* Web DS ToggleGroup, Variant=segmented, Size=sm: a 36 pill on secondary
+   with a 1px border and 4 inside it; items 28 tall, 16 sides, Chivo
+   Medium 14/20; the one that is on sits on card in foreground, the rest
+   are muted-foreground. */
+WebDsV2.Segmented = function WebDsV2Segmented({
+  value,
+  onValueChange,
+  options = [],
+  className,
+  ...props
+}) {
+  return (
+    <div
+      role="radiogroup"
+      className={cx(
+        "inline-flex h-9 w-fit items-center rounded-full border border-[color:var(--wds-border)] bg-[var(--wds-secondary)] p-[3px]",
+        className,
+      )}
+      {...props}
+    >
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => onValueChange?.(o.value)}
+            className={cx(
+              "h-7 cursor-pointer rounded-full px-4 text-sm font-medium leading-5 transition-colors",
+              FOCUS,
+              on
+                ? "bg-[var(--wds-card)] text-[color:var(--wds-foreground)]"
+                : "text-[color:var(--wds-muted-foreground)] hover:text-[color:var(--wds-foreground)]",
+            )}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+/* Web DS TransactionIcon: a 36 circle on accent with a 16 glyph at 1.5
+   in foreground; Complete is on success and Failed on destructive (glyph
+   neutral/950), Skipped draws its glyph in warning. Keys are the Web DS
+   Type values, kebab-cased. */
+const TX_ICON = {
+  "exchange-to-metal": { Icon: Plus },
+  "exchange-to-money": { Icon: Minus },
+  "card-spend": { Icon: CreditCard },
+  "top-up": { Icon: ArrowDown },
+  "transfer-in": { Icon: ArrowDownLeft },
+  "transfer-out": { Icon: ArrowUpRight },
+  withdraw: { Icon: Landmark },
+  "auto-buy": { Icon: Repeat },
+  pending: { Icon: Clock },
+  complete: { Icon: Check, bg: "bg-[var(--wds-success)]", ink: "text-[color:var(--wds-neutral-950)]" },
+  skipped: { Icon: CircleAlert, ink: "text-[color:var(--wds-warning)]" },
+  failed: { Icon: X, bg: "bg-[var(--wds-destructive)]", ink: "text-[color:var(--wds-neutral-950)]" },
+};
+WebDsV2.TxIcon = function WebDsV2TxIcon({ type = "exchange-to-metal", className }) {
+  const t = TX_ICON[type] ?? TX_ICON["exchange-to-metal"];
+  const Icon = t.Icon;
+  return (
+    <span
+      aria-hidden
+      className={cx(
+        "flex size-9 shrink-0 items-center justify-center rounded-full",
+        t.bg ?? "bg-[var(--wds-accent)]",
+        t.ink ?? "text-[color:var(--wds-foreground)]",
+        className,
+      )}
+    >
+      <Icon className="size-4" strokeWidth={1.5} />
+    </span>
+  );
+};
+
+/* Web DS ListItem, Variant=default: 12 top, right and bottom, 16 left, 12
+   between; the title Chivo SemiBold 16/24 in foreground over a Chivo
+   14/20 muted-foreground line; the values on the right, Chivo Medium
+   16/24 over 14/20 muted-foreground. ASSUMPTION: the set draws no hover,
+   so a pressable row takes accent behind it on hover, with 12 corners,
+   the radius the Web DS uses for a focus ring around 8 corners. */
+WebDsV2.ListItem = function WebDsV2ListItem({
+  leading,
+  title,
+  subtitle,
+  value,
+  subValue,
+  onClick,
+  className,
+  ...props
+}) {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={cx(
+        "flex w-full items-center gap-3 py-3 pl-4 pr-3 text-left",
+        onClick && cx("cursor-pointer rounded-[12px] transition-colors hover:bg-[var(--wds-accent)]", FOCUS),
+        className,
+      )}
+      {...props}
+    >
+      {leading}
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate text-base font-semibold leading-6 text-[color:var(--wds-foreground)]">
+          {title}
+        </span>
+        {subtitle ? (
+          <span className="truncate text-sm leading-5 text-[color:var(--wds-muted-foreground)]">
+            {subtitle}
+          </span>
+        ) : null}
+      </span>
+      {value != null ? (
+        <span className="flex shrink-0 flex-col items-end gap-0.5 text-right">
+          <span className="whitespace-nowrap text-base font-medium leading-6 text-[color:var(--wds-foreground)]">
+            {value}
+          </span>
+          {subValue ? (
+            <span className="whitespace-nowrap text-sm leading-5 text-[color:var(--wds-muted-foreground)]">
+              {subValue}
+            </span>
+          ) : null}
+        </span>
+      ) : null}
+    </Tag>
+  );
+};
+
+/* Web DS DescriptionItem. inline: 8 above and below, label Chivo 16/24
+   muted-foreground on the left, value Chivo Medium 16/24 foreground on
+   the right; Emphasis=total sets both SemiBold, the value 18/28. stacked:
+   12 above and below, label 14/20 over value 16/24. copy adds the 16
+   copy icon in primary, which turns into a success check once pressed. */
+WebDsV2.DescriptionItem = function WebDsV2DescriptionItem({
+  label,
+  value,
+  copy,
+  emphasis = "default",
+  layout = "inline",
+  className,
+}) {
+  const [copied, setCopied] = React.useState(false);
+  const doCopy = () => {
+    try {
+      navigator.clipboard?.writeText(typeof copy === "string" ? copy : String(value));
+    } catch {
+      /* a sandbox without clipboard access: the tick still shows */
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  };
+  const total = emphasis === "total";
+  const button = copy ? (
+    <button
+      type="button"
+      aria-label={copied ? "Copied" : `Copy ${label}`}
+      onClick={doCopy}
+      className={cx(
+        "flex shrink-0 cursor-pointer items-center justify-center rounded-[8px]",
+        layout === "stacked" ? "size-9 hover:bg-[var(--wds-accent)]" : "size-4",
+        copied ? "text-[color:var(--wds-success)]" : "text-[color:var(--wds-primary)]",
+        FOCUS,
+      )}
+    >
+      {copied ? <Check className="size-4" strokeWidth={1.5} /> : <Copy className="size-4" strokeWidth={1.5} />}
+    </button>
+  ) : null;
+  if (layout === "stacked") {
+    return (
+      <div className={cx("flex items-center gap-4 py-3", className)}>
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">{label}</span>
+          <span className="text-base font-medium leading-6 text-[color:var(--wds-foreground)]">{value}</span>
+        </div>
+        {button}
+      </div>
+    );
+  }
+  return (
+    <div className={cx("flex items-center gap-4 py-2", className)}>
+      <span
+        className={cx(
+          "min-w-0 flex-1 text-base leading-6",
+          total ? "font-semibold text-[color:var(--wds-foreground)]" : "text-[color:var(--wds-muted-foreground)]",
+        )}
+      >
+        {label}
+      </span>
+      <span
+        className={cx(
+          "text-right text-[color:var(--wds-foreground)]",
+          total ? "text-lg font-semibold leading-7" : "text-base font-medium leading-6",
+        )}
+      >
+        {value}
+      </span>
+      {button}
+    </div>
+  );
+};
+
+/** The 1px rule the Web DS cards draw between their parts (border). */
+WebDsV2.Divider = function WebDsV2Divider({ className }) {
+  return <div role="separator" className={cx("h-px w-full shrink-0 bg-[var(--wds-border)]", className)} />;
+};
+
+/* Web DS Switch (visual): 36 x 20, a full pill; on is primary with a 16
+   primary-foreground thumb, off is switch-track-off with a
+   switch-thumb-off thumb. The row around it owns the role and the keys. */
+WebDsV2.Switch = function WebDsV2Switch({ checked = false, className }) {
+  return (
+    <span
+      aria-hidden
+      className={cx(
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
+        checked ? "bg-[var(--wds-primary)]" : "bg-[var(--wds-switch-track-off)]",
+        className,
+      )}
+    >
+      <span
+        className={cx(
+          "absolute size-4 rounded-full transition-transform",
+          checked ? "translate-x-[18px] bg-[var(--wds-primary-foreground)]" : "translate-x-0.5 bg-[var(--wds-switch-thumb-off)]",
+        )}
+      />
+    </span>
+  );
+};
+
+/* Web DS Radio (visual): 20, a 2px ring, primary with a 10 primary dot
+   when on, muted-foreground when off. */
+WebDsV2.Radio = function WebDsV2Radio({ checked = false, className }) {
+  return (
+    <span
+      aria-hidden
+      className={cx(
+        "flex size-5 shrink-0 items-center justify-center rounded-full border-2",
+        checked ? "border-[color:var(--wds-primary)]" : "border-[color:var(--wds-muted-foreground)]",
+        className,
+      )}
+    >
+      {checked ? <span className="size-2.5 rounded-full bg-[var(--wds-primary)]" /> : null}
+    </span>
+  );
+};
+
+/* Web DS OptionRow: 12 all round and between, 14 corners, card; selected
+   is a 2px primary edge, otherwise a 1px border (the padding gives way by
+   the difference so nothing moves); disabled is 50%. The title is Chivo
+   SemiBold 16/24 over a 14/20 muted-foreground description; a logo sits in
+   a 32 wide tile; the trailing control sits in 12 of padding (a radio in
+   44, a switch in 60). The whole row is the control: role radio or
+   switch, by its trailing. */
+WebDsV2.OptionRow = function WebDsV2OptionRow({
+  trailing = "radio",
+  selected = false,
+  disabled = false,
+  title,
+  description,
+  logo,
+  onSelect,
+  className,
+  ...props
+}) {
+  return (
+    <button
+      type="button"
+      role={trailing === "switch" ? "switch" : "radio"}
+      aria-checked={selected}
+      disabled={disabled}
+      onClick={onSelect}
+      className={cx(
+        "flex w-full cursor-pointer items-center gap-3 rounded-[14px] bg-[var(--wds-card)] text-left disabled:cursor-not-allowed disabled:opacity-50",
+        selected ? "border-2 border-[color:var(--wds-primary)] p-[10px]" : "border border-[color:var(--wds-border)] p-[11px]",
+        FOCUS,
+        className,
+      )}
+      {...props}
+    >
+      {logo ? <span className="flex w-8 shrink-0 items-center justify-center px-1 py-3">{logo}</span> : null}
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="text-base font-semibold leading-6 text-[color:var(--wds-foreground)]">{title}</span>
+        {description ? (
+          <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">{description}</span>
+        ) : null}
+      </span>
+      <span className="flex shrink-0 items-center p-3">
+        {trailing === "switch" ? <WebDsV2.Switch checked={selected} /> : <WebDsV2.Radio checked={selected} />}
+      </span>
+    </button>
+  );
+};
+
+/* Web DS Alert: 12 above and below, 16 sides, 12 between, 14 corners,
+   card with a 1px edge in the tone (border for info); the 16 info icon in
+   a 24 tall slot, in the tone (muted-foreground for info); the title
+   Chivo SemiBold 16/24 over the body in 14/20 muted-foreground. */
+const ALERT_TONE = {
+  info: { edge: "border-[color:var(--wds-border)]", ink: "text-[color:var(--wds-muted-foreground)]" },
+  success: { edge: "border-[color:var(--wds-success)]", ink: "text-[color:var(--wds-success)]" },
+  warning: { edge: "border-[color:var(--wds-warning)]", ink: "text-[color:var(--wds-warning)]" },
+  destructive: { edge: "border-[color:var(--wds-destructive)]", ink: "text-[color:var(--wds-destructive)]" },
+};
+WebDsV2.Alert = function WebDsV2Alert({ tone = "info", title, children, className }) {
+  const t = ALERT_TONE[tone] ?? ALERT_TONE.info;
+  return (
+    <div
+      role={tone === "info" ? "status" : "alert"}
+      className={cx("flex gap-3 rounded-[14px] border bg-[var(--wds-card)] px-4 py-3", t.edge, className)}
+    >
+      <span className={cx("flex h-6 shrink-0 items-center", t.ink)}>
+        <Info className="size-4" strokeWidth={1.5} />
+      </span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        {title ? <span className="text-base font-semibold leading-6 text-[color:var(--wds-foreground)]">{title}</span> : null}
+        {children ? <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">{children}</span> : null}
+      </span>
+    </div>
+  );
+};
+
+/* Exported untyped: the body is plain JSX (see the header). */
+const __WebDsV2: any = WebDsV2;
+export { __WebDsV2 as WebDsV2 };

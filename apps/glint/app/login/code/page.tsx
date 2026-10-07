@@ -121,14 +121,14 @@ export default function LogInCodePage() {
               autoFocus={i === 0}
               invalid={invalid}
               value={d}
-              onChange={(e) => {
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 let v = e.target.value.replace(/\D/g, "");
                 if (!v) return clear(i);
                 /* A digit typed into a filled cell: keep the new one. */
                 if (d && v.length === 2) v = v[0] === d ? v[1] : v[0];
                 fill(i, v);
               }}
-              onKeyDown={(e) => {
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                 if (e.key === "Backspace" && !digits[i] && i > 0) {
                   e.preventDefault();
                   clear(i - 1);
@@ -142,11 +142,11 @@ export default function LogInCodePage() {
                   continueRef.current?.click();
                 }
               }}
-              onPaste={(e) => {
+              onPaste={(e: React.ClipboardEvent<HTMLInputElement>) => {
                 e.preventDefault();
                 fill(i, e.clipboardData.getData("text"));
               }}
-              onFocus={(e) => e.target.select()}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.target.select()}
             />
           ))}
         </WebDsV2.OtpGroup>

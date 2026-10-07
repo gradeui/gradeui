@@ -1,102 +1,59 @@
 "use client";
 
 // Promoted from Studio screen "Activity — history v2"
-// (design dmupumb6uwgoj, version 1790888612974). Registry: lib/screens.ts;
+// (design dmupumb6uwgoj, version 1791399537215). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 52746391ebcb
+// source-hash: d1a87fe1da86
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
 
+// Activity — history v2: the business portal's Activity page on staging.
+// A copy of "Activity — history", which stays untouched because the live
+// demo is promoted from it.
+//
+// 7 OCT, MATCHED TO "Glint - Web Portal - Full New", Activity · Default
+// and Filtered:
+//   - breadcrumb "Activity"; the title (Raleway Bold 24/32) with Download
+//     statement and Tax report on the right (Web DS Button outline, sm);
+//   - the filter, Web DS ToggleGroup segmented sm: All, Gold, Silver;
+//   - the Web DS activity list, metal over cash. 16 between the three.
+//   Gold and Silver keep the rows that touch that wallet; All is every row.
+//
+// Download statement and Tax report are inert: the demo has no documents
+// to give (ASSUMPTION; say if they should open something).
 import * as React from "react";
-import { Section, Container, Stack, Row, Button } from "@gradeui/ui";
+import { AppChromeV2 } from "@/components/layouts/app-chrome-v2";
 import { Persona } from "@/lib/persona";
-import { ActivityTableV2 } from "@/components/activity-table-v2";
-import { Download, FileText } from "lucide-react";
+import { ActivityListV2 } from "@/components/activity-list-v2";
+import { WebDsV2 } from "@/components/web-ds-v2";
 
-// V2 (1 Oct 2026, the business portal v2 for staging): a copy of
-// "Activity — history", which stays untouched because the live demo is promoted
-// from it. Changes: AppChromeV2 (no rail on mobile), ActivityTableV2 (the
-// transaction detail is the shared SideDrawer).
-//
-// Glint Activity screen (Ali, 10 Aug 2026): the full activity history
-// for the persona, inside the AppChrome shell with the Activity nav
-// item active.
-//
-// THE TABLE IS THE SHARED ActivityTable (Ali, 11 Aug). This screen used
-// to inline its own: its own AmountCell, a seven column list, a side
-// sheet and the filter tabs, about 275 lines of it. That copy is where
-// the shared "ActivityTable" module came from, and the wallet screens
-// and the dashboard already render through the module, so a second copy
-// living here meant every change to the table had to be made twice and
-// the surfaces drifted apart within a day. The screen now owns the page
-// and nothing else: the heading, the measure, and which rows go in.
-//
-// The shared table is also AHEAD of what was inlined here: four columns
-// rather than seven (the method and the vault read under the
-// description, where they say what the row IS), and the vault on every
-// metal row.
-//
-// ROWS ARE THE WHOLE PERSONA LIST, not a wallet slice: this is the full
-// history, so it hands over Persona.useActivity() whole. A
-// wallet screen passes Persona.activityFor("gold") to the same table.
-//
-// FILTERS ON: the All / Money in / Money out tabs belong to this screen
-// and to the cash wallet, which is why they are a prop on the module
-// rather than baked into it. A recent list under a dashboard leaves them
-// off. No `hide`, because the full history wants every column.
+const FILTERS = [
+  { value: "all", label: "All" },
+  { value: "gold", label: "Gold" },
+  { value: "silver", label: "Silver" },
+];
 
 export default function ActivityPage() {
-  /* LIVE (Ali, 12 Aug). Persona.useActivity: this session's trades ahead of the seeded
-     history, so a purchase shows up here the moment it completes. */
-  const rows = Persona.useActivity();
+  const [filter, setFilter] = React.useState<"all" | "gold" | "silver">("all");
+  const rows = Persona.useActivity(filter === "all" ? undefined : filter);
   return (
     <>
-      <Section pad="none" className="py-8">
-        <Container maxW="xl">
-          {/* 24 between the title row and the table (Figma wins, 1 Oct). */}
-          <Stack gap="lg">
-            {/* THE TWO REPORTS, top right of the content (Ali, 12 Aug:
-                "we also need to add some other buttons in there to do with
-                Download Statement and Tax Report - they can be in the top
-                right"). On the heading row rather than in the chrome
-                toolbar: the toolbar's trailing region already holds the
-                utility cluster, and these two belong to THIS screen, not to
-                the shell. Both INERT, like Deposit and Withdraw: neither
-                document exists in the demo, and the affordance is the point.
-                Outline rather than filled, because a history is for reading;
-                downloading it is a secondary errand. */}
-            <Row justify="between" align="center" wrap gap="md">
-              <h1 className="text-2xl text-foreground">Activity</h1>
-              <Row gap="sm" wrap>
-                <Button variant="outline" size="sm" className="rounded-full">
-                  <Download className="size-4" />
-                  Download statement
-                </Button>
-                <Button variant="outline" size="sm" className="rounded-full">
-                  <FileText className="size-4" />
-                  Tax report
-                </Button>
-              </Row>
-            </Row>
-            {/* ASSUMPTION, flagged for Ali: the detail panel is now the
-                shared module's, the same one the wallet screens open, so
-                two rows the old inlined sheet carried are gone. It has
-                no "Account" row (the wallet), and its "Type" row shows
-                the method, "Direct Gold" or "Wire transfer", rather than
-                the kind, "Exchange". The module drops both on purpose:
-                every wallet here belongs to one customer, and the
-                description already reads "Exchange USD to Gold". Taken
-                as the module has it so this screen cannot differ from
-                the wallets. If either belongs back in the panel, it goes
-                into the module and every surface gets it. */}
-            {/* pageSize, so the table stops scrolling inside a 28rem box:
-                see the note in the ActivityTable module. Ten rows is what
-                fits a laptop viewport without the page itself scrolling. */}
-            <ActivityTableV2 rows={rows} filters pageSize={10} />
-          </Stack>
-        </Container>
-      </Section>
+      <AppChromeV2.Main className="md:gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <AppChromeV2.Title>Activity</AppChromeV2.Title>
+          <div className="flex items-center gap-2">
+            <WebDsV2.Button variant="outline" size="sm">
+              Download statement
+            </WebDsV2.Button>
+            <WebDsV2.Button variant="outline" size="sm">
+              Tax report
+            </WebDsV2.Button>
+          </div>
+        </div>
+        <WebDsV2.Segmented aria-label="Show" value={filter} onValueChange={setFilter} options={FILTERS} />
+        <ActivityListV2 rows={rows} lead="metal" />
+      </AppChromeV2.Main>
     </>
   );
 }

@@ -1,9 +1,15 @@
+// @ts-nocheck: a MECHANICAL twin (7 Oct 2026). The body is the Studio
+// JSX byte for byte; only the imports and the export line are rewritten
+// (scripts/mechanical-twin.py), so the pair cannot drift by
+// hand-porting.
+"use client";
+
 // RingLattice (2 Oct 2026): the Glint ring pattern as a full-bleed
 // background layer, for the business portal v2's standalone pages (Log in,
 // Page not found, Server error). Web DS "Ring lattice".
 //
-// TWIN: the Studio shared component "RingLattice" (cmur2ntvhk0epo).
-// Editing one does not touch the other. Keep the pair in sync.
+// TWIN: the Studio shared component "RingLattice" (cmur2ntvhk0epo). Editing one does
+// not touch the other. Keep the pair in sync.
 //
 // GEOMETRY is the brand's (Glint-Styleguide brand/pattern.ts): one unit is
 // the G reduced to its two rings and one bar, outer and inner radii 12 and
@@ -23,7 +29,10 @@
 // ASSUMPTION: pitch 96 and a 1px stroke are read off the Web Portal
 // exports (the units measure about 94 px on a 1440 frame). The styleguide's
 // slide pitch is 130; the web pitch is not written down anywhere yet.
-
+// 7 OCT: the ink is the Web DS primary/600 (#2d58bf, --wds-primary-600)
+// wherever WebDsV2 is mounted, falling back to the theme's ramp; and
+// fade="top" fades the lattice out towards the top, for the sidebar
+// (Web DS Sidebar pattern: RingLattice Strength=Light, Clearing=Top fade).
 import * as React from "react";
 
 const OUTER = 12 / 18.6;
@@ -31,24 +40,17 @@ const INNER = 8.68 / 18.6;
 const BAR_FROM = 3 / 18.6;
 const BAR_TO = 15.5 / 18.6;
 
-export function RingLattice({
+function RingLattice({
   pitch = 96,
   weight = 1,
   strength = 0.2,
   fade = "centre",
   className = "",
-}: {
-  pitch?: number;
-  weight?: number;
-  /** Opacity of the whole layer. */
-  strength?: number;
-  fade?: "centre" | "bottom" | "none";
-  className?: string;
 }) {
   const id = "rl" + React.useId().replace(/[^a-zA-Z0-9]/g, "");
   const R = pitch * OUTER;
   const r = pitch * INNER;
-  const units: React.ReactNode[] = [];
+  const units = [];
   for (const j of [-1, 0, 1]) {
     for (const i of [-1, 0, 1]) {
       const cx = pitch / 2 + i * pitch;
@@ -69,7 +71,7 @@ export function RingLattice({
     >
       <defs>
         <pattern id={`${id}-p`} patternUnits="userSpaceOnUse" width={pitch} height={pitch}>
-          <g fill="none" strokeWidth={weight} style={{ stroke: "oklch(var(--ramp-primary-600))" }}>
+          <g fill="none" strokeWidth={weight} style={{ stroke: "var(--wds-primary-600, oklch(var(--ramp-primary-600)))" }}>
             {units}
           </g>
         </pattern>
@@ -78,6 +80,12 @@ export function RingLattice({
             <stop offset="0.15" stopColor="black" />
             <stop offset="0.9" stopColor="white" />
           </radialGradient>
+        ) : null}
+        {fade === "top" ? (
+          <linearGradient id={`${id}-f`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0.08" stopColor="black" />
+            <stop offset="0.78" stopColor="white" />
+          </linearGradient>
         ) : null}
         {fade === "bottom" ? (
           <linearGradient id={`${id}-f`} x1="0" y1="1" x2="0" y2="0">
@@ -101,3 +109,8 @@ export function RingLattice({
     </svg>
   );
 }
+
+
+/* Exported untyped: the body is plain JSX (see the header). */
+const __RingLattice: any = RingLattice;
+export { __RingLattice as RingLattice };

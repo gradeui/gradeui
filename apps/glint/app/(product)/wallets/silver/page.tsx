@@ -1,103 +1,51 @@
 "use client";
 
 // Promoted from Studio screen "Silver — wallet v2"
-// (design dmuppmv1xj9ju, version 1790941638396). Registry: lib/screens.ts;
+// (design dmuppmv1xj9ju, version 1791399494629). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: b93c386c0901
+// source-hash: 1fbfdbf7b064
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
 
-import {
-  Section,
-  Container,
-  Stack,
-  Button,
-} from "@gradeui/ui";
+// Silver — wallet v2: the business portal's Silver page on staging. A copy of
+// "Silver — wallet", which stays untouched because the live demo is promoted
+// from it.
+//
+// 7 OCT, MATCHED TO "Glint - Web Portal - Full New", Silver · Default
+// (the one metal page Figma draws; Gold is the same page with gold in it):
+//   - breadcrumb "Wallets > Silver"; the title, Raleway Bold 24/32;
+//   - the Silver WalletGroupCard (Subtle) and the Vaults card side by side,
+//     24 apart (451 and 493 at 1280, kept as that ratio);
+//   - "Silver activity" (Chivo SemiBold 18/28) over the Web DS activity list,
+//     every row that touches the Silver wallet, metal over cash.
+//   The LBMA price chart that sat beside the card is not on the page any
+//   more: Figma has none.
+//
+// ASSUMPTION: the slide's title and card read "Gold" under a "Silver"
+// breadcrumb and a "Silver activity" heading, a leftover from duplicating
+// the Gold slide. The page here is all Silver.
+import * as React from "react";
+import { AppChromeV2 } from "@/components/layouts/app-chrome-v2";
 import { Persona } from "@/lib/persona";
-import { MetalPriceCardV2 } from "@/components/metal-price-card-v2";
-import { MetalWalletCardV2 } from "@/components/metal-wallet-card-v2";
-import { ActivityTableV2 } from "@/components/activity-table-v2";
-
-// 2 OCT, on staging (Ali: the large numbers in the Web DS face, and
-// tabular): the price card is MetalPriceCardV2, whose headline is the Web
-// DS DisplayNumber. MetalPriceCard stays as it is for the live demo.
-//
-// V2 (1 Oct 2026, the business portal v2 for staging): a copy of
-// "Silver — wallet", which stays untouched because the live demo is
-// promoted from it. The only changes: the wallet card is
-// MetalWalletCardV2, so Buy and Sell open TradeFlowV2 (from and to
-// the USD wallet, selling this wallet's metal), and Back returns to the
-// v2 Wallets screen. Later the same day (Ali, 1 Oct): the card is the
-// App DS metal face with Buy and Sell under it and the vault table below,
-// and the chrome is AppChromeV2, with no rail on mobile. Then: a page
-// title, and ActivityTableV2 (the transaction detail is the shared
-// SideDrawer). And the split now favours the wallet: 7 columns for the
-// card and vaults, 5 for the price (Ali, 1 Oct).
-//
-// Glint Silver wallet screen (Ali, 11 Aug 2026): the desktop silver
-// view. Holding card and price card side by side, then all silver
-// activity.
-//
-// THIS SCREEN IS ONE LINE OF METAL (Ali, 11 Aug). It is now identical to
-// the Gold wallet screen apart from the METAL const below, which is the
-// point: this file used to be a paste of the gold one and still carried
-// gold's header comment ("the desktop gold view", "the LBMA gold price",
-// "all gold activity"), gold's Y-axis padding, which squashed the silver
-// line into a tenth of the card height with the axis running below zero,
-// and a {/* All gold activity */} comment over the silver table. All of
-// that lived in the duplication. Change MetalPriceCard or
-// MetalWalletCard, not this file, for anything visual.
-//
-// WALLET CARD LEADS, ON THE LEFT (Ali, 11 Aug). The holding is what you
-// came to the screen for; the price is context for it. The narrower card
-// takes the left 7 columns (5 until 1 Oct) and the chart the right 5, so the page still
-// reads as one asymmetric pair rather than two equal blocks.
-//
-// ACTIVITY: Persona.useActivity(METAL) is the shared wallet filter, so
-// the three wallet screens cannot disagree about which rows belong to a
-// wallet. Silver has exactly ONE row today, the 6 Aug sale into USD; if
-// this list needs to look busier for a demo the fix is more silver rows
-// in Persona, not anything here.
-// The SHARED ActivityTable is the same component the Activity screen and
-// the Dashboard use. No hide list: there has never been an "account"
-// column, so the hide={["account"]} this screen used to pass did nothing.
-//
-// Reached from the dashboard's Silver card, or from Wallets in the rail;
-// the toolbar leading slot carries the Back affordance.
-
-const METAL = "silver";
+import { WalletGroupCardV2 } from "@/components/wallet-group-card-v2";
+import { ActivityListV2 } from "@/components/activity-list-v2";
 
 export default function SilverWalletPage() {
-  const label = Persona.DEFAULT.balances[METAL].label;
+  const rows = Persona.useActivity("silver");
   return (
     <>
-      {/* Holding + price, side by side */}
-      <Section pad="none" className="pt-8">
-        {/* THE PAGE TITLE (Ali, 1 Oct): an h1 on every page, the style
-            Activity set, 24 above the content
-            (Figma wins, 1 Oct). Raleway 700 through the theme's heading
-            tokens, so no weight class here. */}
-        <Container maxW="xl" className="pb-6">
-          <h1 className="text-2xl text-foreground">{label}</h1>
-        </Container>
-        <Container maxW="xl" grid className="gap-6">
-          <MetalWalletCardV2 asset={METAL} vaults className="col-span-12 lg:col-span-7" />
-          <MetalPriceCardV2 metal={METAL} className="col-span-12 lg:col-span-5" />
-        </Container>
-      </Section>
-
-      {/* Every row that moves this wallet */}
-      <Section pad="none" className="py-10">
-        <Container maxW="xl">
-          <Stack gap="md">
-            <h2 className="text-lg font-semibold text-foreground">
-              {label} activity
-            </h2>
-            <ActivityTableV2 rows={Persona.useActivity(METAL)} />
-          </Stack>
-        </Container>
-      </Section>
+      <AppChromeV2.Main>
+        <AppChromeV2.Title>Silver</AppChromeV2.Title>
+        <div className="grid items-stretch gap-4 md:grid-cols-[451fr_493fr] md:gap-6">
+          <WalletGroupCardV2 asset="silver" />
+          <WalletGroupCardV2.Vaults asset="silver" />
+        </div>
+        <section className="flex flex-col gap-2">
+          <AppChromeV2.Heading>Silver activity</AppChromeV2.Heading>
+          <ActivityListV2 rows={rows} lead="metal" />
+        </section>
+      </AppChromeV2.Main>
     </>
   );
 }

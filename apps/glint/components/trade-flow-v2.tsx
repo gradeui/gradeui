@@ -553,7 +553,7 @@ export function TradeFlowV2({
   return (
     <SideDrawer
       open={open}
-      onOpenChange={(o) => {
+      onOpenChange={(o: boolean) => {
         setOpen(o);
         /* Reset on OPEN, not close, so every entry starts at the form and
            the receipt never blanks while the panel animates out. */

@@ -108,11 +108,11 @@ export default function LogInPage() {
             placeholder={country.placeholder}
             invalid={invalid}
             value={number}
-            onChange={(e) => {
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               setNumber(e.target.value);
               setInvalid(false);
             }}
-            onKeyDown={(e) => {
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
               if (e.key === "Enter") {
                 e.preventDefault();
                 sendRef.current?.click();

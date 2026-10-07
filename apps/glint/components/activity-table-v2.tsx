@@ -236,7 +236,7 @@ function TxSheet({
 }) {
   const d = row ? fmtTxDate(row.timestamp) : null;
   return (
-    <SideDrawer open={Boolean(row)} onOpenChange={(o) => (o ? null : onClose())}>
+    <SideDrawer open={Boolean(row)} onOpenChange={(o: boolean) => (o ? null : onClose())}>
       {row && (
         <>
           <SideDrawer.Header
