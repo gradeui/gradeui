@@ -203,8 +203,12 @@ def opening_tag_span(src: str, name: str) -> tuple[int, int] | None:
         if after in ("", " ", "\n", "\t", ">", "/"):
             start = at
             break
-        at = find_outside_comments(src[at + 1 :], f"<{name}")
-        at = -1 if at == -1 else at + 1
+        # The next match is searched in the rest of the source, so its
+        # index is relative to `at + 1` (7 Oct 2026: this added 1 instead
+        # of `at + 1`, which looped for ever on a screen whose helper used
+        # a compound part, <AppChromeV2.Heading>, above the wrapper).
+        nxt = find_outside_comments(src[at + 1 :], f"<{name}")
+        at = -1 if nxt == -1 else at + 1 + nxt
     if start == -1:
         return None
     depth = 0

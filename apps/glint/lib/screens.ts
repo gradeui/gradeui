@@ -193,6 +193,15 @@ export const SCREENS: ScreenEntry[] = [
     promotedAt: 1791399531273,
     sourceHash: "264413e8dcd7",
   },
+  /* Staging, 7 Oct 2026: Settings, from the avatar menu (Web Portal file,
+     Settings · Default). A new screen, as the log in was. */
+  {
+    slug: "/settings",
+    name: "Settings v2",
+    id: "dmuyhn3548vjg",
+    promotedAt: 1791400560887,
+    sourceHash: "a76a4bce3b11",
+  },
   /* Staging, 2 Oct 2026: the signed-out pages. New screens rather than v2
      copies (production has no log in and no error pages), named "v2" to
      sit with the rest of the business portal v2. The two error pages are

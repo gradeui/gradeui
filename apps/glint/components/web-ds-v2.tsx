@@ -44,6 +44,7 @@
 //   <WebDsV2.Switch checked /> <WebDsV2.Radio checked />  Web DS Switch, Radio (visual)
 //   <WebDsV2.OptionRow trailing selected disabled title description logo onSelect>  Web DS OptionRow
 //   <WebDsV2.Alert tone title>body</WebDsV2.Alert>   Web DS Alert
+//   <WebDsV2.Progress value />, <WebDsV2.Summary>, <WebDsV2.Field label helper error>
 //   WebDsV2.v("input-background")                 "var(--wds-input-background)"
 import * as React from "react";
 import {
@@ -61,6 +62,7 @@ import {
   X,
   Copy,
   Info,
+  ChevronRight,
 } from "lucide-react";
 
 const PRIMITIVES = {
@@ -301,25 +303,57 @@ WebDsV2.Button = React.forwardRef(function WebDsV2Button(
   );
 });
 
-/* Web DS Input (Surface=filled, Size=lg): 48 tall, 10 corners, 16 sides,
-   Chivo 16/24, input-background with a 1px input border; invalid swaps
-   the border for destructive; disabled is 50%. */
-const INPUT =
-  "h-12 w-full min-w-0 rounded-[10px] border bg-[var(--wds-input-background)] px-4 text-base leading-6 text-[color:var(--wds-foreground)] placeholder:text-[color:var(--wds-muted-foreground)] disabled:cursor-not-allowed disabled:opacity-50";
+/* Web DS Input, Surface=filled. lg: 48 tall, 10 corners, 16 sides, Chivo
+   16/24. default (the FormField's): 36 tall, 8 corners, 12 sides, Chivo
+   14/20. input-background with a 1px input border; invalid swaps the
+   border for destructive; disabled is 50%. A suffix ("USD", "g") sits
+   inside the right edge in muted-foreground, 8 from the text. */
+const INPUT_SIZE = {
+  lg: "h-12 rounded-[10px] px-4 text-base leading-6",
+  default: "h-9 rounded-[8px] px-3 text-sm leading-5",
+};
 
-WebDsV2.Input = React.forwardRef(function WebDsV2Input({ invalid, className, ...props }, ref) {
+WebDsV2.Input = React.forwardRef(function WebDsV2Input(
+  { invalid, size = "lg", suffix, className, ...props },
+  ref,
+) {
+  const edge = invalid ? "border-[color:var(--wds-destructive)]" : "border-[color:var(--wds-input)]";
+  const box = "w-full min-w-0 border bg-[var(--wds-input-background)] text-[color:var(--wds-foreground)]";
+  if (suffix == null) {
+    return (
+      <input
+        ref={ref}
+        aria-invalid={invalid || undefined}
+        className={cx(
+          box,
+          INPUT_SIZE[size],
+          "placeholder:text-[color:var(--wds-muted-foreground)] disabled:cursor-not-allowed disabled:opacity-50",
+          FOCUS,
+          edge,
+          className,
+        )}
+        {...props}
+      />
+    );
+  }
   return (
-    <input
-      ref={ref}
-      aria-invalid={invalid || undefined}
+    <div
       className={cx(
-        INPUT,
-        FOCUS,
-        invalid ? "border-[color:var(--wds-destructive)]" : "border-[color:var(--wds-input)]",
+        "flex items-center gap-2 has-[input:disabled]:opacity-50 has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-[color:var(--wds-ring)]",
+        box,
+        INPUT_SIZE[size],
+        edge,
         className,
       )}
-      {...props}
-    />
+    >
+      <input
+        ref={ref}
+        aria-invalid={invalid || undefined}
+        className="h-full min-w-0 flex-1 bg-transparent outline-none placeholder:text-[color:var(--wds-muted-foreground)]"
+        {...props}
+      />
+      <span className="shrink-0 text-[color:var(--wds-muted-foreground)]">{suffix}</span>
+    </div>
   );
 });
 
@@ -434,11 +468,13 @@ WebDsV2.Badge = function WebDsV2Badge({ variant = "default", className, ...props
 /* Web DS ToggleGroup, Variant=segmented, Size=sm: a 36 pill on secondary
    with a 1px border and 4 inside it; items 28 tall, 16 sides, Chivo
    Medium 14/20; the one that is on sits on card in foreground, the rest
-   are muted-foreground. */
+   are muted-foreground. stretch fills the width, items sharing it equally
+   (Settings · Display). */
 WebDsV2.Segmented = function WebDsV2Segmented({
   value,
   onValueChange,
   options = [],
+  stretch = false,
   className,
   ...props
 }) {
@@ -446,7 +482,8 @@ WebDsV2.Segmented = function WebDsV2Segmented({
     <div
       role="radiogroup"
       className={cx(
-        "inline-flex h-9 w-fit items-center rounded-full border border-[color:var(--wds-border)] bg-[var(--wds-secondary)] p-[3px]",
+        "inline-flex h-9 items-center rounded-full border border-[color:var(--wds-border)] bg-[var(--wds-secondary)] p-[3px]",
+        stretch ? "w-full" : "w-fit",
         className,
       )}
       {...props}
@@ -462,6 +499,7 @@ WebDsV2.Segmented = function WebDsV2Segmented({
             onClick={() => onValueChange?.(o.value)}
             className={cx(
               "h-7 cursor-pointer rounded-full px-4 text-sm font-medium leading-5 transition-colors",
+              stretch && "flex-1",
               FOCUS,
               on
                 ? "bg-[var(--wds-card)] text-[color:var(--wds-foreground)]"
@@ -690,8 +728,11 @@ WebDsV2.Radio = function WebDsV2Radio({ checked = false, className }) {
    the difference so nothing moves); disabled is 50%. The title is Chivo
    SemiBold 16/24 over a 14/20 muted-foreground description; a logo sits in
    a 32 wide tile; the trailing control sits in 12 of padding (a radio in
-   44, a switch in 60). The whole row is the control: role radio or
-   switch, by its trailing. */
+   44, a switch in 60, a 16 chevron-right in 40 for a row that opens
+   something). The whole row is the control: role radio or switch, by its
+   trailing; a chevron row is a plain button. A logo tile is 32 wide in a
+   drawer and 48 square (tile="lg") on Settings. badge puts a Web DS Badge
+   8 after the title ("Latest" on the Buy and Sell vault rows). */
 WebDsV2.OptionRow = function WebDsV2OptionRow({
   trailing = "radio",
   selected = false,
@@ -699,6 +740,8 @@ WebDsV2.OptionRow = function WebDsV2OptionRow({
   title,
   description,
   logo,
+  tile = "sm",
+  badge,
   onSelect,
   className,
   ...props
@@ -706,8 +749,8 @@ WebDsV2.OptionRow = function WebDsV2OptionRow({
   return (
     <button
       type="button"
-      role={trailing === "switch" ? "switch" : "radio"}
-      aria-checked={selected}
+      role={trailing === "switch" ? "switch" : trailing === "chevron" ? undefined : "radio"}
+      aria-checked={trailing === "chevron" ? undefined : selected}
       disabled={disabled}
       onClick={onSelect}
       className={cx(
@@ -718,15 +761,28 @@ WebDsV2.OptionRow = function WebDsV2OptionRow({
       )}
       {...props}
     >
-      {logo ? <span className="flex w-8 shrink-0 items-center justify-center px-1 py-3">{logo}</span> : null}
+      {logo ? (
+        <span className={cx("flex shrink-0 items-center justify-center", tile === "lg" ? "size-12 p-3" : "w-8 px-1 py-3")}>
+          {logo}
+        </span>
+      ) : null}
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-base font-semibold leading-6 text-[color:var(--wds-foreground)]">{title}</span>
+        <span className="flex items-center gap-2">
+          <span className="text-base font-semibold leading-6 text-[color:var(--wds-foreground)]">{title}</span>
+          {badge ? <WebDsV2.Badge>{badge}</WebDsV2.Badge> : null}
+        </span>
         {description ? (
           <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">{description}</span>
         ) : null}
       </span>
       <span className="flex shrink-0 items-center p-3">
-        {trailing === "switch" ? <WebDsV2.Switch checked={selected} /> : <WebDsV2.Radio checked={selected} />}
+        {trailing === "switch" ? (
+          <WebDsV2.Switch checked={selected} />
+        ) : trailing === "chevron" ? (
+          <ChevronRight className="size-4 text-[color:var(--wds-foreground)]" />
+        ) : (
+          <WebDsV2.Radio checked={selected} />
+        )}
       </span>
     </button>
   );
@@ -756,6 +812,47 @@ WebDsV2.Alert = function WebDsV2Alert({ tone = "info", title, children, classNam
         {title ? <span className="text-base font-semibold leading-6 text-[color:var(--wds-foreground)]">{title}</span> : null}
         {children ? <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">{children}</span> : null}
       </span>
+    </div>
+  );
+};
+
+/* Web DS Progress: a 4 tall full pill on accent, the value in primary. */
+WebDsV2.Progress = function WebDsV2Progress({ value = 0, className, ...props }) {
+  return (
+    <div
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(value)}
+      className={cx("h-1 w-full overflow-hidden rounded-full bg-[var(--wds-accent)]", className)}
+      {...props}
+    >
+      <div className="h-full rounded-full bg-[var(--wds-primary)]" style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+    </div>
+  );
+};
+
+/* The muted summary panel the drawers list an order in: 12 corners, 8
+   above and below, 16 sides, Web DS DescriptionItems inside. */
+WebDsV2.Summary = function WebDsV2Summary({ className, children }) {
+  return <div className={cx("flex flex-col rounded-[12px] bg-[var(--wds-muted)] px-4 py-2", className)}>{children}</div>;
+};
+
+/* Web DS FormField: the label (Chivo Medium 14/20), the control, a helper
+   (12/16 muted-foreground) and an error (12/16 destructive), 4 apart. A
+   control may sit beside the label (the Sell amount's USD / g). */
+WebDsV2.Field = function WebDsV2Field({ label, htmlFor, aside, helper, error, gap = 1, className, children }) {
+  return (
+    <div className={cx("flex flex-col", gap === 2 ? "gap-2" : "gap-1", className)}>
+      <div className="flex min-h-5 items-center justify-between gap-2">
+        <label htmlFor={htmlFor} className="text-sm font-medium leading-5 text-[color:var(--wds-foreground)]">
+          {label}
+        </label>
+        {aside}
+      </div>
+      {children}
+      {helper ? <span className="text-xs leading-4 text-[color:var(--wds-muted-foreground)]">{helper}</span> : null}
+      {error ? <span className="text-xs leading-4 text-[color:var(--wds-destructive)]">{error}</span> : null}
     </div>
   );
 };

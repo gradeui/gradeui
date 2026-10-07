@@ -179,5 +179,22 @@
       "find": "const [filter, setFilter] = React.useState(\"all\");",
       "replace": "const [filter, setFilter] = React.useState<\"all\" | \"gold\" | \"silver\">(\"all\");"
     }
+  ],
+  "app/(product)/settings/page.tsx": [
+    {
+      "why": "Settings helpers typed (7 Oct)",
+      "find": "  const set = (next) => {",
+      "replace": "  const set = (next: string) => {"
+    },
+    {
+      "why": "Settings helpers typed (7 Oct)",
+      "find": "function SettingsSection({ title, children }) {",
+      "replace": "function SettingsSection({ title, children }: { title: string; children: React.ReactNode }) {"
+    },
+    {
+      "why": "Settings helpers typed (7 Oct)",
+      "find": "onValueChange={(u) => {",
+      "replace": "onValueChange={(u: \"g\" | \"oz\") => {"
+    }
   ]
 }
