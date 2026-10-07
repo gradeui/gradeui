@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Log in code v2"
-// (design dmur2qa05uort, version 1791396768570). Registry: lib/screens.ts;
+// (design dmur2qa05uort, version 1791397179803). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 11b82577475f
+// source-hash: ad9838fdceea
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -25,6 +25,10 @@
 // to sign in sit 12 apart under it. The error turns every slot's border
 // destructive and reads "That code doesn't match. Check it and try again,
 // or send a new one."
+//
+// The label stays in foreground when the code is wrong (Figma's Error
+// slides), so the Field carries no data-invalid: only the slots' borders
+// and the message turn destructive.
 //
 // The mobile number's last four come from Persona (the applicant's
 // mobile), so the copy matches the persona rather than a hard-coded
@@ -100,7 +104,7 @@ export default function LogInCodePage() {
         Enter the code we sent to your mobile ending {ending}.
       </p>
 
-      <Field className="mt-8 gap-2" data-invalid={invalid || undefined}>
+      <Field className="mt-8 gap-2">
         <FieldLabel htmlFor="login-code-0" className="leading-5">
           Sign-in code
         </FieldLabel>

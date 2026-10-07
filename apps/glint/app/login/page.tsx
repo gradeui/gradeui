@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Log in v2"
-// (design dmur2ps41k9hh, version 1791396768570). Registry: lib/screens.ts;
+// (design dmur2ps41k9hh, version 1791397135331). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: c5921446ba85
+// source-hash: 94254fb81a9f
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -34,6 +34,10 @@
 // accounts only (Ali, 1 Oct). So United States stays the default here, and
 // the placeholder is PhoneField's US one. If the Default slide's +44 is
 // meant, set the initial countryId to "uk".
+//
+// The label stays in foreground when the field is invalid (Figma's Error
+// slides), so the Field carries no data-invalid: only the control's border
+// and the message turn destructive.
 //
 // Copy is the Web Portal file's, verbatim. The countries are PhoneField's
 // three (United States first), so the two phone fields in the demo offer
@@ -77,7 +81,7 @@ export default function LogInPage() {
         Enter your phone number and we’ll text you a code.
       </p>
 
-      <Field className="mt-8 gap-2" data-invalid={invalid || undefined}>
+      <Field className="mt-8 gap-2">
         <FieldLabel htmlFor="login-phone" className="leading-5">
           Phone number
         </FieldLabel>
