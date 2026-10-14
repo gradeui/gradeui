@@ -220,15 +220,15 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/log-in",
     name: "Log in v2",
     id: "dmur2ps41k9hh",
-    promotedAt: 1791397135331,
-    sourceHash: "94254fb81a9f",
+    promotedAt: 1792017030244,
+    sourceHash: "ccb62dbbcb37",
   },
   {
     slug: "/log-in/code",
     name: "Log in code v2",
     id: "dmur2qa05uort",
-    promotedAt: 1792007012083,
-    sourceHash: "f6821d07fd82",
+    promotedAt: 1792017031928,
+    sourceHash: "db570fb742e7",
   },
   /* 14 Oct 2026, Ali's calls on the Glint build vs Figma: its Statements
      page, at its address. (The USD wallet v2 screen is dropped: the Glint build has
@@ -246,8 +246,8 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/log-in/passcode",
     name: "Log in passcode v2",
     id: "dmv8iphang26p",
-    promotedAt: 1792008765726,
-    sourceHash: "b7166f3f3554",
+    promotedAt: 1792017033519,
+    sourceHash: "61ba263b643a",
   },
   {
     slug: "/log-in/forgot-passcode",
@@ -267,8 +267,8 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/log-in/new-passcode",
     name: "New passcode v2",
     id: "dmv8iplq561t8",
-    promotedAt: 1792007019581,
-    sourceHash: "78537f803229",
+    promotedAt: 1792017035008,
+    sourceHash: "964d04b787cf",
   },
   {
     slug: "/404",

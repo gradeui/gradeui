@@ -421,8 +421,9 @@ WebDsV2.OtpSlot = React.forwardRef(function WebDsV2OtpSlot({ invalid, className,
    moves on, Backspace on an empty slot steps back and clears it, the
    arrows move, a paste fills from the slot it lands in, and Enter calls
    onEnter. Slot ids are `${id}-0` and on, so a label can point at the
-   first. */
-WebDsV2.OtpField = function WebDsV2OtpField({ id, length = 4, value = "", onChange, invalid, autoFocus, onEnter }) {
+   first. mask (14 Oct, the Glint build's passcode) shows each digit as a
+   dot. */
+WebDsV2.OtpField = function WebDsV2OtpField({ id, length = 4, value = "", onChange, invalid, autoFocus, onEnter, mask = false }) {
   const cells = React.useRef([]);
   const digits = Array.from({ length }, (_, i) => value[i] ?? "");
   const write = (next) => onChange?.(next.join("").slice(0, length));
@@ -450,6 +451,8 @@ WebDsV2.OtpField = function WebDsV2OtpField({ id, length = 4, value = "", onChan
             cells.current[i] = el;
           }}
           autoComplete="off"
+          type={mask ? "password" : "text"}
+          style={mask ? { fontSize: 40 } : undefined}
           aria-label={`Digit ${i + 1} of ${length}`}
           autoFocus={autoFocus && i === 0}
           invalid={invalid}

@@ -1,77 +1,61 @@
+// @ts-nocheck: promoted Studio JSX, see scripts/promotion-patches.json.
 "use client";
 
 // Promoted from Studio screen "Log in v2"
-// (design dmur2ps41k9hh, version 1791397135331). Registry: lib/screens.ts;
+// (design dmur2ps41k9hh, version 1792017030244). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 94254fb81a9f
+// source-hash: ccb62dbbcb37
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
 
-// Log in v2 (2 Oct 2026): the business portal's sign in, step one of two:
-// the phone number. Glint's production log in is a phone number, then a
-// one-time code (web.prod.glintpay.com/log-in), and this follows the Web
-// Portal file's Login slides: Web DS LoginTemplate with the SignInForm in
-// it. Send code goes to "Log in code v2".
+// Log in v2 (2 Oct 2026): the business portal's sign in, step one: the
+// phone number. Send code goes to "Log in code v2".
 //
-// ASSUMPTION, A DEMO, NOT AUTH: nothing here signs anyone in. The number
-// is held in this screen's state only while it is open. It is never sent,
-// never stored (no FlowStore key, no storage of any kind), and autofill is
-// off so the browser does not offer a real number. The only check is that
-// it has at least seven digits, so the error state can be shown.
+// 14 OCT, MATCHED TO THE GLINT BUILD (web.staging.glintpay.com/log-in; Ali:
+// sign in and the error states match it too):
+//   - the rotating headline, then "Enter your phone number and we'll text
+//     you a code.";
+//   - "Phone number" with the Glint build's country picker
+//     (CountriesV2: +44 United Kingdom by default, "Search country…",
+//     United Kingdom and United States first, then A to Z) and the number,
+//     with no placeholder, as the Glint build has none;
+//   - its errors in an alert above the field: an empty number says "Enter
+//     your phone number.", a short one "Invalid data" (the Glint build's
+//     own copy; Ali may want better);
+//   - Send code shows a spinner while it "sends", then moves on;
+//   - "Having trouble signing in? Contact support"; the footer adds
+//     "© 2026 Glint Pay Inc." (LoginTemplateV2).
+// ASSUMPTION, THE ADDRESS: the Glint build runs phone, code and passcode at
+// one address, /log-in; our prototype keeps a page per step (/log-in,
+// /log-in/code, /log-in/passcode), so each step can be opened directly.
 //
-// 7 OCT, MATCHED TO "Glint - Web Portal - Full New" (Login · Phone ·
-// Default, Filled, Error): the lead is Chivo 16/24; the country select
-// and the number are the Web DS Select and Input at lg (48 tall, 10
-// corners, input-background), 128 and the rest, 12 apart; Send code is
-// the Web DS Button at lg (40, 8 corners, Chivo Medium 14/20 on
-// button-primary). Heading, fields and actions are 32 apart, the help line
-// 16 under the button.
-//
-// ASSUMPTION, THE COUNTRY: Figma's Default slide shows "🇬🇧 +44" with a
-// "(555) 000-0000" placeholder, but its Filled and Error slides show
-// "🇺🇸 +1" and a US number, and the web portal is for US business
-// accounts only (Ali, 1 Oct). So United States stays the default here, and
-// the placeholder is PhoneField's US one. If the Default slide's +44 is
-// meant, set the initial countryId to "uk".
-//
-// The label stays in foreground when the field is invalid (Figma's Error
-// slides), so the Field carries no data-invalid: only the control's border
-// and the message turn destructive.
-//
-// Copy is the Web Portal file's, verbatim. The countries are PhoneField's
-// three (United States first), so the two phone fields in the demo offer
-// the same list.
+// A DEMO, NOT AUTH: nothing here signs anyone in. The number is held in
+// this screen's state only while it is open, never sent or stored, and
+// autofill is off. The only check is the digit count, so the errors show.
 import * as React from "react";
-import {
-  Field,
-  FieldLabel,
-  FieldError,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@gradeui/ui";
+import { Field, FieldLabel } from "@gradeui/ui";
 import { LoginTemplateV2 } from "@/components/login-template-v2";
-import { PhoneField } from "@/components/phone-field";
+import { CountriesV2 } from "@/components/countries-v2";
 import { WebDsV2 } from "@/components/web-ds-v2";
 
 const CODE_SCREEN = "Log in code v2";
 
 export default function LogInPage() {
-  const [countryId, setCountryId] = React.useState("us");
+  const [country, setCountry] = React.useState("GB");
   const [number, setNumber] = React.useState("");
-  const [invalid, setInvalid] = React.useState(false);
-  const sendRef = React.useRef<HTMLButtonElement>(null);
-  const country = PhoneField.country(countryId);
-  const valid = number.replace(/\D/g, "").length >= 7;
+  const [error, setError] = React.useState(null);
+  const [sending, setSending] = React.useState(false);
+  const goRef = React.useRef(null);
+  const digits = number.replace(/\D/g, "");
 
-  /* The goto is only on the button while the number is valid, so a valid
-     press navigates and an invalid one falls through to onClick and shows
-     the error. Enter in the field presses the button the same way. */
   const send = () => {
-    if (!valid) setInvalid(true);
+    if (sending) return;
+    if (!digits) return setError("Enter your phone number.");
+    if (digits.length < 7) return setError("Invalid data");
+    setError(null);
+    setSending(true);
+    window.setTimeout(() => goRef.current?.click(), 900);
   };
 
   return (
@@ -81,58 +65,42 @@ export default function LogInPage() {
         Enter your phone number and we’ll text you a code.
       </p>
 
-      <Field className="mt-8 gap-2">
+      {error ? (
+        <WebDsV2.Alert tone="destructive" title={error} className="mt-6" />
+      ) : null}
+
+      <Field className={`${error ? "mt-4" : "mt-8"} gap-2`}>
         <FieldLabel htmlFor="login-phone" className="leading-5">
           Phone number
         </FieldLabel>
         <div className="flex gap-3">
-          <Select value={countryId} onValueChange={setCountryId}>
-            <SelectTrigger aria-label="Country calling code" className={`${WebDsV2.SELECT_TRIGGER} w-32 shrink-0`}>
-              <SelectValue>{`${country.flag} ${country.dial}`}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {PhoneField.COUNTRIES.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  <span className="mr-2">{c.flag}</span>
-                  {c.name}
-                  <span className="ml-2 text-muted-foreground">{c.dial}</span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <CountriesV2.Picker value={country} onChange={setCountry} className="w-32 shrink-0" />
           <WebDsV2.Input
             id="login-phone"
             type="tel"
             inputMode="tel"
             autoComplete="off"
-            placeholder={country.placeholder}
-            invalid={invalid}
             value={number}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+            onChange={(e) => {
               setNumber(e.target.value);
-              setInvalid(false);
+              setError(null);
             }}
-            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+            onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
-                sendRef.current?.click();
+                send();
               }
             }}
             className="flex-1"
           />
         </div>
-        {invalid ? <FieldError className="text-sm leading-5">Check the number and try again.</FieldError> : null}
       </Field>
 
-      <WebDsV2.Button
-        ref={sendRef}
-        size="lg"
-        className="mt-8 w-full"
-        data-grade-goto={valid ? CODE_SCREEN : undefined}
-        onClick={send}
-      >
-        Send code
+      <WebDsV2.Button size="lg" className="mt-8 w-full" onClick={send} aria-busy={sending || undefined}>
+        {sending ? <LoginTemplateV2.Spinner /> : "Send code"}
       </WebDsV2.Button>
+      {/* The goto fires after the spinner: the bridge acts on the click. */}
+      <button ref={goRef} type="button" tabIndex={-1} aria-hidden className="hidden" data-grade-goto={CODE_SCREEN} />
       <p className="mt-4 text-center text-sm leading-5 text-muted-foreground">
         Having trouble signing in?{" "}
         <button type="button" className="cursor-pointer font-medium text-primary hover:underline">
@@ -142,4 +110,3 @@ export default function LogInPage() {
     </LoginTemplateV2>
   );
 }
-

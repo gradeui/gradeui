@@ -138,6 +138,7 @@ const TWINS: Record<string, string> = {
   TransferV2: "components/transfer-v2.tsx",
   /* 14 Oct 2026. */
   PortalV2: "lib/portal-v2.ts",
+  CountriesV2: "components/countries-v2.tsx",
 };
 
 /**

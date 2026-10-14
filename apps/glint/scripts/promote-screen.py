@@ -129,6 +129,8 @@ COMPONENT_MODULES = {
     # Staging, 14 Oct 2026: the portal's identity (Acme Corp) and its
     # notifications, from "Glint - Web Portal - Full New".
     "PortalV2": "@/lib/portal-v2",
+    # 14 Oct 2026: the Glint build's phone country picker.
+    "CountriesV2": "@/components/countries-v2",
 }
 
 # BuyFlow is deliberately absent. TradeFlow superseded it and there is no

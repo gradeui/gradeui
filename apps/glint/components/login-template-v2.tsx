@@ -54,7 +54,7 @@
 // useWebDsType AppChromeV2 has). The app twin has no such hook: the app
 // sets them in app/globals.css.
 import * as React from "react";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, LoaderCircle } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { RingLattice } from "@/components/ring-lattice";
 import { WebDsV2 } from "@/components/web-ds-v2";
@@ -92,15 +92,20 @@ const GLOW = "0 0 56px rgb(188 155 85 / 0.2)";
 const DROP = "0 30px 40px rgb(5 5 18 / 0.45)";
 
 /** The legal links. Inert. */
+/* The legal links, and under them (14 Oct, the Glint build's footer)
+   "© 2026 Glint Pay Inc.". */
 function Legal({ className = "" }) {
   return (
-    <div className={`flex items-center gap-6 text-[13px] leading-5 ${className}`}>
-      <button type="button" className="cursor-pointer hover:text-[color:var(--wds-foreground)]">
-        Privacy policy
-      </button>
-      <button type="button" className="cursor-pointer hover:text-[color:var(--wds-foreground)]">
-        Terms of use
-      </button>
+    <div className={`flex flex-col items-center gap-1 text-[13px] leading-5 ${className}`}>
+      <div className="flex items-center gap-6">
+        <button type="button" className="cursor-pointer hover:text-[color:var(--wds-foreground)]">
+          Privacy policy
+        </button>
+        <button type="button" className="cursor-pointer hover:text-[color:var(--wds-foreground)]">
+          Terms of use
+        </button>
+      </div>
+      <span>© 2026 Glint Pay Inc.</span>
     </div>
   );
 }
@@ -173,6 +178,12 @@ const HEADLINES = [
   ["Great ideas never fade."],
   ["Gold is security", "Glint is key"],
 ];
+
+/** The spinner a sign-in button shows while it works (14 Oct, the Glint
+ *  build's Send code, Continue and Log in). */
+LoginTemplateV2.Spinner = function LoginTemplateV2Spinner() {
+  return <LoaderCircle aria-label="Working" className="size-4 animate-spin motion-reduce:animate-none" />;
+};
 
 LoginTemplateV2.Headline = function LoginTemplateV2Headline() {
   const [at, setAt] = React.useState(0);

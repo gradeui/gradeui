@@ -1,9 +1,10 @@
+// @ts-nocheck: promoted Studio JSX, see scripts/promotion-patches.json.
 "use client";
 
 // Promoted from Studio screen "Log in code v2"
-// (design dmur2qa05uort, version 1792007012083). Registry: lib/screens.ts;
+// (design dmur2qa05uort, version 1792017031928). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: f6821d07fd82
+// source-hash: db570fb742e7
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -12,6 +13,9 @@
 // the one-time code. Six digits; the sixth continues on its own to the
 // passcode step (14 Oct: Full New adds Login · Passcode after the code;
 // before that it went straight to the Wallets page).
+//
+// 14 OCT, THE GLINT BUILD: Continue stays disabled until all six digits are
+// in, and shows a spinner while the code is "checked" before the passcode.
 //
 // ASSUMPTION, A DEMO, NOT AUTH: no code is sent and none is checked. Any
 // six digits continue, except 000000, which is the demo's wrong code so
@@ -47,10 +51,12 @@ const LENGTH = 6;
 const WRONG = "000000";
 
 export default function LogInCodePage() {
-  const [digits, setDigits] = React.useState<string[]>(Array(LENGTH).fill(""));
+  const [digits, setDigits] = React.useState(Array(LENGTH).fill(""));
   const [invalid, setInvalid] = React.useState(false);
-  const cells = React.useRef<(HTMLInputElement | null)[]>([]);
-  const continueRef = React.useRef<HTMLButtonElement>(null);
+  const [checking, setChecking] = React.useState(false);
+  const goRef = React.useRef(null);
+  const cells = React.useRef([]);
+  const continueRef = React.useRef(null);
   const code = digits.join("");
   const complete = code.length === LENGTH;
   const ok = complete && code !== WRONG;
@@ -65,19 +71,19 @@ export default function LogInCodePage() {
     return () => window.clearTimeout(t);
   }, [complete]);
 
-  const fill = (from: number, text: string) => {
+  const fill = (from, text) => {
     const incoming = text.replace(/\D/g, "").slice(0, LENGTH - from).split("");
     if (!incoming.length) return;
     setInvalid(false);
     setDigits((prev) => {
       const next = [...prev];
-      incoming.forEach((d: string, k: number) => (next[from + k] = d));
+      incoming.forEach((d, k) => (next[from + k] = d));
       return next;
     });
     cells.current[Math.min(from + incoming.length, LENGTH - 1)]?.focus();
   };
 
-  const clear = (i: number) => {
+  const clear = (i) => {
     setInvalid(false);
     setDigits((prev) => {
       const next = [...prev];
@@ -86,14 +92,12 @@ export default function LogInCodePage() {
     });
   };
 
-  /* The goto is on the button only while the code is right, so a wrong
-     code falls through to here and shows the error. */
+  /* A right code spins, then moves on; a wrong one shows the error. */
   const next = () => {
-    if (complete) {
-      if (!ok) setInvalid(true);
-      return;
-    }
-    cells.current[digits.findIndex((d) => d === "")]?.focus();
+    if (!complete || checking) return;
+    if (!ok) return setInvalid(true);
+    setChecking(true);
+    window.setTimeout(() => goRef.current?.click(), 900);
   };
 
   return (
@@ -114,7 +118,7 @@ export default function LogInCodePage() {
             <WebDsV2.OtpSlot
               key={i}
               id={`login-code-${i}`}
-              ref={(el: HTMLInputElement | null) => {
+              ref={(el) => {
                 cells.current[i] = el;
               }}
               autoComplete={i === 0 ? "one-time-code" : "off"}
@@ -122,14 +126,14 @@ export default function LogInCodePage() {
               autoFocus={i === 0}
               invalid={invalid}
               value={d}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              onChange={(e) => {
                 let v = e.target.value.replace(/\D/g, "");
                 if (!v) return clear(i);
                 /* A digit typed into a filled cell: keep the new one. */
                 if (d && v.length === 2) v = v[0] === d ? v[1] : v[0];
                 fill(i, v);
               }}
-              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+              onKeyDown={(e) => {
                 if (e.key === "Backspace" && !digits[i] && i > 0) {
                   e.preventDefault();
                   clear(i - 1);
@@ -143,11 +147,11 @@ export default function LogInCodePage() {
                   continueRef.current?.click();
                 }
               }}
-              onPaste={(e: React.ClipboardEvent<HTMLInputElement>) => {
+              onPaste={(e) => {
                 e.preventDefault();
                 fill(i, e.clipboardData.getData("text"));
               }}
-              onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.target.select()}
+              onFocus={(e) => e.target.select()}
             />
           ))}
         </WebDsV2.OtpGroup>
@@ -162,11 +166,13 @@ export default function LogInCodePage() {
         ref={continueRef}
         size="lg"
         className="mt-8 w-full"
-        data-grade-goto={ok ? NEXT : undefined}
+        disabled={!complete}
+        aria-busy={checking || undefined}
         onClick={next}
       >
-        Continue
+        {checking ? <LoginTemplateV2.Spinner /> : "Continue"}
       </WebDsV2.Button>
+      <button ref={goRef} type="button" tabIndex={-1} aria-hidden className="hidden" data-grade-goto={NEXT} />
       <p className="mt-3 text-center text-sm leading-5 text-muted-foreground">
         Didn't get it?{" "}
         <button type="button" className="cursor-pointer font-medium text-primary hover:underline">

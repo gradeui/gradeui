@@ -2,9 +2,9 @@
 "use client";
 
 // Promoted from Studio screen "New passcode v2"
-// (design dmv8iplq561t8, version 1792007019581). Registry: lib/screens.ts;
+// (design dmv8iplq561t8, version 1792017035008). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 78537f803229
+// source-hash: 964d04b787cf
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -24,6 +24,7 @@
 import * as React from "react";
 import { Field, FieldLabel } from "@gradeui/ui";
 import { LoginTemplateV2 } from "@/components/login-template-v2";
+import { FlowStore } from "@/lib/flow-store";
 import { WebDsV2 } from "@/components/web-ds-v2";
 
 const WALLETS = "Dashboard — logged-in home v2";
@@ -33,6 +34,8 @@ export default function NewPasscodePage() {
   const [code, setCode] = React.useState("");
   const goRef = React.useRef(null);
   const complete = code.length === 4;
+  /* Choosing a passcode signs the tab back in (AppChromeV2's SIGNED OUT). */
+  const [, setSignedOut] = FlowStore.useField("v2.signedOut", false);
   return (
     <LoginTemplateV2>
       <h1 className="text-4xl" style={{ lineHeight: "40px" }}>
@@ -59,6 +62,7 @@ export default function NewPasscodePage() {
         size="lg"
         className="mt-8 w-full"
         data-grade-goto={complete ? WALLETS : undefined}
+        onPointerDown={() => complete && setSignedOut(false)}
         onClick={() => (complete ? null : document.getElementById(`new-passcode-${code.length}`)?.focus())}
       >
         Continue

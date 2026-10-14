@@ -76,6 +76,11 @@
 //     trigger expands it again. ASSUMPTION: Ali said "no icon rail" and
 //     also to follow Figma's collapsed version, which is this rail; it is
 //     Figma's rail, not the Glint build's.
+//   - SIGNED OUT (14 Oct, the Glint build sends a signed-out /console page
+//     to /log-in): Sign out marks the tab signed out (FlowStore
+//     "v2.signedOut"), and while it is, any page in this chrome goes to the
+//     log in; logging in (the passcode, or a new passcode) clears it. A DEMO:
+//     a fresh tab starts signed in, so a shared link opens on its page.
 //   - SYSTEM STATES (14 Oct, StagingSwitches ?state=): "error" swaps every
 //     page's content for the Web DS EmptyState of Error · Page; "offline"
 //     raises Toast · Error. The toasts (WebDsV2.toast) show from the host
@@ -121,6 +126,7 @@ import {
 import { Wordmark } from "@/components/wordmark";
 import { Persona } from "@/lib/persona";
 import { PortalV2 } from "@/lib/portal-v2";
+import { FlowStore } from "@/lib/flow-store";
 import { RingLattice } from "@/components/ring-lattice";
 import { StagingSwitches } from "@/lib/staging-switches";
 import { WebDsV2 } from "@/components/web-ds-v2";
@@ -276,6 +282,7 @@ function IconButton({ label, children, className, ...props }) {
 /** The sidebar: header, account, nav. Shared by the desktop rail and the
  *  mobile sheet. */
 function SidebarBody({ active, business, describe, onTrigger, onNavigate, person }) {
+  const [, setSignedOut] = FlowStore.useField("v2.signedOut", false);
   return (
     <div className="relative flex h-full flex-col gap-4 overflow-hidden bg-[var(--wds-sidebar)]">
       <RingLattice strength={0.1} fade="top" />
@@ -395,12 +402,13 @@ function SidebarBody({ active, business, describe, onTrigger, onNavigate, person
             </div>
             {[
               { label: "Profile", Icon: ProfileIcon, target: PROFILE },
-              { label: "Sign out", Icon: LogOut, target: LOG_IN },
-            ].map(({ label, Icon, target }) => (
+              { label: "Sign out", Icon: LogOut, target: LOG_IN, out: true },
+            ].map(({ label, Icon, target, out }) => (
               <button
                 key={label}
                 type="button"
                 data-grade-goto={target}
+                onPointerDown={out ? () => setSignedOut(true) : undefined}
                 onClick={onNavigate}
                 className={cx(
                   "flex h-10 w-full cursor-pointer items-center gap-3 rounded-[8px] px-2.5 text-left text-sm leading-5 text-[color:var(--wds-sidebar-foreground)] transition-colors hover:bg-[var(--wds-sidebar-accent)]",
@@ -644,6 +652,8 @@ function SearchPalette({ size = "size-5" }) {
 
 /** The avatar's account menu (Profile drop down). */
 function AccountMenu({ name, business }) {
+  const [, setSignedOut] = FlowStore.useField("v2.signedOut", false);
+  const signOut = () => setSignedOut(true);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -667,7 +677,7 @@ function AccountMenu({ name, business }) {
           Profile
         </DropdownMenuItem>
         <div role="separator" className="my-1.5 h-px bg-[var(--wds-border)]" />
-        <DropdownMenuItem className="h-10 gap-3 px-3" data-grade-goto={LOG_IN}>
+        <DropdownMenuItem className="h-10 gap-3 px-3" data-grade-goto={LOG_IN} onPointerDown={signOut} onKeyDown={signOut}>
           <LogOut className="size-4" />
           Sign out
         </DropdownMenuItem>
@@ -788,6 +798,11 @@ function AppChromeV2({
   /* useWebDsType() is Studio only: the app sets the Web DS type in
      app/globals.css and loads the faces with next/font. */
   const sys = StagingSwitches.useState();
+  const [signedOut] = FlowStore.useField("v2.signedOut", false);
+  const outRef = React.useRef(null);
+  React.useEffect(() => {
+    if (signedOut) outRef.current?.click();
+  }, [signedOut]);
   React.useEffect(() => {
     if (sys !== "offline") return;
     WebDsV2.toast({
@@ -914,6 +929,8 @@ function AppChromeV2({
         </SlotContext.Provider>
       </div>
       <WebDsV2.ToastHost />
+      {/* The signed-out redirect's goto (see SIGNED OUT). */}
+      <button ref={outRef} type="button" tabIndex={-1} aria-hidden className="hidden" data-grade-goto={LOG_IN} />
     </div>
   );
 }

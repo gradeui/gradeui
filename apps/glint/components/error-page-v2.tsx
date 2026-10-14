@@ -81,9 +81,11 @@ function useWebDsType() {
 const WALLETS = "Dashboard — logged-in home v2";
 
 const COPY = {
+  /* 14 Oct: the Glint build's 404, word for word (its /console/anything and
+     /anything both show it). */
   404: {
-    title: "Page not found",
-    body: "The page you’re looking for doesn’t exist or has moved.",
+    title: "Oops. We can’t find that page.",
+    body: "The link may be old, or the page may have moved.",
   },
   500: {
     title: "Something went wrong",
@@ -134,7 +136,7 @@ function ErrorPageV2({ code = "404", onRetry }) {
       </WebDsV2.Button>
     ) : (
       <WebDsV2.Button size="lg" className="w-full md:w-auto" data-grade-goto={WALLETS}>
-        Go to Wallets
+        Go home
       </WebDsV2.Button>
     );
   const secondary =
@@ -143,8 +145,8 @@ function ErrorPageV2({ code = "404", onRetry }) {
         Go to Wallets
       </WebDsV2.Button>
     ) : (
-      <WebDsV2.Button size="lg" variant="outline" className="w-full md:w-auto" onClick={back}>
-        Go back
+      <WebDsV2.Button size="lg" variant="outline" className="w-full md:w-auto">
+        Contact support
       </WebDsV2.Button>
     );
 
@@ -168,7 +170,8 @@ function ErrorPageV2({ code = "404", onRetry }) {
           {primary}
           {secondary}
         </div>
-        <div className="mt-6 flex items-center gap-3 text-sm leading-5">
+        {/* The Glint build's 404 has only its two buttons. */}
+        <div className={code === "500" ? "mt-6 flex items-center gap-3 text-sm leading-5" : "hidden"}>
           <button type="button" className="cursor-pointer font-medium text-[color:var(--wds-primary)] hover:underline">
             Contact support
           </button>

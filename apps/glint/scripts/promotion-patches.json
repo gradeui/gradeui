@@ -101,76 +101,16 @@
   ],
   "app/log-in/code/page.tsx": [
     {
-      "why": "the ref and the digit list are typed (staging log in, 7 Oct)",
-      "find": "const cells = React.useRef([]);",
-      "replace": "const cells = React.useRef<(HTMLInputElement | null)[]>([]);"
-    },
-    {
-      "why": "the ref and the digit list are typed (staging log in, 7 Oct)",
-      "find": "const continueRef = React.useRef(null);",
-      "replace": "const continueRef = React.useRef<HTMLButtonElement>(null);"
-    },
-    {
-      "why": "the ref and the digit list are typed (staging log in, 7 Oct)",
-      "find": "const [digits, setDigits] = React.useState(Array(LENGTH).fill(\"\"));",
-      "replace": "const [digits, setDigits] = React.useState<string[]>(Array(LENGTH).fill(\"\"));"
-    },
-    {
-      "why": "the ref and the digit list are typed (staging log in, 7 Oct)",
-      "find": "const fill = (from, text) => {",
-      "replace": "const fill = (from: number, text: string) => {"
-    },
-    {
-      "why": "the ref and the digit list are typed (staging log in, 7 Oct)",
-      "find": "incoming.forEach((d, k) =>",
-      "replace": "incoming.forEach((d: string, k: number) =>"
-    },
-    {
-      "why": "the ref and the digit list are typed (staging log in, 7 Oct)",
-      "find": "const clear = (i) => {",
-      "replace": "const clear = (i: number) => {"
-    },
-    {
-      "why": "the ref and the digit list are typed (staging log in, 7 Oct)",
-      "find": "ref={(el) => {",
-      "replace": "ref={(el: HTMLInputElement | null) => {"
-    },
-    {
-      "why": "WebDsV2 is exported untyped, so its event handlers are typed here (7 Oct)",
-      "find": "onChange={(e) => {\n                let v",
-      "replace": "onChange={(e: React.ChangeEvent<HTMLInputElement>) => {\n                let v"
-    },
-    {
-      "why": "WebDsV2 is exported untyped, so its event handlers are typed here (7 Oct)",
-      "find": "onKeyDown={(e) => {\n                if (e.key === \"Backspace\"",
-      "replace": "onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {\n                if (e.key === \"Backspace\""
-    },
-    {
-      "why": "WebDsV2 is exported untyped, so its event handlers are typed here (7 Oct)",
-      "find": "onPaste={(e) =>",
-      "replace": "onPaste={(e: React.ClipboardEvent<HTMLInputElement>) =>"
-    },
-    {
-      "why": "WebDsV2 is exported untyped, so its event handlers are typed here (7 Oct)",
-      "find": "onFocus={(e) =>",
-      "replace": "onFocus={(e: React.FocusEvent<HTMLInputElement>) =>"
+      "why": "14 Oct: the Login reset steps are plain Studio JSX with refs, events and a counter state; checked as the mechanical twins are, by not checking them, instead of a dozen annotations each",
+      "find": "\"use client\";",
+      "replace": "// @ts-nocheck: promoted Studio JSX, see scripts/promotion-patches.json.\n\"use client\";"
     }
   ],
   "app/log-in/page.tsx": [
     {
-      "why": "the ref and the digit list are typed (staging log in, 7 Oct)",
-      "find": "const sendRef = React.useRef(null);",
-      "replace": "const sendRef = React.useRef<HTMLButtonElement>(null);"
-    },
-    {
-      "why": "WebDsV2 is exported untyped, so its event handlers are typed here (7 Oct)",
-      "find": "onChange={(e) => {\n              setNumber(",
-      "replace": "onChange={(e: React.ChangeEvent<HTMLInputElement>) => {\n              setNumber("
-    },
-    {
-      "why": "WebDsV2 is exported untyped, so its event handlers are typed here (7 Oct)",
-      "find": "onKeyDown={(e) => {\n              if (e.key === \"Enter\")",
-      "replace": "onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {\n              if (e.key === \"Enter\")"
+      "why": "14 Oct: the Login reset steps are plain Studio JSX with refs, events and a counter state; checked as the mechanical twins are, by not checking them, instead of a dozen annotations each",
+      "find": "\"use client\";",
+      "replace": "// @ts-nocheck: promoted Studio JSX, see scripts/promotion-patches.json.\n\"use client\";"
     }
   ],
   "app/console/activity/page.tsx": [

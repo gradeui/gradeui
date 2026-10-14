@@ -2,9 +2,9 @@
 "use client";
 
 // Promoted from Studio screen "Log in passcode v2"
-// (design dmv8iphang26p, version 1792008765726). Registry: lib/screens.ts;
+// (design dmv8iphang26p, version 1792017033519). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: b7166f3f3554
+// source-hash: 61ba263b643a
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -23,11 +23,17 @@
 // ASSUMPTION, A DEMO, NOT AUTH: no passcode is checked. Any four digits
 // continue, except 0000, the demo's wrong passcode, which shows the Error
 // state ("That passcode is incorrect.", every slot's border destructive).
-// Contact support is inert. "Glint app" takes the capital the phone slide
+// Contact support is inert.
+//
+// 14 OCT, THE GLINT BUILD: the four boxes mask each digit as a dot; the
+// button reads "Log in", stays disabled until all four are in, and spins
+// while it "checks"; the link under it is just "Forgot passcode?". Logging
+// in clears a sign out (AppChromeV2's signed-out redirect). "Glint app" takes the capital the phone slide
 // gives it (the desktop slide writes "glint app").
 import * as React from "react";
 import { Field, FieldLabel, FieldError } from "@gradeui/ui";
 import { LoginTemplateV2 } from "@/components/login-template-v2";
+import { FlowStore } from "@/lib/flow-store";
 import { WebDsV2 } from "@/components/web-ds-v2";
 
 const WALLETS = "Dashboard — logged-in home v2";
@@ -38,11 +44,17 @@ export default function LogInPasscodePage() {
   const [code, setCode] = React.useState("");
   const [invalid, setInvalid] = React.useState(false);
   const loginRef = React.useRef(null);
+  const goRef = React.useRef(null);
+  const [checking, setChecking] = React.useState(false);
+  const [, setSignedOut] = FlowStore.useField("v2.signedOut", false);
   const complete = code.length === 4;
   const ok = complete && code !== WRONG;
   const login = () => {
-    if (complete && !ok) setInvalid(true);
-    else if (!complete) document.getElementById(`login-passcode-${code.length}`)?.focus();
+    if (!complete || checking) return;
+    if (!ok) return setInvalid(true);
+    setChecking(true);
+    setSignedOut(false);
+    window.setTimeout(() => goRef.current?.click(), 900);
   };
   return (
     <LoginTemplateV2>
@@ -61,6 +73,7 @@ export default function LogInPasscodePage() {
           length={4}
           autoFocus
           value={code}
+          mask
           invalid={invalid}
           onChange={(v) => {
             setCode(v);
@@ -74,15 +87,16 @@ export default function LogInPasscodePage() {
         ref={loginRef}
         size="lg"
         className="mt-8 w-full"
-        data-grade-goto={ok ? WALLETS : undefined}
+        disabled={!complete}
+        aria-busy={checking || undefined}
         onClick={login}
       >
-        Login
+        {checking ? <LoginTemplateV2.Spinner /> : "Log in"}
       </WebDsV2.Button>
+      <button ref={goRef} type="button" tabIndex={-1} aria-hidden className="hidden" data-grade-goto={WALLETS} />
       <p className="mt-3 text-center text-sm leading-5 text-muted-foreground">
-        Forgot passcode?{" "}
         <button type="button" data-grade-goto={FORGOT} className="cursor-pointer font-medium text-primary hover:underline">
-          Reset passcode
+          Forgot passcode?
         </button>
       </p>
       <p className="mt-3 text-center text-sm leading-5 text-muted-foreground">
