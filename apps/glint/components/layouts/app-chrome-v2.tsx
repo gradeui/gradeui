@@ -552,7 +552,8 @@ function AppChromeV2({
     Activity: `${sinceYesterday(rows)} since yesterday`,
     "Business profile": business,
   };
-  const person = PortalV2.PROFILE.fullName;
+  /* ?name=long: the Long name slide's signed-in person (StagingSwitches). */
+  const person = StagingSwitches.useName() === "long" ? "Alexandra Fitzwilliam-Montgomery" : PortalV2.PROFILE.fullName;
   const trail = crumbs && crumbs.length ? crumbs : [{ label: active }];
 
   return (

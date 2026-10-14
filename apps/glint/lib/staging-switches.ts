@@ -29,6 +29,15 @@
 //                           Couldn't connect toast (Toast · Error). LIVE
 //                           (the default) is the demo; Try again and
 //                           Retry now go back to it.
+//   ?trend=live | down | neutral   (14 Oct) The price card's Charts ·
+//                           Down and Neutral slides. The real LBMA prices
+//                           rise over every range Figma offers, so those
+//                           two states never show by themselves; DOWN
+//                           mirrors the drawn series about its first price
+//                           and NEUTRAL scales its moves to a 0.5% change.
+//                           NOT REAL PRICES: a comparison switch only.
+//   ?name=default | long    (14 Oct) The account menu's Long name slide:
+//                           "Alexandra Fitzwilliam-Montgomery" signed in.
 //   ?announce=on | off      (14 Oct) The announcement bar over the
 //                           Wallets page (Announcement bar · Default).
 //                           Off by default; dismissing it hides it for
@@ -65,6 +74,8 @@ const SWITCHES = {
   autobuy: { key: "glint-autobuy", values: ["off", "on"], fallback: "on" },
   state: { key: "glint-state", values: ["live", "empty", "error", "inline", "offline"], fallback: "live" },
   announce: { key: "glint-announce", values: ["off", "on"], fallback: "off" },
+  trend: { key: "glint-trend", values: ["live", "down", "neutral"], fallback: "live" },
+  name: { key: "glint-name", values: ["default", "long"], fallback: "default" },
 };
 
 /** ?name= on this page, or on the page hosting this frame. */
@@ -132,6 +143,16 @@ StagingSwitches.useCards = function useCards() {
 /** "live" (the default), "empty", "error", "inline" or "offline". */
 StagingSwitches.useState = function useStateSwitch() {
   return useSwitch("state");
+};
+
+/** "live" (the default), "down" or "neutral". */
+StagingSwitches.useTrend = function useTrend() {
+  return useSwitch("trend");
+};
+
+/** "default" or "long". */
+StagingSwitches.useName = function useName() {
+  return useSwitch("name");
 };
 
 /** false by default; true with ?announce=on. */

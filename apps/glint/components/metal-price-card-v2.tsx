@@ -40,6 +40,10 @@
 // 2Y: Market has 1M, 3M, 1Y and 5Y. Figma's 2Y is the last two years of
 // the 5Y series (monthly points), cut here so Market stays as it is.
 //
+// ?trend=down | neutral (StagingSwitches) reshapes the drawn series so the
+// Down and Neutral slides can be seen: the real prices only rise over these
+// ranges. Off by default; not real prices.
+//
 // ASSUMPTIONS: the figures are Market's LBMA series, not Figma's samples
 // ($131.82, $125.39 to $179.95), so the state a range shows depends on
 // the real prices; the change line's "past 2 years" and "past 5 years"
@@ -50,6 +54,7 @@ import { ArrowRight, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Persona } from "@/lib/persona";
 import { Market } from "@/lib/market";
 import { DisplayNumber } from "@/components/display-number";
+import { StagingSwitches } from "@/lib/staging-switches";
 import { WebDsV2 } from "@/components/web-ds-v2";
 
 const RANGES = ["1M", "1Y", "2Y", "5Y"];
@@ -87,11 +92,14 @@ function MetalPriceCardV2({ metal = "gold", className }) {
   const latest = Market.latest(metal);
   const price = unit === "oz" ? latest.usdPerOz : latest.usdPerG;
 
-  /* The range in the preferred unit. */
-  const data = rowsFor(metal, range).map(([d, usdPerG]) => ({
-    d,
-    price: Math.round((unit === "oz" ? usdPerG * Market.OZ : usdPerG) * 100) / 100,
-  }));
+  const trend = StagingSwitches.useTrend();
+  /* The range in the preferred unit, reshaped by ?trend= (see above). */
+  const raw = rowsFor(metal, range).map(([d, usdPerG]) => [d, unit === "oz" ? usdPerG * Market.OZ : usdPerG]);
+  const start = raw[0]?.[1] ?? 0;
+  const end = raw[raw.length - 1]?.[1] ?? 0;
+  const k = trend === "neutral" && end !== start ? Math.abs((0.005 * start) / (end - start)) : 1;
+  const shape = (v) => (trend === "down" ? 2 * start - v : start + (v - start) * k);
+  const data = raw.map(([d, v]) => ({ d, price: Math.round(shape(v) * 100) / 100 }));
   const values = data.map((p) => p.price);
   const lo = Math.min(...values);
   const hi = Math.max(...values);
