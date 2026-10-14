@@ -178,7 +178,7 @@ function CountriesV2() {
 CountriesV2.Picker = Picker;
 CountriesV2.dial = (code) => `+${DIAL[code] ?? ""}`;
 CountriesV2.flag = flag;
-CountriesV2.name = name;
+CountriesV2.countryName = name;
 
 /* Exported untyped: the body is plain JSX (see the header). */
 const __CountriesV2: any = CountriesV2;
