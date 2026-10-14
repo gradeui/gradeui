@@ -223,5 +223,33 @@
       "find": "{rows.map((n) => (",
       "replace": "{rows.map((n: any) => ("
     }
+  ],
+  "app/log-in/passcode/page.tsx": [
+    {
+      "why": "14 Oct: the Login reset steps are plain Studio JSX with refs, events and a counter state; checked as the mechanical twins are, by not checking them, instead of a dozen annotations each",
+      "find": "\"use client\";",
+      "replace": "// @ts-nocheck: promoted Studio JSX, see scripts/promotion-patches.json.\n\"use client\";"
+    }
+  ],
+  "app/log-in/forgot-passcode/page.tsx": [
+    {
+      "why": "14 Oct: the Login reset steps are plain Studio JSX with refs, events and a counter state; checked as the mechanical twins are, by not checking them, instead of a dozen annotations each",
+      "find": "\"use client\";",
+      "replace": "// @ts-nocheck: promoted Studio JSX, see scripts/promotion-patches.json.\n\"use client\";"
+    }
+  ],
+  "app/log-in/verify/page.tsx": [
+    {
+      "why": "14 Oct: the Login reset steps are plain Studio JSX with refs, events and a counter state; checked as the mechanical twins are, by not checking them, instead of a dozen annotations each",
+      "find": "\"use client\";",
+      "replace": "// @ts-nocheck: promoted Studio JSX, see scripts/promotion-patches.json.\n\"use client\";"
+    }
+  ],
+  "app/log-in/new-passcode/page.tsx": [
+    {
+      "why": "14 Oct: the Login reset steps are plain Studio JSX with refs, events and a counter state; checked as the mechanical twins are, by not checking them, instead of a dozen annotations each",
+      "find": "\"use client\";",
+      "replace": "// @ts-nocheck: promoted Studio JSX, see scripts/promotion-patches.json.\n\"use client\";"
+    }
   ]
 }

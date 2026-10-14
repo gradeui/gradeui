@@ -150,8 +150,8 @@ export const SCREENS: ScreenEntry[] = [
     name: "Dashboard — logged-in home v2",
     id: "dmuppmsu1t19c",
     aliases: ["Dashboard — logged-in home"],
-    promotedAt: 1791399481858,
-    sourceHash: "b4eddad17018",
+    promotedAt: 1792007390435,
+    sourceHash: "8b5a78321bc4",
   },
   {
     slug: "/console/bank-accounts",
@@ -166,8 +166,8 @@ export const SCREENS: ScreenEntry[] = [
     name: "Activity — history v2",
     id: "dmupumb6uwgoj",
     aliases: ["Activity — history"],
-    promotedAt: 1791399537215,
-    sourceHash: "d1a87fe1da86",
+    promotedAt: 1792007391997,
+    sourceHash: "8962b6add177",
   },
   {
     slug: "/console/wallets/gold",
@@ -235,8 +235,38 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/log-in/code",
     name: "Log in code v2",
     id: "dmur2qa05uort",
-    promotedAt: 1791397179803,
-    sourceHash: "ad9838fdceea",
+    promotedAt: 1792007012083,
+    sourceHash: "f6821d07fd82",
+  },
+  /* Staging, 14 Oct 2026: the rest of Full New's Login page, the passcode
+     after the code and the reset (forgot, verify, choose new). */
+  {
+    slug: "/log-in/passcode",
+    name: "Log in passcode v2",
+    id: "dmv8iphang26p",
+    promotedAt: 1792007013839,
+    sourceHash: "f0b19cbe92b6",
+  },
+  {
+    slug: "/log-in/forgot-passcode",
+    name: "Forgot passcode v2",
+    id: "dmv8ipitiwy4d",
+    promotedAt: 1792007015814,
+    sourceHash: "c6fb3c35d20c",
+  },
+  {
+    slug: "/log-in/verify",
+    name: "Verify account v2",
+    id: "dmv8ipk6sspxj",
+    promotedAt: 1792007017588,
+    sourceHash: "cfe3fe0819da",
+  },
+  {
+    slug: "/log-in/new-passcode",
+    name: "New passcode v2",
+    id: "dmv8iplq561t8",
+    promotedAt: 1792007019581,
+    sourceHash: "78537f803229",
   },
   {
     slug: "/404",

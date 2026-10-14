@@ -72,6 +72,14 @@
 // RATES: "1 g = $105.33" (2 places) for gold, "1 g = $1.5633" (4 places)
 // for silver, as the slides write them; ounces read "1 oz = $X".
 //
+// TOASTS (14 Oct, System states Toast · Progress and Success): confirming
+// raises "Buying Gold..." with "$X from your USD wallet." and a filling
+// gold bar, then "Gold bought" with "N g is in your <vault> vault.", View
+// opening Activity. ASSUMPTIONS: the progress runs for 1.2 s, since the
+// demo settles at once; the drawer still shows its own Success; a sell
+// mirrors the copy ("Selling Silver...", "$X to your USD wallet.",
+// "Silver sold", "N g sold from your <vault> vault.").
+//
 // ASSUMPTIONS, NOT IN FIGMA:
 //   - the Default slide's amount field shows a search icon, a leftover of
 //     the FormField's default prefix (the Over balance slide has none); it
@@ -91,6 +99,8 @@ import { VaultsV2 } from "@/lib/vaults-v2";
 import { Wordmark } from "@/components/wordmark";
 import { SideDrawer } from "@/components/side-drawer";
 import { WebDsV2 } from "@/components/web-ds-v2";
+
+const ACTIVITY = "Activity — history v2";
 
 const METAL_LABEL = { gold: "Gold", silver: "Silver" };
 const FEE = 0.009;
@@ -262,6 +272,31 @@ function TradeFlowV2({ metal = "gold", direction = "buy", children }) {
       reference: `GX-${String(at).slice(-8, -4)}-${String(at).slice(-4)}`,
     });
     setStep("done");
+    const toastId = `trade-${at}`;
+    const qtyLine = `${grams.toFixed(4)} g`;
+    WebDsV2.toast({
+      id: toastId,
+      type: "progress",
+      title: selling ? `Selling ${label}...` : `Buying ${label}...`,
+      body: `${Persona.fmtMoney(total)} ${selling ? "to" : "from"} your USD wallet.`,
+      progress: 50,
+      action: "View",
+      goto: ACTIVITY,
+      closable: false,
+      duration: 0,
+    });
+    window.setTimeout(() => {
+      WebDsV2.toast({
+        id: toastId,
+        type: "success",
+        title: selling ? `${label} sold` : `${label} bought`,
+        body: selling
+          ? `${qtyLine} sold from your ${VaultsV2.label(vault)} vault.`
+          : `${qtyLine} is in your ${VaultsV2.label(vault)} vault.`,
+        action: "View",
+        goto: ACTIVITY,
+      });
+    }, 1200);
   };
 
   const onOpenChange = (next) => {

@@ -17,16 +17,18 @@
 //                           (Ali, 2 Oct: "I think the subtle metals work
 //                           for Web"); metal stays one parameter away for
 //                           comparison.
-//   ?state=live | empty | error | offline   (14 Oct) The System states
+//   ?state=live | empty | error | inline | offline   (14 Oct) The System states
 //                           slides of "Glint - Web Portal - Full New",
 //                           which nothing in the demo would otherwise
 //                           reach: EMPTY is a business with nothing yet
 //                           (no activity, no metal: the Gold and Silver
 //                           No holdings slides and Empty · Activity);
 //                           ERROR is the in-shell error page (Error ·
-//                           Page); OFFLINE is Wallets failing to load
-//                           (Error · Inline) with the Couldn't connect
-//                           toast. LIVE (the default) is the demo.
+//                           Page); INLINE is Wallets failing to load its
+//                           cards (Error · Inline); OFFLINE is the
+//                           Couldn't connect toast (Toast · Error). LIVE
+//                           (the default) is the demo; Try again and
+//                           Retry now go back to it.
 //   ?announce=on | off      (14 Oct) The announcement bar over the
 //                           Wallets page (Announcement bar · Default).
 //                           Off by default; dismissing it hides it for
@@ -61,7 +63,7 @@ const SWITCHES = {
   /* ASSUMPTION (7 Oct): auto-buy shows by default on staging now. To put
      it back behind ?autobuy=on, change this fallback to "off". */
   autobuy: { key: "glint-autobuy", values: ["off", "on"], fallback: "on" },
-  state: { key: "glint-state", values: ["live", "empty", "error", "offline"], fallback: "live" },
+  state: { key: "glint-state", values: ["live", "empty", "error", "inline", "offline"], fallback: "live" },
   announce: { key: "glint-announce", values: ["off", "on"], fallback: "off" },
 };
 
@@ -127,7 +129,7 @@ StagingSwitches.useCards = function useCards() {
   return useSwitch("cards");
 };
 
-/** "live" (the default), "empty", "error" or "offline". */
+/** "live" (the default), "empty", "error", "inline" or "offline". */
 StagingSwitches.useState = function useStateSwitch() {
   return useSwitch("state");
 };

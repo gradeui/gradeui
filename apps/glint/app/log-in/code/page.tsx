@@ -1,16 +1,17 @@
 "use client";
 
 // Promoted from Studio screen "Log in code v2"
-// (design dmur2qa05uort, version 1791397179803). Registry: lib/screens.ts;
+// (design dmur2qa05uort, version 1792007012083). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: ad9838fdceea
+// source-hash: f6821d07fd82
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
 
 // Log in code v2 (2 Oct 2026): step two of the business portal's sign in,
 // the one-time code. Six digits; the sixth continues on its own to the
-// Wallets page, as the Web Portal file's Login · Code slides describe.
+// passcode step (14 Oct: Full New adds Login · Passcode after the code;
+// before that it went straight to the Wallets page).
 //
 // ASSUMPTION, A DEMO, NOT AUTH: no code is sent and none is checked. Any
 // six digits continue, except 000000, which is the demo's wrong code so
@@ -39,7 +40,7 @@ import { LoginTemplateV2 } from "@/components/login-template-v2";
 import { Persona } from "@/lib/persona";
 import { WebDsV2 } from "@/components/web-ds-v2";
 
-const WALLETS = "Dashboard — logged-in home v2";
+const NEXT = "Log in passcode v2";
 const SIGN_IN = "Log in v2";
 const LENGTH = 6;
 /** The demo's wrong code (see the header). */
@@ -161,7 +162,7 @@ export default function LogInCodePage() {
         ref={continueRef}
         size="lg"
         className="mt-8 w-full"
-        data-grade-goto={ok ? WALLETS : undefined}
+        data-grade-goto={ok ? NEXT : undefined}
         onClick={next}
       >
         Continue
@@ -182,4 +183,3 @@ export default function LogInCodePage() {
     </LoginTemplateV2>
   );
 }
-

@@ -34,6 +34,7 @@
 //   <WebDsV2.Input invalid>                       Web DS Input (lg, filled)
 //   WebDsV2.SELECT_TRIGGER                        classes for a DS SelectTrigger
 //   <WebDsV2.OtpGroup><WebDsV2.OtpSlot invalid>   Web DS OTPInput + OTPSlot
+//   <WebDsV2.OtpField id length value onChange invalid onEnter>  the same, keys handled
 //   <WebDsV2.MetalButton metal>                   Web DS Button gold / silver
 //   <WebDsV2.Badge variant>                       Web DS Badge
 //   <WebDsV2.Segmented value options onValueChange>  Web DS ToggleGroup, segmented sm
@@ -48,6 +49,10 @@
 //   <WebDsV2.Alert tone title>body</WebDsV2.Alert>   Web DS Alert
 //   <WebDsV2.Progress value />, <WebDsV2.Summary>, <WebDsV2.Field label helper error>
 //   WebDsV2.v("input-background")                 "var(--wds-input-background)"
+//   <WebDsV2.EmptyState tone title body actions>   Web DS EmptyState (14 Oct)
+//   <WebDsV2.AnnouncementBar message link onLink onDismiss>  Web DS AnnouncementBar
+//   <WebDsV2.Toast type title body action onAction onClose progress>  Web DS Toast
+//   WebDsV2.toast({...}) / <WebDsV2.ToastHost />  raise a toast / show them
 import * as React from "react";
 import {
   Plus,
@@ -65,6 +70,7 @@ import {
   Copy,
   Info,
   ChevronRight,
+  Repeat2,
 } from "lucide-react";
 
 const PRIMITIVES = {
@@ -409,6 +415,75 @@ WebDsV2.OtpSlot = React.forwardRef(function WebDsV2OtpSlot({ invalid, className,
     />
   );
 });
+
+/* An OTPInput that owns its keys (14 Oct, for the Login passcode steps):
+   `value` is the digit string, `onChange(next)` gets the new one. Typing
+   moves on, Backspace on an empty slot steps back and clears it, the
+   arrows move, a paste fills from the slot it lands in, and Enter calls
+   onEnter. Slot ids are `${id}-0` and on, so a label can point at the
+   first. */
+WebDsV2.OtpField = function WebDsV2OtpField({ id, length = 4, value = "", onChange, invalid, autoFocus, onEnter }) {
+  const cells = React.useRef([]);
+  const digits = Array.from({ length }, (_, i) => value[i] ?? "");
+  const write = (next) => onChange?.(next.join("").slice(0, length));
+  const fill = (from, text) => {
+    const incoming = text.replace(/\D/g, "").slice(0, length - from).split("");
+    if (!incoming.length) return;
+    const next = [...digits];
+    incoming.forEach((d, k) => (next[from + k] = d));
+    write(next);
+    cells.current[Math.min(from + incoming.length, length - 1)]?.focus();
+  };
+  const clear = (i) => {
+    const next = [...digits];
+    next[i] = "";
+    /* Keep the digits after a cleared slot where they are. */
+    onChange?.(next.map((d) => d || " ").join("").trimEnd().replace(/ /g, ""));
+  };
+  return (
+    <WebDsV2.OtpGroup>
+      {digits.map((d, i) => (
+        <WebDsV2.OtpSlot
+          key={i}
+          id={`${id}-${i}`}
+          ref={(el) => {
+            cells.current[i] = el;
+          }}
+          autoComplete="off"
+          aria-label={`Digit ${i + 1} of ${length}`}
+          autoFocus={autoFocus && i === 0}
+          invalid={invalid}
+          value={d}
+          onChange={(e) => {
+            let v = e.target.value.replace(/\D/g, "");
+            if (!v) return clear(i);
+            if (d && v.length === 2) v = v[0] === d ? v[1] : v[0];
+            fill(i, v);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Backspace" && !digits[i] && i > 0) {
+              e.preventDefault();
+              clear(i - 1);
+              cells.current[i - 1]?.focus();
+            } else if (e.key === "ArrowLeft" && i > 0) {
+              cells.current[i - 1]?.focus();
+            } else if (e.key === "ArrowRight" && i < length - 1) {
+              cells.current[i + 1]?.focus();
+            } else if (e.key === "Enter") {
+              e.preventDefault();
+              onEnter?.();
+            }
+          }}
+          onPaste={(e) => {
+            e.preventDefault();
+            fill(i, e.clipboardData.getData("text"));
+          }}
+          onFocus={(e) => e.target.select()}
+        />
+      ))}
+    </WebDsV2.OtpGroup>
+  );
+};
 
 /* Web DS Button, Variant=gold / silver (lg): a 999 pill (shape="square"
    gives the 8 corners of every other Web DS Button, as the wallet cards
@@ -902,6 +977,184 @@ WebDsV2.Field = function WebDsV2Field({ label, htmlFor, aside, helper, error, ga
       {children}
       {helper ? <span className="text-xs leading-4 text-[color:var(--wds-muted-foreground)]">{helper}</span> : null}
       {error ? <span className="text-xs leading-4 text-[color:var(--wds-destructive)]">{error}</span> : null}
+    </div>
+  );
+};
+
+/* Web DS EmptyState (14 Oct, the System states slides: Empty · Activity,
+   Error · Page, Error · Inline): 48 above and below, 32 sides, 16 between,
+   centred. A 48 icon box (card, a border, 14 corners) with a 24 circle-alert;
+   the title Raleway Bold 24/32 over the body Chivo 16/24 muted-foreground,
+   8 apart; then the actions, 8 above them and 12 apart (Web DS Button lg,
+   primary then outline). The slides draw the glyph in foreground for both
+   tones; critical turns it destructive in the component, which the slides
+   do not show, so it stays foreground here (ASSUMPTION). */
+WebDsV2.EmptyState = function WebDsV2EmptyState({ title, body, actions, className }) {
+  return (
+    <div className={cx("flex flex-col items-center gap-4 px-8 py-12 text-center", className)}>
+      <span className="flex size-12 items-center justify-center rounded-[14px] border border-[color:var(--wds-border)] bg-[var(--wds-card)] text-[color:var(--wds-foreground)]">
+        <CircleAlert className="size-6" strokeWidth={2} />
+      </span>
+      <span className="flex max-w-[640px] flex-col gap-2">
+        <span className="wds-display text-2xl font-bold leading-8 text-[color:var(--wds-foreground)]">{title}</span>
+        {body ? <span className="text-base leading-6 text-[color:var(--wds-muted-foreground)]">{body}</span> : null}
+      </span>
+      {actions ? <span className="flex items-center gap-3 pt-2">{actions}</span> : null}
+    </div>
+  );
+};
+
+/* Web DS AnnouncementBar, Layout=desktop (Announcement bar · Default):
+   card with a border, 10 corners, 8 8 8 16 inside, 12 between; a 16 icon
+   in the gold token, the message Chivo 14/20 in foreground and its link
+   Chivo Medium 14/20 in primary, 12 apart; a 28 Dismiss with a 16 X in
+   muted-foreground. */
+WebDsV2.AnnouncementBar = function WebDsV2AnnouncementBar({ message, link, onLink, onDismiss, className }) {
+  return (
+    <div
+      role="region"
+      aria-label="Announcement"
+      className={cx(
+        "flex items-center gap-3 rounded-[10px] border border-[color:var(--wds-border)] bg-[var(--wds-card)] py-2 pl-4 pr-2",
+        className,
+      )}
+    >
+      <Repeat2 aria-hidden className="size-4 shrink-0 text-[color:var(--wds-gold)]" strokeWidth={2} />
+      <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 text-sm leading-5">
+        <span className="text-[color:var(--wds-foreground)]">{message}</span>
+        {link ? (
+          <button type="button" onClick={onLink} className={cx("cursor-pointer font-medium text-[color:var(--wds-primary)] hover:underline", FOCUS)}>
+            {link}
+          </button>
+        ) : null}
+      </span>
+      {onDismiss ? (
+        <button
+          type="button"
+          aria-label="Dismiss"
+          onClick={onDismiss}
+          className={cx("flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[8px] text-[color:var(--wds-muted-foreground)] hover:bg-[var(--wds-accent)]", FOCUS)}
+        >
+          <X className="size-4" />
+        </button>
+      ) : null}
+    </div>
+  );
+};
+
+/* Web DS Toast (Toast · Error, Progress, Success): ALWAYS the Dark look, as
+   the Light slides draw it too: neutral/700 with a 10% white edge, 14
+   corners, 12 12 12 16 inside, 12 between, 400 wide. A 16 glyph 2 down
+   (success green/400, error red/400, progress gold/300, info primary/400);
+   the title Chivo SemiBold 14/20 in white over the body Chivo 14/20 in
+   neutral/300, 2 apart; progress adds a 4 track (neutral/600) with the
+   gold/300 indicator, 3 under the body. The action is a 32 ghost button
+   in primary/400; Close a 20 box with a 16 X in neutral/300. ASSUMPTION:
+   every slide draws a clock for the glyph, so every type uses it. */
+const TOAST_INK = {
+  success: "var(--wds-green-400)",
+  error: "var(--wds-red-400)",
+  progress: "var(--wds-gold-300)",
+  info: "var(--wds-primary-400)",
+};
+WebDsV2.Toast = function WebDsV2Toast({ type = "info", title, body, action, actionGoto, onAction, onClose, progress, className }) {
+  return (
+    <div
+      role={type === "error" ? "alert" : "status"}
+      className={cx(
+        "flex w-[400px] max-w-[calc(100vw-32px)] items-start gap-3 rounded-[14px] border py-3 pl-4 pr-3 shadow-[0_10px_15px_-3px_var(--wds-shadow),0_4px_6px_-4px_var(--wds-shadow)]",
+        className,
+      )}
+      style={{ background: "var(--wds-neutral-700)", borderColor: "rgba(255,255,255,0.1)" }}
+    >
+      <span className="flex shrink-0 pt-0.5" style={{ color: TOAST_INK[type] ?? TOAST_INK.info }}>
+        <Clock className="size-4" strokeWidth={2} />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-sm font-semibold leading-5" style={{ color: "var(--wds-base-white)" }}>{title}</span>
+        {body ? <span className="text-sm leading-5" style={{ color: "var(--wds-neutral-300)" }}>{body}</span> : null}
+        {progress != null ? (
+          <span className="mt-[3px] block h-1 w-full overflow-hidden rounded-full" style={{ background: "var(--wds-neutral-600)" }}>
+            <span
+              className="block h-full rounded-full transition-[width] duration-300"
+              style={{ width: `${Math.max(0, Math.min(100, progress))}%`, background: "var(--wds-gold-300)" }}
+            />
+          </span>
+        ) : null}
+      </span>
+      {action ? (
+        <button
+          type="button"
+          data-grade-goto={actionGoto}
+          onClick={onAction}
+          className={cx("h-8 shrink-0 cursor-pointer rounded-[8px] px-3 text-sm font-medium leading-5 hover:bg-white/10", FOCUS)}
+          style={{ color: "var(--wds-primary-400)" }}
+        >
+          {action}
+        </button>
+      ) : null}
+      {onClose ? (
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={onClose}
+          className={cx("flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-[8px]", FOCUS)}
+          style={{ color: "var(--wds-neutral-300)" }}
+        >
+          <X className="size-4" />
+        </button>
+      ) : null}
+    </div>
+  );
+};
+
+/* Raising a toast from anywhere: WebDsV2.toast({ id, type, title, body,
+   action, goto, progress, duration }). A toast with the same id replaces
+   the one showing (progress, then its result). duration in ms; 0 keeps
+   it until closed. The host (mounted once by AppChromeV2) shows them
+   bottom right, 24 in, newest last. */
+WebDsV2.toast = function toast(detail) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("glint:toast", { detail }));
+};
+WebDsV2.ToastHost = function WebDsV2ToastHost() {
+  const [items, setItems] = React.useState([]);
+  React.useEffect(() => {
+    const timers = new Map();
+    const drop = (id) => setItems((xs) => xs.filter((x) => x.id !== id));
+    const on = (e) => {
+      const t = { id: `t${Date.now()}`, duration: 6000, ...e.detail };
+      setItems((xs) => [...xs.filter((x) => x.id !== t.id), t]);
+      clearTimeout(timers.get(t.id));
+      if (t.duration) timers.set(t.id, setTimeout(() => drop(t.id), t.duration));
+    };
+    window.addEventListener("glint:toast", on);
+    return () => {
+      window.removeEventListener("glint:toast", on);
+      timers.forEach(clearTimeout);
+    };
+  }, []);
+  const close = (id) => setItems((xs) => xs.filter((x) => x.id !== id));
+  if (!items.length) return null;
+  return (
+    <div className="pointer-events-none fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-3">
+      {items.map((t) => (
+        <div key={t.id} className="pointer-events-auto">
+          <WebDsV2.Toast
+            type={t.type}
+            title={t.title}
+            body={t.body}
+            progress={t.progress}
+            action={t.action}
+            actionGoto={t.goto}
+            onAction={() => {
+              t.onAction?.();
+              close(t.id);
+            }}
+            onClose={t.closable === false ? undefined : () => close(t.id)}
+          />
+        </div>
+      ))}
     </div>
   );
 };

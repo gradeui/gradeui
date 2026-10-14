@@ -53,6 +53,10 @@
 //     Notifications and the menu (panel-left), which opens the sidebar as a
 //     sheet from the left.
 //   - The colour is the Web DS's: <WebDsV2 /> is mounted here.
+//   - SYSTEM STATES (14 Oct, StagingSwitches ?state=): "error" swaps every
+//     page's content for the Web DS EmptyState of Error · Page; "offline"
+//     raises Toast · Error. The toasts (WebDsV2.toast) show from the host
+//     mounted here. Try again and Retry now return to ?state=live.
 //
 // ASSUMPTION, THE NAV'S SECOND LINES: Figma's "£29.85 total" and "3 since
 // yesterday" are sample data. Here they are live: the dollar total of the
@@ -89,6 +93,7 @@ import { Wordmark } from "@/components/wordmark";
 import { Persona } from "@/lib/persona";
 import { PortalV2 } from "@/lib/portal-v2";
 import { RingLattice } from "@/components/ring-lattice";
+import { StagingSwitches } from "@/lib/staging-switches";
 import { WebDsV2 } from "@/components/web-ds-v2";
 
 /* GLINT'S TAB ICONS, from Figma Primatives & Helpers, page "Glint icons",
@@ -524,6 +529,19 @@ function AppChromeV2({
   }, [menuOpen]);
   /* useWebDsType() is Studio only: the app sets the Web DS type in
      app/globals.css and loads the faces with next/font. */
+  const sys = StagingSwitches.useState();
+  React.useEffect(() => {
+    if (sys !== "offline") return;
+    WebDsV2.toast({
+      id: "offline",
+      type: "error",
+      title: "Couldn’t connect. Retrying...",
+      body: "Your balances will update when we’re back.",
+      action: "Retry now",
+      duration: 0,
+      onAction: backToLive,
+    });
+  }, [sys]);
 
   const [gold] = Persona.useBalance("gold");
   const [silver] = Persona.useBalance("silver");
@@ -620,11 +638,46 @@ function AppChromeV2({
           </header>
         </div>
 
-        <SlotContext.Provider value={registerSlot}>{children}</SlotContext.Provider>
+        <SlotContext.Provider value={registerSlot}>
+          {sys === "error" ? (
+            <AppChromeV2.Main>
+              <WebDsV2.EmptyState
+                title="Something went wrong"
+                body="We couldn’t load this page. Try again, or contact support if it keeps happening."
+                actions={
+                  <>
+                    <WebDsV2.Button size="lg" onClick={backToLive}>
+                      Try again
+                    </WebDsV2.Button>
+                    <WebDsV2.Button size="lg" variant="outline">
+                      Contact support
+                    </WebDsV2.Button>
+                  </>
+                }
+              />
+            </AppChromeV2.Main>
+          ) : (
+            children
+          )}
+        </SlotContext.Provider>
       </div>
+      <WebDsV2.ToastHost />
     </div>
   );
 }
+
+/** Try again / Retry now: this page again, on ?state=live. */
+function backToLive() {
+  try {
+    const u = new URL(window.location.href);
+    u.searchParams.set("state", "live");
+    window.location.assign(u.toString());
+  } catch {
+    /* a frame that cannot navigate: nothing to retry */
+  }
+}
+
+AppChromeV2.backToLive = backToLive;
 
 /** Compound part: a screen's content for a region of the header. Renders
  *  nothing in place. region defaults to "leading"; id lets one screen fill

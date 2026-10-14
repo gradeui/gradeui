@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Activity — history v2"
-// (design dmupumb6uwgoj, version 1791399537215). Registry: lib/screens.ts;
+// (design dmupumb6uwgoj, version 1792007391997). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: d1a87fe1da86
+// source-hash: 8962b6add177
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -26,6 +26,7 @@ import * as React from "react";
 import { AppChromeV2 } from "@/components/layouts/app-chrome-v2";
 import { Persona } from "@/lib/persona";
 import { ActivityListV2 } from "@/components/activity-list-v2";
+import { StagingSwitches } from "@/lib/staging-switches";
 import { WebDsV2 } from "@/components/web-ds-v2";
 
 const FILTERS = [
@@ -37,12 +38,15 @@ const FILTERS = [
 export default function ActivityPage() {
   const [filter, setFilter] = React.useState<"all" | "gold" | "silver">("all");
   const rows = Persona.useActivity(filter === "all" ? undefined : filter);
+  /* ?state=empty (14 Oct): System · Empty · Activity, the title and the
+     Web DS EmptyState, no buttons and no filter, as the slide draws it. */
+  const empty = StagingSwitches.useState() === "empty";
   return (
     <>
       <AppChromeV2.Main className="md:gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <AppChromeV2.Title>Activity</AppChromeV2.Title>
-          <div className="flex items-center gap-2">
+          <div className={empty ? "hidden" : "flex items-center gap-2"}>
             <WebDsV2.Button variant="outline" size="sm">
               Download statement
             </WebDsV2.Button>
@@ -51,8 +55,14 @@ export default function ActivityPage() {
             </WebDsV2.Button>
           </div>
         </div>
-        <WebDsV2.Segmented aria-label="Show" value={filter} onValueChange={setFilter} options={FILTERS} />
-        <ActivityListV2 rows={rows} lead="metal" />
+        {empty ? (
+          <WebDsV2.EmptyState title="No activity yet" body="Trades, deposits and withdrawals will show here." />
+        ) : (
+          <>
+            <WebDsV2.Segmented aria-label="Show" value={filter} onValueChange={setFilter} options={FILTERS} />
+            <ActivityListV2 rows={rows} lead="metal" />
+          </>
+        )}
       </AppChromeV2.Main>
     </>
   );
