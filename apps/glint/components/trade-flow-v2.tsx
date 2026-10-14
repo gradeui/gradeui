@@ -72,6 +72,16 @@
 // RATES: "1 g = $105.33" (2 places) for gold, "1 g = $1.5633" (4 places)
 // for silver, as the slides write them; ounces read "1 oz = $X".
 //
+// VAULT ROWS (14 Oct, Ali: Buy as the Glint build "EXACTLY"): each row says
+// "252.0000 g held here" under the vault, there is no Latest tag, and a buy
+// starts with no vault chosen (Review waits for one). ASSUMPTION: Sell's
+// rows say "held here" too, as on the Glint build, and keep their first
+// vault chosen, as its Sell from does. This reverses Ali's 7 Oct removal
+// of "held here".
+// PENDING SELLS (14 Oct): a sale is Pending in the activity until it
+// settles, as on the Glint build, which feeds the USD activity's pending
+// sells alert. ASSUMPTION: the dollars still reach the USD wallet at once.
+//
 // TOASTS (14 Oct, System states Toast · Progress and Success): confirming
 // raises "Buying Gold..." with "$X from your USD wallet." and a filling
 // gold bar, then "Gold bought" with "N g is in your <vault> vault.", View
@@ -179,7 +189,7 @@ function TradeFlowV2({ metal = "gold", direction = "buy", children }) {
     if (!latestRow || row.timestamp > latestRow.timestamp) latestRow = row;
   }
   const latest = latestRow ? VaultsV2.id(latestRow.vault) : undefined;
-  const vault = vaultChoice ?? latest ?? choices[0];
+  const vault = vaultChoice ?? (selling ? latest ?? choices[0] : undefined);
   const heldQty = (v) => Market.toQty(held(v), metal, unit);
 
   /* The quote: the market rate, held for 30 s on Review, then refreshed
@@ -201,7 +211,7 @@ function TradeFlowV2({ metal = "gold", direction = "buy", children }) {
   const total = selling ? value - fee : value + fee;
   const holdingQty = selling ? heldQty(vault) : 0;
   const over = !fromLock && has && (selling ? qty > holdingQty + 0.00005 : total > fiat + 0.005);
-  const valid = has && !over;
+  const valid = has && !over && Boolean(vault);
 
   React.useEffect(() => {
     if (step !== "review" || order) return;
@@ -263,7 +273,7 @@ function TradeFlowV2({ metal = "gold", direction = "buy", children }) {
       fiatAmount: selling ? Math.round(total * 100) / 100 : -Math.round(total * 100) / 100,
       rate: quote,
       type: "exchange",
-      status: "completed",
+      status: selling ? "pending" : "completed",
       account: metal,
       counterAccount: "fiat",
       vault,
@@ -311,7 +321,7 @@ function TradeFlowV2({ metal = "gold", direction = "buy", children }) {
           key={v}
           selected={v === vault}
           title={VaultsV2.label(v)}
-          badge={v === latest ? "Latest" : undefined}
+          description={`${qtyText(heldQty(v), unit).replace(/ oz$/, " oz t")} held here`}
           onSelect={() => setVaultChoice(v)}
         />
       ))}

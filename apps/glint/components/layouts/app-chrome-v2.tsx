@@ -53,6 +53,29 @@
 //     Notifications and the menu (panel-left), which opens the sidebar as a
 //     sheet from the left.
 //   - The colour is the Web DS's: <WebDsV2 /> is mounted here.
+//   - SEARCH (14 Oct, Ali: "add it because its there - as I want to match"):
+//     the Glint build's search button, left of the bell, opens its command
+//     palette, "Search or jump to…", with exactly its five entries in two
+//     groups (Console: Wallets, Activity; Account: Notifications, Account,
+//     Your settings); typing filters those five and nothing else, as on the
+//     Glint build. Measured off its capture: 576 wide, 105 from the top,
+//     popover with a border, 16 corners, 8 inside; a 32 input on
+//     input-background; 12/16 group labels; 32 rows, 8 corners, accent on
+//     the active one. Up, Down and Enter work; Escape or a press outside
+//     closes; Cmd or Ctrl K opens it. ASSUMPTION, THE MAPPING: Account goes
+//     to Business profile (the business's account) and Your settings to
+//     Profile.
+//   - HELP (14 Oct, Ali: "we can add in the help at the bottom"): a 16
+//     circle-help and "Help" pinned to the foot of the sidebar, as the
+//     Glint build has it; the collapsed rail keeps the icon. It opens
+//     nothing (the demo has no help pages).
+//   - COLLAPSED (14 Oct): the Web DS Sidebar's State=Collapsed, the 64 rail:
+//     the trigger on top, the business as a 56 box (its 36 initials tile),
+//     each nav item as its 36 tile in a 56 slot (the lit one on
+//     sidebar-accent with 16 corners), Help at the foot. Pressing the
+//     trigger expands it again. ASSUMPTION: Ali said "no icon rail" and
+//     also to follow Figma's collapsed version, which is this rail; it is
+//     Figma's rail, not the Glint build's.
 //   - SYSTEM STATES (14 Oct, StagingSwitches ?state=): "error" swaps every
 //     page's content for the Web DS EmptyState of Error · Page; "offline"
 //     raises Toast · Error. The toasts (WebDsV2.toast) show from the host
@@ -88,6 +111,12 @@ import {
   ChevronRight,
   Briefcase,
   LogOut,
+  Search,
+  Wallet,
+  List,
+  Settings,
+  CircleUser,
+  CircleHelp,
 } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { Persona } from "@/lib/persona";
@@ -345,6 +374,11 @@ function SidebarBody({ active, business, describe, onTrigger, onNavigate, person
             );
           })}
         </nav>
+        {person ? null : (
+          <div className="mt-auto flex flex-col">
+            <HelpRow />
+          </div>
+        )}
         {/* THE PHONE MENU'S ACCOUNT ROWS (14 Oct). Below md there is no
             header avatar, so Profile and Sign out were unreachable on a
             phone (12 Oct bug list). ASSUMPTION: Full New draws no phone
@@ -381,6 +415,230 @@ function SidebarBody({ active, business, describe, onTrigger, onNavigate, person
         ) : null}
       </div>
     </div>
+  );
+}
+
+/** Help at the foot of the sidebar (see HELP above). */
+function HelpRow() {
+  return (
+    <button
+      type="button"
+      className={cx(
+        "relative mx-2 mb-3 flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-[8px] px-4 text-left text-sm leading-5 text-[color:var(--wds-sidebar-foreground)] transition-colors hover:bg-[var(--wds-sidebar-accent)]",
+        FOCUS,
+      )}
+    >
+      <CircleHelp className="size-4" />
+      Help
+    </button>
+  );
+}
+
+/** The collapsed sidebar: the Web DS Sidebar, State=Collapsed. */
+function SidebarRail({ active, business, onTrigger }) {
+  return (
+    <div className="relative flex h-full w-16 flex-col items-center overflow-hidden bg-[var(--wds-sidebar)]">
+      <RingLattice strength={0.1} fade="top" />
+      <div className="relative flex h-14 shrink-0 items-center justify-center">
+        <button
+          type="button"
+          aria-label="Expand sidebar"
+          onClick={onTrigger}
+          className={cx(
+            "flex size-7 cursor-pointer items-center justify-center rounded-[8px] text-[color:var(--wds-sidebar-foreground)] transition-colors hover:bg-[var(--wds-sidebar-accent)]",
+            FOCUS,
+          )}
+        >
+          <PanelLeft className="size-4" />
+        </button>
+      </div>
+      <div className="relative pt-[22px]">
+        <button
+          type="button"
+          aria-label={business}
+          className={cx(
+            "flex size-14 cursor-pointer items-center justify-center rounded-[10px] border border-[color:var(--wds-sidebar-border)] transition-colors hover:bg-[var(--wds-sidebar-accent)]",
+            FOCUS,
+          )}
+        >
+          <span className="flex size-9 items-center justify-center rounded-[6px] bg-[var(--wds-muted)] text-xs font-medium leading-4 text-[color:var(--wds-muted-foreground)]">
+            {initials(business)}
+          </span>
+        </button>
+      </div>
+      <nav className="relative flex flex-col items-center gap-1 pt-4">
+        {NAV.map((item) => {
+          const Icon = item.icon;
+          const lit = item.label === active;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              aria-label={item.label}
+              data-grade-goto={item.target}
+              aria-current={lit ? "page" : undefined}
+              className={cx(
+                "flex size-14 cursor-pointer items-center justify-center rounded-[16px] transition-colors",
+                lit ? "bg-[var(--wds-sidebar-accent)]" : "hover:bg-[var(--wds-sidebar-accent)]",
+                FOCUS,
+              )}
+            >
+              <span
+                className={cx(
+                  "flex size-9 items-center justify-center rounded-[6px] bg-[var(--wds-sidebar)]",
+                  lit
+                    ? "text-[color:var(--wds-sidebar-accent-foreground)]"
+                    : "border border-[color:var(--wds-sidebar-border)] text-[color:var(--wds-sidebar-foreground)]",
+                )}
+              >
+                <Icon filled={lit} className="size-5" />
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+      <button
+        type="button"
+        aria-label="Help"
+        className={cx(
+          "relative mb-1.5 mt-auto flex size-9 cursor-pointer items-center justify-center rounded-[8px] text-[color:var(--wds-sidebar-foreground)] hover:bg-[var(--wds-sidebar-accent)]",
+          FOCUS,
+        )}
+      >
+        <CircleHelp className="size-4" />
+      </button>
+    </div>
+  );
+}
+
+/* The command palette's entries, exactly the Glint build's (see SEARCH). */
+const SEARCH_GROUPS = [
+  {
+    label: "Console",
+    items: [
+      { label: "Wallets", icon: Wallet, target: "Dashboard — logged-in home v2" },
+      { label: "Activity", icon: List, target: "Activity — history v2" },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { label: "Notifications", icon: Bell, target: "Notifications v2" },
+      { label: "Account", icon: Settings, target: "Business profile v2" },
+      { label: "Your settings", icon: CircleUser, target: "Profile v2" },
+    ],
+  },
+];
+
+/** The header's search button and its command palette. */
+function SearchPalette({ size = "size-5" }) {
+  const [open, setOpen] = React.useState(false);
+  const [q, setQ] = React.useState("");
+  const [at, setAt] = React.useState(0);
+  const inputRef = React.useRef(null);
+  const listRef = React.useRef(null);
+  const groups = SEARCH_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((i) => i.label.toLowerCase().includes(q.trim().toLowerCase())),
+  })).filter((g) => g.items.length);
+  const flat = groups.flatMap((g) => g.items);
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  React.useEffect(() => {
+    if (!open) return;
+    setQ("");
+    setAt(0);
+    window.setTimeout(() => inputRef.current?.focus(), 0);
+  }, [open]);
+  React.useEffect(() => setAt(0), [q]);
+  const go = (i) => {
+    listRef.current?.querySelector(`[data-index="${i}"]`)?.click();
+  };
+  let index = -1;
+  return (
+    <>
+      <IconButton label="Search" onClick={() => setOpen(true)} className="text-[color:var(--wds-muted-foreground)]">
+        <Search className={size} />
+      </IconButton>
+      {open ? (
+        <div className="fixed inset-0 z-50" role="presentation">
+          <div className="absolute inset-0 bg-[var(--wds-overlay)]" onClick={() => setOpen(false)} />
+          <div
+            role="dialog"
+            aria-label="Search"
+            className="relative mx-auto mt-[105px] flex w-[576px] max-w-[calc(100vw-32px)] flex-col rounded-[16px] border border-[color:var(--wds-border)] bg-[var(--wds-popover)] p-2 shadow-[0_10px_15px_-3px_var(--wds-shadow),0_4px_6px_-4px_var(--wds-shadow)]"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setOpen(false);
+              else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setAt((n) => Math.min(flat.length - 1, n + 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setAt((n) => Math.max(0, n - 1));
+              } else if (e.key === "Enter" && flat.length) {
+                e.preventDefault();
+                go(at);
+              }
+            }}
+          >
+            <label className="flex h-8 items-center gap-2 rounded-[8px] border border-[color:var(--wds-input)] bg-[var(--wds-input-background)] px-3">
+              <Search aria-hidden className="size-4 shrink-0 text-[color:var(--wds-muted-foreground)]" />
+              <input
+                ref={inputRef}
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search or jump to…"
+                aria-label="Search or jump to"
+                className="h-full min-w-0 flex-1 bg-transparent text-sm leading-5 text-[color:var(--wds-foreground)] outline-none placeholder:text-[color:var(--wds-muted-foreground)]"
+              />
+            </label>
+            <div ref={listRef} className="flex flex-col pb-0.5">
+              {groups.map((g) => (
+                <div key={g.label} className="flex flex-col">
+                  <span className="px-2 pb-1 pt-3 text-xs font-medium leading-4 text-[color:var(--wds-muted-foreground)]">
+                    {g.label}
+                  </span>
+                  {g.items.map((item) => {
+                    index += 1;
+                    const i = index;
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.label}
+                        type="button"
+                        data-index={i}
+                        data-grade-goto={item.target}
+                        onMouseEnter={() => setAt(i)}
+                        onClick={() => setOpen(false)}
+                        className={cx(
+                          "flex h-8 cursor-pointer items-center gap-3 rounded-[8px] px-2 text-left text-sm leading-5 text-[color:var(--wds-foreground)]",
+                          i === at ? "bg-[var(--wds-accent)]" : "",
+                          FOCUS,
+                        )}
+                      >
+                        <Icon aria-hidden className="size-4 shrink-0 text-[color:var(--wds-muted-foreground)]" />
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+              {groups.length ? null : (
+                <span className="px-2 py-3 text-sm leading-5 text-[color:var(--wds-muted-foreground)]">No results</span>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -569,7 +827,11 @@ function AppChromeV2({
             onTrigger={() => setCollapsed(true)}
           />
         </aside>
-      ) : null}
+      ) : (
+        <aside className="hidden h-full w-16 shrink-0 md:block">
+          <SidebarRail active={active} business={business} onTrigger={() => setCollapsed(false)} />
+        </aside>
+      )}
 
       {/* SidebarInset */}
       <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
@@ -584,6 +846,7 @@ function AppChromeV2({
             <Wordmark tone="current" style={{ height: 24, color: "var(--wds-wordmark)" }} />
           </button>
           <div className="flex items-center gap-1">
+            <SearchPalette size="size-4" />
             <BellButton size="size-4" />
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <IconButton
@@ -614,25 +877,13 @@ function AppChromeV2({
         {/* THE HEADER, md and up: Web DS Header, Surface=raised. */}
         <div className="sticky top-0 z-30 hidden shrink-0 bg-[var(--wds-background)] px-2 py-1.5 md:block">
           <header className="flex h-14 items-center gap-3 rounded-[16px] border border-[color:var(--wds-border)] bg-[var(--wds-card)] px-6">
-            {collapsed ? (
-              <button
-                type="button"
-                aria-label="Expand sidebar"
-                onClick={() => setCollapsed(false)}
-                className={cx(
-                  "-ml-2 flex size-7 cursor-pointer items-center justify-center rounded-[8px] text-[color:var(--wds-primary)] hover:bg-[var(--wds-accent)]",
-                  FOCUS,
-                )}
-              >
-                <PanelLeft className="size-4" />
-              </button>
-            ) : null}
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <Crumbs crumbs={trail} />
               {slotsIn("leading")}
             </div>
             <div className="flex items-center gap-0.5">
               {slotsIn("trailing")}
+              <SearchPalette />
               <BellButton />
               <AccountMenu name={person} business={business} />
             </div>

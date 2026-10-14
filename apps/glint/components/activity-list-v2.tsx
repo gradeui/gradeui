@@ -14,6 +14,20 @@
 //
 //   <ActivityListV2 rows={rows} lead="metal" />   metal over cash (Activity, Gold, Silver)
 //   <ActivityListV2 rows={rows} lead="cash" />    cash over metal (USD)
+//   <ActivityListV2.Table rows={rows} />          the Activity page's table
+//
+// THE TABLE (14 Oct, Ali: "Glint build + drawer"): the Glint build's
+// transactions table, measured off its capture. Above it "Transactions"
+// (Chivo SemiBold 18/28) with "1-20 of N" in 14/20 muted-foreground on the
+// right. A header row (Description, Amount, Status, Date; Chivo Medium
+// 14/20) over rows 12 above and below with a border under each: the
+// TransactionIcon (a clock while pending), the description in SemiBold
+// 14/20 over its type in muted-foreground; the amount right-aligned, metal
+// in Medium over cash in muted-foreground (lead="cash" swaps them); the
+// status in muted-foreground; the day in Chivo 16/24 over the time in
+// 14/20 muted-foreground, right-aligned. 20 to a page, "Page 1 of N" with
+// Previous and Next under it. A row opens the agreed detail drawer, which
+// the Glint build does not have yet.
 //
 // EACH ROW (Web DS ListItem + TransactionIcon): the type's icon (a buy is
 // Exchange to metal, a sell Exchange to money, a deposit Transfer in, a
@@ -55,6 +69,8 @@ import { DisplayNumber } from "@/components/display-number";
 import { WebDsV2 } from "@/components/web-ds-v2";
 
 const MINUS = "−";
+const FOCUS =
+  "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--wds-ring)]";
 
 /** "+$2,500.00" / "−$1,000.00". */
 function money(n) {
@@ -199,6 +215,93 @@ function ActivityListV2({ rows = [], lead = "metal", limit, empty = "Nothing her
   );
 }
 
+/** The Activity page's table (see THE TABLE above). */
+function ActivityTable({ rows = [], lead = "metal", pageSize = 20 }) {
+  const [openId, setOpenId] = React.useState(null);
+  const [page, setPage] = React.useState(0);
+  const autoBuy = StagingSwitches.useAutoBuy();
+  const sorted = [...rows].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
+  const pages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const at = Math.min(page, pages - 1);
+  const shown = sorted.slice(at * pageSize, at * pageSize + pageSize);
+  const open = sorted.find((r) => r.id === openId) ?? null;
+  React.useEffect(() => setPage(0), [rows.length]);
+  const first = sorted.length ? at * pageSize + 1 : 0;
+  const last = at * pageSize + shown.length;
+  const COLS = "grid grid-cols-[minmax(0,1fr)_140px_104px_116px] items-start gap-4";
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-lg font-semibold leading-7 text-[color:var(--wds-foreground)]">Transactions</h2>
+        <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">
+          {first}-{last} of {sorted.length}
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <div className="min-w-[640px]">
+          <div className={`${COLS} border-b border-[color:var(--wds-border)] px-2 py-2.5 text-sm font-medium leading-5 text-[color:var(--wds-foreground)]`}>
+            <span>Description</span>
+            <span className="text-right">Amount</span>
+            <span>Status</span>
+            <span className="text-right">Date</span>
+          </div>
+          {shown.length ? (
+            shown.map((row) => {
+              const metal = row.metalAmount != null ? grams(row.metalAmount) : null;
+              const cash = money(row.fiatAmount);
+              const top = lead === "cash" || metal == null ? cash : metal;
+              const under = metal == null ? null : lead === "cash" ? metal : cash;
+              const d = Persona.fmtTxDate(row.timestamp);
+              return (
+                <button
+                  key={row.id}
+                  type="button"
+                  onClick={() => setOpenId(row.id)}
+                  className={`${COLS} w-full cursor-pointer border-b border-[color:var(--wds-border)] px-2 py-3 text-left transition-colors hover:bg-[var(--wds-accent)] ${FOCUS}`}
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <WebDsV2.TxIcon type={iconFor(row)} />
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate text-sm font-semibold leading-5 text-[color:var(--wds-foreground)]">{row.description}</span>
+                      <span className="truncate text-sm leading-5 text-[color:var(--wds-muted-foreground)]">
+                        {Persona.TX_TYPE_LABEL[row.type] ?? methodLabel(row, autoBuy)}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="flex flex-col items-end">
+                    <span className="whitespace-nowrap text-sm font-medium leading-5 text-[color:var(--wds-foreground)]">{top}</span>
+                    {under ? <span className="whitespace-nowrap text-sm leading-5 text-[color:var(--wds-muted-foreground)]">{under}</span> : null}
+                  </span>
+                  <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">{Persona.TX_STATUS_LABEL[row.status]}</span>
+                  <span className="flex flex-col items-end">
+                    <span className="whitespace-nowrap text-base leading-6 text-[color:var(--wds-foreground)]">{d.day}</span>
+                    <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">{d.time}</span>
+                  </span>
+                </button>
+              );
+            })
+          ) : (
+            <p className="px-2 py-4 text-sm leading-5 text-[color:var(--wds-muted-foreground)]">No transactions in this wallet yet.</p>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center justify-end gap-3 pt-2">
+        <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">
+          Page {at + 1} of {pages}
+        </span>
+        <WebDsV2.Button variant="outline" size="sm" disabled={at === 0} onClick={() => setPage(at - 1)}>
+          Previous
+        </WebDsV2.Button>
+        <WebDsV2.Button variant="outline" size="sm" disabled={at >= pages - 1} onClick={() => setPage(at + 1)}>
+          Next
+        </WebDsV2.Button>
+      </div>
+      <TxSheet row={open} onClose={() => setOpenId(null)} autoBuy={autoBuy} />
+    </div>
+  );
+}
+
+ActivityListV2.Table = ActivityTable;
 ActivityListV2.money = money;
 ActivityListV2.grams = grams;
 

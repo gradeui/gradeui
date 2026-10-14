@@ -26,10 +26,10 @@ const CHROME_BY_PATH: Record<string, { active: string; crumbs: Crumb[] }> = {
   "/console/wallets": { active: "Wallets", crumbs: [{ label: "Wallets" }] },
   "/console/wallets/gold": { active: "Wallets", crumbs: [WALLETS, { label: "Gold" }] },
   "/console/wallets/silver": { active: "Wallets", crumbs: [WALLETS, { label: "Silver" }] },
-  "/console/wallets/usd": { active: "Wallets", crumbs: [WALLETS, { label: "USD" }] },
   "/console/activity": { active: "Activity", crumbs: [{ label: "Activity" }] },
   "/console/bank-accounts": { active: "Bank accounts", crumbs: [{ label: "Bank accounts" }] },
   "/console/user/profile": { active: "Profile", crumbs: [{ label: "Profile" }] },
+  "/console/account/statements": { active: "Activity", crumbs: [{ label: "Statements" }] },
   "/console/notifications": { active: "Notifications", crumbs: [{ label: "Notifications" }] },
   "/console/user/business-profile": { active: "Business profile", crumbs: [{ label: "Business profile" }] },
 };

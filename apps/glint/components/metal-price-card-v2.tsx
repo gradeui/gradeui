@@ -25,9 +25,9 @@
 //     arrow-up-right in success, DOWN is arrow-down-right in destructive,
 //     NEUTRAL (under 1% either way) is a flat arrow-right, muted. Those
 //     are the Charts slides' own words.
-//   - 16 under that, the chart, 104 tall: a 1.5 line in the silver token
-//     for both metals (silver/300 Dark, silver/500 Light, as the slides
-//     paint it), a dot on the last point, and a dashed 1px rule in
+//   - 16 under that, the chart, 104 tall: a 1.5 line in THE METAL'S token
+//     (gold or silver, Ali's 14 Oct call: Figma's layout, the Glint build's
+//     metal-coloured line; Figma painted both grey), a dot on the last point, and a dashed 1px rule in
 //     muted-foreground (4 on, 4 off) at the range's FIRST price, so the
 //     line reads as above or below where it started. No fill, no axes.
 //   - HOVER (Charts · Hover): Recharts' tooltip, cursor and active dot.
@@ -59,7 +59,7 @@ import { WebDsV2 } from "@/components/web-ds-v2";
 
 const RANGES = ["1M", "1Y", "2Y", "5Y"];
 const PAST = { "1M": "past month", "1Y": "past year", "2Y": "past 2 years", "5Y": "past 5 years" };
-const LINE = "var(--wds-silver)";
+
 
 /** The rows for a range, oldest first: Market's, and 2Y cut from 5Y. */
 function rowsFor(metal, range) {
@@ -87,6 +87,7 @@ function PriceTooltip({ active, payload }) {
 
 function MetalPriceCardV2({ metal = "gold", className }) {
   const [range, setRange] = React.useState("1Y");
+  const LINE = metal === "silver" ? "var(--wds-silver)" : "var(--wds-gold)";
   const [unit] = Persona.usePreference(`unit.${metal}`);
   const label = Persona.DEFAULT.balances[metal].label;
   const latest = Market.latest(metal);

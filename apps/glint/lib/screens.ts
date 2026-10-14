@@ -150,8 +150,8 @@ export const SCREENS: ScreenEntry[] = [
     name: "Dashboard — logged-in home v2",
     id: "dmuppmsu1t19c",
     aliases: ["Dashboard — logged-in home"],
-    promotedAt: 1792007390435,
-    sourceHash: "8b5a78321bc4",
+    promotedAt: 1792016108683,
+    sourceHash: "cbac8dc9e6c2",
   },
   {
     slug: "/console/bank-accounts",
@@ -166,8 +166,8 @@ export const SCREENS: ScreenEntry[] = [
     name: "Activity — history v2",
     id: "dmupumb6uwgoj",
     aliases: ["Activity — history"],
-    promotedAt: 1792009308959,
-    sourceHash: "358b90ccd451",
+    promotedAt: 1792016110753,
+    sourceHash: "2040bdf14317",
   },
   {
     slug: "/console/wallets/gold",
@@ -185,14 +185,6 @@ export const SCREENS: ScreenEntry[] = [
     promotedAt: 1792006237904,
     sourceHash: "679843ed9129",
   },
-  {
-    slug: "/console/wallets/usd",
-    name: "USD — wallet v2",
-    id: "dmupum94g8tuz",
-    aliases: ["USD — wallet"],
-    promotedAt: 1791399531273,
-    sourceHash: "264413e8dcd7",
-  },
   /* Staging, 14 Oct 2026: the pages "Glint - Web Portal - Full New" adds.
      Profile takes over from Settings v2 (7 Oct), which is retired: its
      name stays as an alias so an old goto lands on Profile, and
@@ -202,8 +194,8 @@ export const SCREENS: ScreenEntry[] = [
     name: "Profile v2",
     id: "dmv8hrbkp0e3v",
     aliases: ["Settings v2"],
-    promotedAt: 1792005420121,
-    sourceHash: "7f6a3371514a",
+    promotedAt: 1792016112558,
+    sourceHash: "56ac7e2a9d7b",
   },
   {
     slug: "/console/notifications",
@@ -237,6 +229,16 @@ export const SCREENS: ScreenEntry[] = [
     id: "dmur2qa05uort",
     promotedAt: 1792007012083,
     sourceHash: "f6821d07fd82",
+  },
+  /* 14 Oct 2026, Ali's calls on the Glint build vs Figma: its Statements
+     page, at its address. (The USD wallet v2 screen is dropped: the Glint build has
+     no USD page and Ali chose to drop ours; its address redirects.) */
+  {
+    slug: "/console/account/statements",
+    name: "Statements v2",
+    id: "dmv8o4j2187s3",
+    promotedAt: 1792016114041,
+    sourceHash: "f13db7a7ca34",
   },
   /* Staging, 14 Oct 2026: the rest of Full New's Login page, the passcode
      after the code and the reset (forgot, verify, choose new). */

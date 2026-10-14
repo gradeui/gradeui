@@ -52,8 +52,22 @@
 // contacted. The bank details are typed by the person and kept only in
 // this drawer's state until it closes.
 //
+// 14 OCT, ALI'S CALLS:
+//   - DEPOSIT keeps Figma's three steps and shows Glint Pay's REAL details,
+//     as Figma and the Glint build do (Ali chose this knowingly for the
+//     public prototype; it supersedes the 11 Aug invented-numbers rule
+//     here): ACH routing 041215663, wire routing 041208777, account
+//     233101103833, and the Glint build's Account type row ("Personal
+//     Checking"). ASSUMPTION: Account type sits after Account number.
+//   - WITHDRAW is the Glint build's form: Amount; Account holder, your
+//     name, fixed ("Withdrawals can only be sent to an account in your
+//     name"); Routing number, Account number, Confirm account number, Bank
+//     name, Bank address; then Review withdrawal. ASSUMPTION: "your name"
+//     is the signed-in person's (Wade Jones), as the Glint build shows its
+//     user's own name; Review lists the bank name and address too.
+//
 // ASSUMPTIONS, NOT IN FIGMA:
-//   - THE DEPOSIT NUMBERS STAY MINTED. Full New shows routing numbers
+//   - (superseded 14 Oct, see above) THE DEPOSIT NUMBERS STAY MINTED. Full New shows routing numbers
 //     that look like the sponsor bank's real ones (041215663, 041208777)
 //     and a 12 digit account number; the demo's rule since 11 Aug is that
 //     no number shown can address a real account (see Accounts), so the
@@ -69,7 +83,7 @@
 import * as React from "react";
 import { Landmark } from "lucide-react";
 import { Persona } from "@/lib/persona";
-import { Accounts } from "@/lib/accounts";
+import { PortalV2 } from "@/lib/portal-v2";
 import { FlowStore } from "@/lib/flow-store";
 import { SideDrawer } from "@/components/side-drawer";
 import { WebDsV2 } from "@/components/web-ds-v2";
@@ -82,7 +96,7 @@ const DEPOSIT = {
     description: "No fee. $10 to $200,000 a day from a bank account in your business name. Arrives in 1 to 3 business days.",
     intro: "Send an ACH using the details below.",
     routingLabel: "ACH routing number",
-    routing: null /* Accounts' minted ACH number, read at render */,
+    routing: "041215663",
     note: "Limits are $10 minimum and $200,000 maximum a day. We only accept deposits from a bank account in your business name.",
   },
   wire: {
@@ -90,12 +104,14 @@ const DEPOSIT = {
     description: "$25 fee per wire. $500 to $200,000 a day from a US bank account in your business name. Arrives in 1 to 2 business days.",
     intro: "Send a wire using the details below.",
     routingLabel: "Wire routing number",
-    routing: "041208531",
+    routing: "041208777",
     note: "Wires have a $25 incoming fee. Limits are $500 minimum and $200,000 maximum a day. Wires under $500 will be returned.",
   },
 };
 const DEPOSIT_TO = {
   accountName: "Glint Pay",
+  accountNumber: "233101103833",
+  accountType: "Personal Checking",
   bankName: "Sutton Bank",
   bankAddress: "1 S Main Street, Attica, OH 44807",
 };
@@ -153,8 +169,9 @@ function Deposit({ children }) {
   const rows = m
     ? [
         { label: "Account name", value: DEPOSIT_TO.accountName },
-        { label: m.routingLabel, value: m.routing ?? Accounts.ALL.fiat.routingNumber },
-        { label: "Account number", value: Accounts.numberFull("fiat") },
+        { label: m.routingLabel, value: m.routing },
+        { label: "Account number", value: DEPOSIT_TO.accountNumber },
+        { label: "Account type", value: DEPOSIT_TO.accountType, noCopy: true },
         { label: "Bank name", value: DEPOSIT_TO.bankName },
         { label: "Bank address", value: DEPOSIT_TO.bankAddress },
       ]
@@ -194,7 +211,7 @@ function Deposit({ children }) {
           <div className="flex flex-col gap-4">
             <WebDsV2.Summary>
               {rows.map((r) => (
-                <WebDsV2.DescriptionItem key={r.label} layout="stacked" label={r.label} value={r.value} copy={r.value} />
+                <WebDsV2.DescriptionItem key={r.label} layout="stacked" label={r.label} value={r.value} copy={r.noCopy ? undefined : r.value} />
               ))}
             </WebDsV2.Summary>
             <Note>{m.note}</Note>
@@ -230,10 +247,11 @@ function Deposit({ children }) {
 const EMPTY = {
   amount: "",
   rail: "ach",
-  holder: "",
   routing: "",
   account: "",
   confirm: "",
+  bankName: "",
+  bankAddress: "",
 };
 
 /** Withdraw: Form, Review, Requested in one drawer. */
@@ -247,6 +265,7 @@ function Withdraw({ children }) {
   const { add: addActivity } = Persona.useLiveActivity();
 
   const rail = RAIL[f.rail];
+  const holder = PortalV2.PROFILE.fullName;
   const amount = Number.parseFloat(f.amount.replace(/,/g, ""));
   const has = Number.isFinite(amount) && amount > 0;
   const total = has ? amount + rail.fee : 0;
@@ -255,17 +274,19 @@ function Withdraw({ children }) {
   /* What is still missing, in the order the fields appear. */
   const problems = {
     amount: !has || over,
-    holder: !f.holder.trim(),
     routing: digits(f.routing).length !== 9,
     account: digits(f.account).length < 4,
     confirm: digits(f.account) !== digits(f.confirm) || !f.confirm,
+    bankName: !f.bankName.trim(),
+    bankAddress: !f.bankAddress.trim(),
   };
   const FIELD_ID = {
     amount: "withdraw-amount",
-    holder: "withdraw-holder",
     routing: "withdraw-routing",
     account: "withdraw-account",
     confirm: "withdraw-confirm",
+    bankName: "withdraw-bank",
+    bankAddress: "withdraw-bank-address",
   };
   const firstProblem = Object.keys(problems).find((k) => problems[k]);
   const [tried, setTried] = React.useState(false);
@@ -300,7 +321,9 @@ function Withdraw({ children }) {
       status: "in-review",
       createdAt: at,
       recipient: {
-        holder: f.holder.trim(),
+        holder,
+        bankName: f.bankName.trim(),
+        bankAddress: f.bankAddress.trim(),
         routingNumber: digits(f.routing),
         accountLast4: digits(f.account).slice(-4),
       },
@@ -374,9 +397,11 @@ function Withdraw({ children }) {
         <span className="text-xs leading-4 text-[color:var(--wds-muted-foreground)]">{rail.arrivesNote}</span>
         <span className="text-sm font-medium leading-5 text-[color:var(--wds-foreground)]">Sending to</span>
         <WebDsV2.Summary>
-          <WebDsV2.DescriptionItem label="Account holder" value={f.holder.trim()} />
+          <WebDsV2.DescriptionItem label="Account holder" value={holder} />
           <WebDsV2.DescriptionItem label="Routing number" value={digits(f.routing)} />
           <WebDsV2.DescriptionItem label="Account number" value={digits(f.account)} />
+          <WebDsV2.DescriptionItem label="Bank name" value={f.bankName.trim()} />
+          <WebDsV2.DescriptionItem label="Bank address" value={f.bankAddress.trim()} />
         </WebDsV2.Summary>
       </div>
     );
@@ -414,8 +439,12 @@ function Withdraw({ children }) {
             onChange={set("amount")}
           />
         </WebDsV2.Field>
-        <WebDsV2.Field label="Account holder name" htmlFor="withdraw-holder" helper="Must match your business name">
-          <WebDsV2.Input id="withdraw-holder" size="default" invalid={bad("holder")} autoComplete="off" placeholder="Business name" value={f.holder} onChange={set("holder")} />
+        <WebDsV2.Field
+          label="Account holder"
+          htmlFor="withdraw-holder"
+          helper="Withdrawals can only be sent to an account in your name"
+        >
+          <WebDsV2.Input id="withdraw-holder" size="default" readOnly value={holder} />
         </WebDsV2.Field>
         <WebDsV2.Field label="Routing number" htmlFor="withdraw-routing">
           <WebDsV2.Input id="withdraw-routing" size="default" invalid={bad("routing")} inputMode="numeric" autoComplete="off" placeholder="9 digits" value={f.routing} onChange={set("routing")} />
@@ -425,6 +454,12 @@ function Withdraw({ children }) {
         </WebDsV2.Field>
         <WebDsV2.Field label="Confirm account number" htmlFor="withdraw-confirm">
           <WebDsV2.Input id="withdraw-confirm" size="default" invalid={bad("confirm")} inputMode="numeric" autoComplete="off" placeholder="Re-enter account number" value={f.confirm} onChange={set("confirm")} />
+        </WebDsV2.Field>
+        <WebDsV2.Field label="Bank name" htmlFor="withdraw-bank">
+          <WebDsV2.Input id="withdraw-bank" size="default" invalid={bad("bankName")} autoComplete="off" placeholder="Bank name" value={f.bankName} onChange={set("bankName")} />
+        </WebDsV2.Field>
+        <WebDsV2.Field label="Bank address" htmlFor="withdraw-bank-address">
+          <WebDsV2.Input id="withdraw-bank-address" size="default" invalid={bad("bankAddress")} autoComplete="off" placeholder="Bank address" value={f.bankAddress} onChange={set("bankAddress")} />
         </WebDsV2.Field>
       </div>
     );

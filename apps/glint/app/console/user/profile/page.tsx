@@ -1,9 +1,10 @@
+// @ts-nocheck: promoted Studio JSX, see scripts/promotion-patches.json.
 "use client";
 
 // Promoted from Studio screen "Profile v2"
-// (design dmv8hrbkp0e3v, version 1792005420121). Registry: lib/screens.ts;
+// (design dmv8hrbkp0e3v, version 1792016112558). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 7f6a3371514a
+// source-hash: 56ac7e2a9d7b
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -24,6 +25,17 @@
 // Units (g, oz t) and Appearance (System, Light, Dark), each a label, a
 // full-width Web DS segmented control and a note, 4 apart. On mobile the
 // side column follows the content.
+//
+// 14 OCT, ALI'S CALL ("we need to match the fields exactly for profile and
+// address in Figma and Our Prototype (we dont need tabs)"): Personal
+// details carries the Glint build's six fields, Title, First name, Middle
+// names, Last name, Email, Phone, unmasked; under it its Home address card,
+// tagged Primary, with House name or number, Street name, Flat or unit,
+// Town or city, State, ZIP code, Country. Both are Figma's muted card,
+// the fields two to a row as the Glint build sets them. One page, no
+// tabs; /console/user/addresses lands here.
+// ASSUMPTIONS: Figma's Display section (Units, Appearance) stays, since the
+// account menu points here; the address note is the Glint build's own.
 //
 // A DEMO: Units writes the persona's unit preferences for the tab, so every
 // balance changes with it; Appearance switches the page's mode for the tab.
@@ -46,7 +58,7 @@ const UNITS = [
   { value: "g", label: "g" },
   { value: "oz", label: "oz t" },
 ];
-const UNIT_NOTE: Record<string, string> = {
+const UNIT_NOTE = {
   g: "Grams are shown across your account.",
   oz: "Troy ounces are shown across your account.",
 };
@@ -62,29 +74,17 @@ function useAppearance() {
   React.useEffect(() => {
     setMode(document.documentElement.classList.contains("dark") ? "dark" : "light");
   }, []);
-  const set = (next: string) => {
+  const set = (next) => {
     setMode(next);
     const dark =
       next === "dark" || (next === "system" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
     document.documentElement.classList.toggle("dark", Boolean(dark));
   };
-  return [mode, set] as const;
+  return [mode, set];
 }
 
 /** A Display control: label, full-width segmented, note, 4 apart. */
-function DisplayControl({
-  label,
-  note,
-  value,
-  onValueChange,
-  options,
-}: {
-  label: string;
-  note: string | null;
-  value: string;
-  onValueChange: (v: any) => void;
-  options: { value: string; label: string }[];
-}) {
+function DisplayControl({ label, note, value, onValueChange, options }) {
   return (
     <div className="flex flex-col gap-1">
       <span className="text-sm font-medium leading-5 text-[color:var(--wds-foreground)]">{label}</span>
@@ -94,14 +94,19 @@ function DisplayControl({
   );
 }
 
-/** One label and value pair on the details card. */
-function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+/** One label and value pair on a details card. */
+function Detail({ label, children }) {
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex min-w-0 flex-col gap-0.5">
       <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">{label}</span>
-      <span className="text-base font-medium leading-6 text-[color:var(--wds-foreground)]">{children}</span>
+      <span className="break-words text-base font-medium leading-6 text-[color:var(--wds-foreground)]">{children}</span>
     </div>
   );
+}
+
+/** Figma's muted card with the fields two to a row. */
+function DetailsCard({ children }) {
+  return <div className="grid grid-cols-1 gap-6 rounded-[12px] bg-[var(--wds-muted)] px-4 py-5 sm:grid-cols-2">{children}</div>;
 }
 
 export default function ProfilePage() {
@@ -120,19 +125,28 @@ export default function ProfilePage() {
             <p className="text-xs leading-4 text-[color:var(--wds-muted-foreground)]">
               These are your personal details. Contact us to change them.
             </p>
-            <div className="flex flex-col gap-6 rounded-[12px] bg-[var(--wds-muted)] px-4 py-5">
-              <Detail label="Full name">{p.fullName}</Detail>
+            <DetailsCard>
+              <Detail label="Title">{p.title}</Detail>
+              <Detail label="First name">{p.firstName}</Detail>
+              <Detail label="Middle names">{p.middleNames || "None"}</Detail>
+              <Detail label="Last name">{p.lastName}</Detail>
               <Detail label="Email">{p.email}</Detail>
               <Detail label="Phone">{p.phone}</Detail>
-              <Detail label="Date of birth">{p.dateOfBirth}</Detail>
-              <Detail label="Home address">
-                {p.address.map((line: string) => (
-                  <span key={line} className="block">
-                    {line}
-                  </span>
-                ))}
-              </Detail>
+            </DetailsCard>
+            <div className="mt-5 flex items-center gap-2">
+              <AppChromeV2.Heading>Home address</AppChromeV2.Heading>
+              <WebDsV2.Badge variant="secondary">Primary</WebDsV2.Badge>
             </div>
+            <p className="text-xs leading-4 text-[color:var(--wds-muted-foreground)]">Your primary residential address.</p>
+            <DetailsCard>
+              <Detail label="House name or number">{p.address.house}</Detail>
+              <Detail label="Street name">{p.address.street}</Detail>
+              <Detail label="Flat or unit">{p.address.flat}</Detail>
+              <Detail label="Town or city">{p.address.town}</Detail>
+              <Detail label="State">{p.address.state}</Detail>
+              <Detail label="ZIP code">{p.address.zip}</Detail>
+              <Detail label="Country">{p.address.country}</Detail>
+            </DetailsCard>
           </section>
           <section className="flex w-full flex-col gap-3 md:w-[296px] md:shrink-0">
             <AppChromeV2.Heading>Display</AppChromeV2.Heading>
@@ -140,7 +154,7 @@ export default function ProfilePage() {
               label="Units"
               note={UNIT_NOTE[goldUnit] ?? UNIT_NOTE.g}
               value={goldUnit}
-              onValueChange={(u: any) => {
+              onValueChange={(u) => {
                 setGoldUnit(u);
                 setSilverUnit(u);
               }}

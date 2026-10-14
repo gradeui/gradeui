@@ -12,7 +12,12 @@ const nextConfig: NextConfig = {
       { source: "/dashboard", destination: "/console/wallets", permanent: false },
       { source: "/gold", destination: "/console/wallets/gold", permanent: false },
       { source: "/wallets", destination: "/console/wallets", permanent: false },
-      { source: "/wallets/:metal(gold|silver|usd)", destination: "/console/wallets/:metal", permanent: false },
+      { source: "/wallets/:metal(gold|silver)", destination: "/console/wallets/:metal", permanent: false },
+      /* 14 Oct, later: the USD page is dropped (Ali), and Addresses lives on
+         Profile (one page, no tabs). */
+      { source: "/wallets/usd", destination: "/console/wallets", permanent: false },
+      { source: "/console/wallets/usd", destination: "/console/wallets", permanent: false },
+      { source: "/console/user/addresses", destination: "/console/user/profile", permanent: false },
       { source: "/activity", destination: "/console/activity", permanent: false },
       { source: "/bank-accounts", destination: "/console/bank-accounts", permanent: false },
       { source: "/settings", destination: "/console/user/profile", permanent: false },

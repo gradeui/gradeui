@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Dashboard — logged-in home v2"
-// (design dmuppmsu1t19c, version 1792007390435). Registry: lib/screens.ts;
+// (design dmuppmsu1t19c, version 1792016108683). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 8b5a78321bc4
+// source-hash: cbac8dc9e6c2
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -100,7 +100,8 @@ export default function WalletsPage() {
         <section className="flex flex-col gap-4">
           <AppChromeV2.Heading>Fiat currency</AppChromeV2.Heading>
           <div className="grid gap-4 md:grid-cols-2">
-            <WalletGroupCardV2 asset="fiat" link="USD — wallet v2" />
+            {/* No link: the USD page is dropped (Ali, 14 Oct). */}
+            <WalletGroupCardV2 asset="fiat" />
             {autoBuy ? <AutoBuyV2.Card /> : null}
           </div>
         </section>

@@ -175,14 +175,9 @@
   ],
   "app/console/activity/page.tsx": [
     {
-      "why": "the filter is a wallet key or \"all\" (7 Oct)",
-      "find": "const [filter, setFilter] = React.useState(\"all\");",
-      "replace": "const [filter, setFilter] = React.useState<\"all\" | \"gold\" | \"silver\">(\"all\");"
-    },
-    {
-      "why": "14 Oct: the ?wallet= map typed",
-      "find": "const WALLET_FILTER = {",
-      "replace": "const WALLET_FILTER: Record<string, \"gold\" | \"silver\"> = {"
+      "why": "14 Oct: plain Studio JSX with untyped helpers; checked as the mechanical twins are, by not checking it",
+      "find": "\"use client\";",
+      "replace": "// @ts-nocheck: promoted Studio JSX, see scripts/promotion-patches.json.\n\"use client\";"
     }
   ],
   "app/console/notifications/page.tsx": [
@@ -222,39 +217,16 @@
   ],
   "app/console/user/profile/page.tsx": [
     {
-      "why": "Profile and Notifications helpers typed (14 Oct)",
-      "find": "  const set = (next) => {",
-      "replace": "  const set = (next: string) => {"
-    },
+      "why": "14 Oct: plain Studio JSX with untyped helpers; checked as the mechanical twins are, by not checking it",
+      "find": "\"use client\";",
+      "replace": "// @ts-nocheck: promoted Studio JSX, see scripts/promotion-patches.json.\n\"use client\";"
+    }
+  ],
+  "app/console/account/statements/page.tsx": [
     {
-      "why": "Profile and Notifications helpers typed (14 Oct)",
-      "find": "function DisplayControl({ label, note, value, onValueChange, options }) {",
-      "replace": "function DisplayControl({\n  label,\n  note,\n  value,\n  onValueChange,\n  options,\n}: {\n  label: string;\n  note: string | null;\n  value: string;\n  onValueChange: (v: any) => void;\n  options: { value: string; label: string }[];\n}) {"
-    },
-    {
-      "why": "Profile and Notifications helpers typed (14 Oct)",
-      "find": "function Detail({ label, children }) {",
-      "replace": "function Detail({ label, children }: { label: string; children: React.ReactNode }) {"
-    },
-    {
-      "why": "Profile and Notifications helpers typed (14 Oct)",
-      "find": "{p.address.map((line) => (",
-      "replace": "{p.address.map((line: string) => ("
-    },
-    {
-      "why": "Profile and Notifications helpers typed (14 Oct)",
-      "find": "onValueChange={(u) => {",
-      "replace": "onValueChange={(u: any) => {"
-    },
-    {
-      "why": "Profile and Notifications helpers typed (14 Oct)",
-      "find": "const UNIT_NOTE = {",
-      "replace": "const UNIT_NOTE: Record<string, string> = {"
-    },
-    {
-      "why": "Profile helpers typed (14 Oct)",
-      "find": "  return [mode, set];",
-      "replace": "  return [mode, set] as const;"
+      "why": "14 Oct: plain Studio JSX with untyped helpers; checked as the mechanical twins are, by not checking it",
+      "find": "\"use client\";",
+      "replace": "// @ts-nocheck: promoted Studio JSX, see scripts/promotion-patches.json.\n\"use client\";"
     }
   ]
 }

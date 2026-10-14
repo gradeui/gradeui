@@ -22,7 +22,7 @@
 // build is setting its own. Figma's $4,878.36 and friends are not used.
 //
 //   PortalV2.business                 "Acme Corp"
-//   PortalV2.PROFILE                  Wade's personal details (Profile page)
+//   PortalV2.PROFILE                  Wade's personal details and home address (Profile page)
 //   PortalV2.NOTIFICATIONS            the Notifications page's rows
 //   PortalV2.useNotifications()       [rows with read applied, unread count, markAllRead]
 import * as React from "react";
@@ -30,13 +30,28 @@ import { FlowStore } from "@/lib/flow-store";
 
 const BUSINESS = "Acme Corp";
 
-/* Profile · Units g (87:42743): Personal details, in Figma's order. */
+/* Profile (14 Oct, Ali: "match the fields exactly for profile and address
+   in Figma and Our Prototype"): the Glint build's fields, unmasked ("we
+   dont need to mask them for now"). fullName is what the menus show.
+   ASSUMPTION: Wade has no middle name, shown as "None". */
 const PROFILE = {
   fullName: "Wade Jones",
+  title: "Mr",
+  firstName: "Wade",
+  middleNames: "",
+  lastName: "Jones",
   email: "wade.jones@acmecorp.com",
   phone: "+1 415 555 0142",
-  dateOfBirth: "14 March 1988",
-  address: ["1200 Market Street, Apt 4B", "San Francisco, CA 94102", "United States"],
+  /* The Glint build's Home address card, field for field. */
+  address: {
+    house: "1200",
+    street: "Market Street",
+    flat: "Apt 4B",
+    town: "San Francisco",
+    state: "CA",
+    zip: "94102",
+    country: "US",
+  },
 };
 
 /* Notifications · Default (190:109450), newest first. `icon` is a Web DS
