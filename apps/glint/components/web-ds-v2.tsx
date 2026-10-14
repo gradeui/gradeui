@@ -70,7 +70,7 @@ import {
   Copy,
   Info,
   ChevronRight,
-  Repeat2,
+  ArrowRightLeft,
 } from "lucide-react";
 
 const PRIMITIVES = {
@@ -1006,7 +1006,7 @@ WebDsV2.EmptyState = function WebDsV2EmptyState({ title, body, actions, classNam
 
 /* Web DS AnnouncementBar, Layout=desktop (Announcement bar · Default):
    card with a border, 10 corners, 8 8 8 16 inside, 12 between; a 16 icon
-   in the gold token, the message Chivo 14/20 in foreground and its link
+   (the slide's arrow-right-left in foreground; the component says gold), the message Chivo 14/20 in foreground and its link
    Chivo Medium 14/20 in primary, 12 apart; a 28 Dismiss with a 16 X in
    muted-foreground. */
 WebDsV2.AnnouncementBar = function WebDsV2AnnouncementBar({ message, link, onLink, onDismiss, className }) {
@@ -1019,7 +1019,7 @@ WebDsV2.AnnouncementBar = function WebDsV2AnnouncementBar({ message, link, onLin
         className,
       )}
     >
-      <Repeat2 aria-hidden className="size-4 shrink-0 text-[color:var(--wds-gold)]" strokeWidth={2} />
+      <ArrowRightLeft aria-hidden className="size-4 shrink-0 text-[color:var(--wds-foreground)]" strokeWidth={2} />
       <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 text-sm leading-5">
         <span className="text-[color:var(--wds-foreground)]">{message}</span>
         {link ? (

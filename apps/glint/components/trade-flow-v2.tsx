@@ -353,7 +353,9 @@ function TradeFlowV2({ metal = "gold", direction = "buy", children }) {
       </div>
     );
     footer = selling ? (
-      <div className="flex gap-2">
+      /* Side by side from sm; stacked on a phone, View in Activity first
+         (Sell Silver · Success · Mobile). */
+      <div className="flex flex-col gap-3 sm:flex-row sm:gap-2">
         <WebDsV2.Button
           variant="outline"
           size="xl"
@@ -551,7 +553,13 @@ function TradeFlowV2({ metal = "gold", direction = "buy", children }) {
 
   return (
     <SideDrawer open={open} onOpenChange={onOpenChange} trigger={children}>
-      <SideDrawer.Header icon={<Mark metal={metal} />} title={title} />
+      {/* Sell's amount step says where the money goes (Sell Silver ·
+          Amount, 14 Oct). */}
+      <SideDrawer.Header
+        icon={<Mark metal={metal} />}
+        title={title}
+        description={selling && step !== "review" && step !== "done" ? "To your USD wallet" : undefined}
+      />
       <SideDrawer.Body>{body}</SideDrawer.Body>
       <SideDrawer.Footer>{footer}</SideDrawer.Footer>
     </SideDrawer>

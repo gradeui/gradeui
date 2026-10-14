@@ -2,9 +2,9 @@
 "use client";
 
 // Promoted from Studio screen "Log in passcode v2"
-// (design dmv8iphang26p, version 1792007013839). Registry: lib/screens.ts;
+// (design dmv8iphang26p, version 1792008765726). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: f0b19cbe92b6
+// source-hash: b7166f3f3554
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -23,7 +23,8 @@
 // ASSUMPTION, A DEMO, NOT AUTH: no passcode is checked. Any four digits
 // continue, except 0000, the demo's wrong passcode, which shows the Error
 // state ("That passcode is incorrect.", every slot's border destructive).
-// Contact support is inert.
+// Contact support is inert. "Glint app" takes the capital the phone slide
+// gives it (the desktop slide writes "glint app").
 import * as React from "react";
 import { Field, FieldLabel, FieldError } from "@gradeui/ui";
 import { LoginTemplateV2 } from "@/components/login-template-v2";
@@ -49,7 +50,7 @@ export default function LogInPasscodePage() {
         Enter your passcode.
       </h1>
       <p className="mt-2 text-base leading-6 text-muted-foreground">
-        Enter the passcode you use to unlock the glint app.
+        Enter the passcode you use to unlock the Glint app.
       </p>
       <Field className="mt-8 gap-2">
         <FieldLabel htmlFor="login-passcode-0" className="leading-5">

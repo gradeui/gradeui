@@ -244,8 +244,8 @@ export const SCREENS: ScreenEntry[] = [
     slug: "/log-in/passcode",
     name: "Log in passcode v2",
     id: "dmv8iphang26p",
-    promotedAt: 1792007013839,
-    sourceHash: "f0b19cbe92b6",
+    promotedAt: 1792008765726,
+    sourceHash: "b7166f3f3554",
   },
   {
     slug: "/log-in/forgot-passcode",

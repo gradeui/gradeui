@@ -75,9 +75,9 @@
     "reconciled": "2026-08-12T12:33:15.176Z"
   },
   "TradeFlowV2": {
-    "studio": "73f4dbac5f8b",
-    "twin": "dd546f848e16",
-    "reconciled": "2026-10-14T19:51:15.875Z"
+    "studio": "7b3b9563eb1e",
+    "twin": "0131c7475b31",
+    "reconciled": "2026-10-14T20:13:05.833Z"
   },
   "MetalWalletCardV2": {
     "studio": "6a331384b56e",
@@ -95,9 +95,9 @@
     "reconciled": "2026-10-02T12:06:37.543Z"
   },
   "SideDrawer": {
-    "studio": "af0ce84f29e8",
-    "twin": "e76a13f90d64",
-    "reconciled": "2026-10-14T19:40:51.857Z"
+    "studio": "dae187db6965",
+    "twin": "0b7335850ad9",
+    "reconciled": "2026-10-14T20:13:05.829Z"
   },
   "MetalPriceCardV2": {
     "studio": "d800b302a99a",
@@ -125,19 +125,19 @@
     "reconciled": "2026-10-14T19:25:10.504Z"
   },
   "WebDsV2": {
-    "studio": "fc15bbba8aee",
-    "twin": "840ef99a02ef",
-    "reconciled": "2026-10-14T20:05:40.714Z"
+    "studio": "2119e2a0e103",
+    "twin": "490a51c1cadd",
+    "reconciled": "2026-10-14T20:13:05.843Z"
   },
   "WalletGroupCardV2": {
-    "studio": "499388ef1aa4",
-    "twin": "2864caa567d7",
-    "reconciled": "2026-10-14T19:40:51.869Z"
+    "studio": "e948528761a0",
+    "twin": "b93757478d9c",
+    "reconciled": "2026-10-14T20:13:05.843Z"
   },
   "AutoBuyV2": {
-    "studio": "8846dd49f6af",
-    "twin": "bc46f7be750e",
-    "reconciled": "2026-10-14T19:25:10.507Z"
+    "studio": "c59e9804e296",
+    "twin": "80bca10af0c0",
+    "reconciled": "2026-10-14T20:13:05.844Z"
   },
   "ActivityListV2": {
     "studio": "f9526450760d",
@@ -158,5 +158,10 @@
     "studio": "91bc68b95998",
     "twin": "1469dde5b371",
     "reconciled": "2026-10-14T19:25:10.508Z"
+  },
+  "LoginTemplateV2": {
+    "studio": "f4a977d2f85b",
+    "twin": "fff5332e16fc",
+    "reconciled": "2026-10-14T20:13:05.841Z"
   }
 }

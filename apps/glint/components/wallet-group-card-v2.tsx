@@ -167,7 +167,7 @@ function WalletGroupCardV2({
           value={metal ? Market.toQty(amount, metal, unit) : amount}
           places={metal ? 4 : 2}
           currency={!metal}
-          suffix={metal ? ` ${unit}` : undefined}
+          suffix={metal ? ` ${unit === "oz" ? "oz t" : unit}` : undefined}
           suffixColor={metal ? (face ? ink : accent) : undefined}
           size="md"
           className={face ? "" : "text-[color:var(--wds-foreground)]"}
@@ -279,7 +279,8 @@ WalletGroupCardV2.Vaults = function WalletGroupCardV2Vaults({ asset = "gold", cl
           </span>
           <span className="flex flex-col items-end gap-0.5">
             <span className="text-base font-medium leading-6 text-[color:var(--wds-foreground)]">
-              {Market.fmtQty(Market.toQty(v.amount, asset, unit), unit)}
+              {/* "oz t", as Full New writes troy ounces (Market says "oz"). */}
+              {Market.fmtQty(Market.toQty(v.amount, asset, unit), unit).replace(/ oz$/, " oz t")}
             </span>
             <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">
               {Persona.fmtMoney(v.amount)}

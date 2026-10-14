@@ -21,8 +21,10 @@
 //     drop shadows; the scrim is the overlay token.
 //   - Header (never scrolls): 16 from the top, 24 sides, 8 under; a 40
 //     row with the title in Raleway Bold 24/32 and a 40 square Close (8
-//     corners; since 14 Oct a 16 X in muted-foreground, flush with the 24
-//     side, as every Full New drawer measures). An optional description, Chivo 16/24
+//     corners; since 14 Oct a 16 X flush with the 24 side: muted-foreground
+//     in the inset="sheet" header (Deposit, Withdraw, Activity detail),
+//     foreground in the Buy, Sell and Auto-buy one, as Full New paints
+//     each). An optional description, Chivo 16/24
 //     muted-foreground, 8 under the title; an optional icon before the
 //     title; an optional Back (onBack, a 36 ROUND secondary button since
 //     14 Oct, as Deposit · ACH and Withdraw · Review draw it) before that. inset="sheet" is the Web DS SheetHeader the
@@ -85,7 +87,7 @@ SideDrawer.Header = function SideDrawerHeader({ icon, title, description, onBack
           <button
             type="button"
             aria-label="Close"
-            className={`flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-[8px] text-[color:var(--wds-muted-foreground)] hover:bg-[var(--wds-accent)] ${FOCUS}`}
+            className={`flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-[8px] ${inset === "sheet" ? "text-[color:var(--wds-muted-foreground)]" : "text-[color:var(--wds-foreground)]"} hover:bg-[var(--wds-accent)] ${FOCUS}`}
           >
             <X className="size-4" />
           </button>

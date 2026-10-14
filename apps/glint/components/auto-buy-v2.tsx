@@ -216,7 +216,8 @@ function Drawer({ open, onOpenChange }) {
                 description="This will buy the metal you choose when fiat money is deposited"
                 onSelect={toggle}
               />
-              <p className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">
+              {/* Not under an Alert: the No vault and Saved slides drop it. */}
+              <p className={saved || missingVault ? "hidden" : "text-sm leading-5 text-[color:var(--wds-muted-foreground)]"}>
                 Auto-buy is subject to rates at the time the funds are received.{" "}
                 <button type="button" className="cursor-pointer text-[color:var(--wds-primary)] underline">
                   Learn more.

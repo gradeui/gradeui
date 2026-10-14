@@ -1,3 +1,7 @@
+// @ts-nocheck: a MECHANICAL twin (7 Oct 2026). The body is the Studio
+// JSX byte for byte; only the imports and the export line are rewritten
+// (scripts/mechanical-twin.py), so the pair cannot drift by
+// hand-porting.
 "use client";
 
 // LoginTemplateV2 (2 Oct 2026): the signed-out page for the Glint business
@@ -6,8 +10,8 @@
 // use it: the ring lattice ground, the wordmark, one gold-framed card with
 // the form in it, Privacy policy and Terms of use, and the chat button.
 //
-// TWIN: the Studio shared component "LoginTemplateV2" (cmur2ofqhi0uta).
-// Editing one does not touch the other. Keep the pair in sync.
+// TWIN: the Studio shared component "LoginTemplateV2" (cmur2ofqhi0uta). Editing one does
+// not touch the other. Keep the pair in sync.
 //
 //   <LoginTemplateV2>
 //     <LoginTemplateV2.Headline />            the rotating title, or
@@ -45,24 +49,50 @@
 // THE CHAT BUTTON, Privacy policy, Terms of use and Contact support are
 // inert: the prototype has nowhere for them to go.
 //
-// No useWebDsType here: the app sets the Web DS type tokens in
-// app/globals.css. The Studio copy sets them while it is mounted.
+// STUDIO DIFFERS HERE: Studio's theme is the project's, so this copy sets
+// the Web DS type tokens on the document while it is mounted (the same
+// useWebDsType AppChromeV2 has). The app twin has no such hook: the app
+// sets them in app/globals.css.
 import * as React from "react";
 import { MessageCircle } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { RingLattice } from "@/components/ring-lattice";
 import { WebDsV2 } from "@/components/web-ds-v2";
 
+const WEB_DS_TYPE_CSS =
+  ":root:root{--font-sans:Chivo, system-ui, sans-serif;" +
+  "--font-display:Raleway, system-ui, sans-serif;" +
+  "--font-heading-weight:700;" +
+  "font-variant-numeric:lining-nums tabular-nums}";
+function useWebDsType() {
+  React.useEffect(() => {
+    if (!document.getElementById("glint-webds-fonts")) {
+      const link = document.createElement("link");
+      link.id = "glint-webds-fonts";
+      link.rel = "stylesheet";
+      link.href =
+        "https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;600;700&family=Raleway:wght@600;700&display=swap";
+      document.head.appendChild(link);
+    }
+    const style = document.createElement("style");
+    style.dataset.glintWebdsType = "";
+    style.textContent = WEB_DS_TYPE_CSS;
+    document.head.appendChild(style);
+    return () => style.remove();
+  }, []);
+}
+
 /** Web DS Card surface, Frame=Gold: the frame's own gradient stops. */
 const FRAME = "linear-gradient(135deg, #e3e5bc 0%, #d0b26d 33%, #a48544 67%, #7f6124 100%)";
 
 /** Shadows are the one place transparency is allowed: the Card surface's
  *  glow (gold/400 at 20%, 56 blur) and the card's drop (Figma's effect
- *  colour, 0 30 40 at 45%, set as the card's md:shadow class). */
+ *  colour, 0 30 40 at 45%). */
 const GLOW = "0 0 56px rgb(188 155 85 / 0.2)";
+const DROP = "0 30px 40px rgb(5 5 18 / 0.45)";
 
 /** The legal links. Inert. */
-function Legal({ className = "" }: { className?: string }) {
+function Legal({ className = "" }) {
   return (
     <div className={`flex items-center gap-6 text-[13px] leading-5 ${className}`}>
       <button type="button" className="cursor-pointer hover:text-[color:var(--wds-foreground)]">
@@ -75,7 +105,9 @@ function Legal({ className = "" }: { className?: string }) {
   );
 }
 
-export function LoginTemplateV2({ children }: { children?: React.ReactNode }) {
+function LoginTemplateV2({ children }) {
+  /* useWebDsType() is Studio only: the app sets the Web DS type in
+     app/globals.css and loads the faces with next/font. */
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--wds-page-deep)] text-[color:var(--wds-foreground)]">
       <WebDsV2 />
@@ -84,7 +116,10 @@ export function LoginTemplateV2({ children }: { children?: React.ReactNode }) {
       <RingLattice fade="bottom" className="md:hidden" />
       <RingLattice fade="centre" className="hidden md:block" />
 
-      <main className="relative flex flex-1 flex-col md:items-center md:justify-center md:px-6 md:py-16">
+      {/* 100 above on desktop, not 64 (14 Oct): Full New centres the
+          column on the whole frame, 18 lower than centring it above the
+          footer put it. */}
+      <main className="relative flex flex-1 flex-col md:items-center md:justify-center md:px-6 md:pb-16 md:pt-[100px]">
         {/* The wordmark. On mobile this is the band, and it takes the
             height the sheet leaves. */}
         <div className="flex flex-1 items-center justify-center py-10 md:flex-none md:pb-10 md:pt-0">
@@ -133,7 +168,7 @@ export function LoginTemplateV2({ children }: { children?: React.ReactNode }) {
  *  400 ms; with reduced motion it shows the first line only. The slogan
  *  is the lockup, two lines with no full stops. No dots: they read as a
  *  carousel control. */
-const HEADLINES: string[][] = [
+const HEADLINES = [
   ["Gold, as money."],
   ["Great ideas never fade."],
   ["Gold is security", "Glint is key"],
@@ -166,3 +201,7 @@ LoginTemplateV2.Headline = function LoginTemplateV2Headline() {
     </h1>
   );
 };
+
+/* Exported untyped: the body is plain JSX (see the header). */
+const __LoginTemplateV2: any = LoginTemplateV2;
+export { __LoginTemplateV2 as LoginTemplateV2 };
