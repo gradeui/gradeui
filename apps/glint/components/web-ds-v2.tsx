@@ -38,7 +38,7 @@
 //   <WebDsV2.Badge variant>                       Web DS Badge
 //   <WebDsV2.Segmented value options onValueChange>  Web DS ToggleGroup, segmented sm
 //   <WebDsV2.TxIcon type>                         Web DS TransactionIcon
-//   <WebDsV2.ListItem leading title subtitle value subValue onClick>  Web DS ListItem
+//   <WebDsV2.ListItem leading title subtitle value subValue valueTop onClick>  Web DS ListItem
 //   <WebDsV2.DescriptionItem label value copy emphasis>  Web DS DescriptionItem
 //   <WebDsV2.Divider />                           the 1px border rule
 //   <WebDsV2.Switch checked /> <WebDsV2.Radio checked />  Web DS Switch, Radio (visual)
@@ -558,6 +558,9 @@ const TX_ICON = {
   complete: { Icon: Check, bg: "bg-[var(--wds-success)]", ink: "text-[color:var(--wds-neutral-950)]" },
   skipped: { Icon: CircleAlert, ink: "text-[color:var(--wds-warning)]" },
   failed: { Icon: X, bg: "bg-[var(--wds-destructive)]", ink: "text-[color:var(--wds-neutral-950)]" },
+  /* 14 Oct: Notifications' Security, Regulatory and Service rows draw an
+     info glyph in the same circle (Notifications · Default, 190:109450). */
+  info: { Icon: Info },
 };
 WebDsV2.TxIcon = function WebDsV2TxIcon({ type = "exchange-to-metal", className }) {
   const t = TX_ICON[type] ?? TX_ICON["exchange-to-metal"];
@@ -582,13 +585,16 @@ WebDsV2.TxIcon = function WebDsV2TxIcon({ type = "exchange-to-metal", className 
    14/20 muted-foreground line; the values on the right, Chivo Medium
    16/24 over 14/20 muted-foreground. ASSUMPTION: the set draws no hover,
    so a pressable row takes accent behind it on hover, with 12 corners,
-   the radius the Web DS uses for a focus ring around 8 corners. */
+   the radius the Web DS uses for a focus ring around 8 corners.
+   valueTop (14 Oct) is a 14/20 line above the value in warning (amber), the
+   "New" that Notifications · Default puts over a fresh row's date. */
 WebDsV2.ListItem = function WebDsV2ListItem({
   leading,
   title,
   subtitle,
   value,
   subValue,
+  valueTop,
   onClick,
   className,
   ...props
@@ -618,6 +624,9 @@ WebDsV2.ListItem = function WebDsV2ListItem({
       </span>
       {value != null ? (
         <span className="flex shrink-0 flex-col items-end gap-0.5 text-right">
+          {valueTop ? (
+            <span className="whitespace-nowrap text-sm leading-5 text-[color:var(--wds-warning)]">{valueTop}</span>
+          ) : null}
           <span className="whitespace-nowrap text-base font-medium leading-6 text-[color:var(--wds-foreground)]">
             {value}
           </span>

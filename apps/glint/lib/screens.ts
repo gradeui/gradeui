@@ -146,7 +146,7 @@ export const SCREENS: ScreenEntry[] = [
     sourceHash: "32b7d6e48622",
   },
   {
-    slug: "/wallets",
+    slug: "/console/wallets",
     name: "Dashboard — logged-in home v2",
     id: "dmuppmsu1t19c",
     aliases: ["Dashboard — logged-in home"],
@@ -154,7 +154,7 @@ export const SCREENS: ScreenEntry[] = [
     sourceHash: "b4eddad17018",
   },
   {
-    slug: "/bank-accounts",
+    slug: "/console/bank-accounts",
     name: "Bank Accounts v2",
     id: "dmupume7sb1e7",
     aliases: ["Bank Accounts"],
@@ -162,7 +162,7 @@ export const SCREENS: ScreenEntry[] = [
     sourceHash: "3a108c45a62d",
   },
   {
-    slug: "/activity",
+    slug: "/console/activity",
     name: "Activity — history v2",
     id: "dmupumb6uwgoj",
     aliases: ["Activity — history"],
@@ -170,7 +170,7 @@ export const SCREENS: ScreenEntry[] = [
     sourceHash: "d1a87fe1da86",
   },
   {
-    slug: "/wallets/gold",
+    slug: "/console/wallets/gold",
     name: "Gold — wallet v2",
     id: "dmuppmu4zpn8y",
     aliases: ["Gold — wallet"],
@@ -178,7 +178,7 @@ export const SCREENS: ScreenEntry[] = [
     sourceHash: "f5a80bfac8f4",
   },
   {
-    slug: "/wallets/silver",
+    slug: "/console/wallets/silver",
     name: "Silver — wallet v2",
     id: "dmuppmv1xj9ju",
     aliases: ["Silver — wallet"],
@@ -186,21 +186,38 @@ export const SCREENS: ScreenEntry[] = [
     sourceHash: "1fbfdbf7b064",
   },
   {
-    slug: "/wallets/usd",
+    slug: "/console/wallets/usd",
     name: "USD — wallet v2",
     id: "dmupum94g8tuz",
     aliases: ["USD — wallet"],
     promotedAt: 1791399531273,
     sourceHash: "264413e8dcd7",
   },
-  /* Staging, 7 Oct 2026: Settings, from the avatar menu (Web Portal file,
-     Settings · Default). A new screen, as the log in was. */
+  /* Staging, 14 Oct 2026: the pages "Glint - Web Portal - Full New" adds.
+     Profile takes over from Settings v2 (7 Oct), which is retired: its
+     name stays as an alias so an old goto lands on Profile, and
+     /console/settings redirects there (next.config.ts). */
   {
-    slug: "/settings",
-    name: "Settings v2",
-    id: "dmuyhn3548vjg",
-    promotedAt: 1791408417297,
-    sourceHash: "61e2520aedee",
+    slug: "/console/profile",
+    name: "Profile v2",
+    id: "dmv8hrbkp0e3v",
+    aliases: ["Settings v2"],
+    promotedAt: 1792005420121,
+    sourceHash: "7f6a3371514a",
+  },
+  {
+    slug: "/console/notifications",
+    name: "Notifications v2",
+    id: "dmv8hrd1lm6pv",
+    promotedAt: 1792005847837,
+    sourceHash: "54490ee67526",
+  },
+  {
+    slug: "/console/business-profile",
+    name: "Business profile v2",
+    id: "dmv8hrg7gdew8",
+    promotedAt: 1792005426124,
+    sourceHash: "2929ed6be126",
   },
   /* Staging, 2 Oct 2026: the signed-out pages. New screens rather than v2
      copies (production has no log in and no error pages), named "v2" to
@@ -208,14 +225,14 @@ export const SCREENS: ScreenEntry[] = [
      also the app's not-found and error boundary (app/not-found.tsx,
      app/error.tsx). */
   {
-    slug: "/login",
+    slug: "/log-in",
     name: "Log in v2",
     id: "dmur2ps41k9hh",
     promotedAt: 1791397135331,
     sourceHash: "94254fb81a9f",
   },
   {
-    slug: "/login/code",
+    slug: "/log-in/code",
     name: "Log in code v2",
     id: "dmur2qa05uort",
     promotedAt: 1791397179803,
@@ -234,7 +251,7 @@ export const SCREENS: ScreenEntry[] = [
     name: "Server error v2",
     id: "dmur2qjt0mxyu",
     promotedAt: 1790952264999,
-    sourceHash: "e05e2515d3b3",
+    sourceHash: "d82a78d9a30d",
     prefetch: false,
   },
 ];

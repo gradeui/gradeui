@@ -5,8 +5,21 @@ const nextConfig: NextConfig = {
      already shared pointing at the old paths keeps working. */
   async redirects() {
     return [
-      { source: "/dashboard", destination: "/wallets", permanent: false },
-      { source: "/gold", destination: "/wallets/gold", permanent: false },
+      /* THE LIVE BUILD'S URLS (14 Oct 2026, Ali: "we could also probably
+         match the urls"). web.staging.glintpay.com puts the logged-in
+         pages under /console and signs in at /log-in, so staging does too;
+         every older address forwards. Settings became Profile (Full New). */
+      { source: "/dashboard", destination: "/console/wallets", permanent: false },
+      { source: "/gold", destination: "/console/wallets/gold", permanent: false },
+      { source: "/wallets", destination: "/console/wallets", permanent: false },
+      { source: "/wallets/:metal(gold|silver|usd)", destination: "/console/wallets/:metal", permanent: false },
+      { source: "/activity", destination: "/console/activity", permanent: false },
+      { source: "/bank-accounts", destination: "/console/bank-accounts", permanent: false },
+      { source: "/settings", destination: "/console/profile", permanent: false },
+      { source: "/console/settings", destination: "/console/profile", permanent: false },
+      { source: "/console", destination: "/console/wallets", permanent: false },
+      { source: "/login", destination: "/log-in", permanent: false },
+      { source: "/login/:step*", destination: "/log-in/:step*", permanent: false },
       /* THE STEP RENUMBER (Ali, 12 Aug: "rename the steps so they are the
          same as the actual number shown - we dont show step 0 / 8").
          Artefacts counted 0-7 while the wizard showed 1-8, so every name,

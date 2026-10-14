@@ -23,18 +23,20 @@ type Crumb = { label: string; target?: string };
 /* Pathname -> sidebar nav label and breadcrumb. A wallet page keeps
    Wallets lit: it is a child of that section. */
 const CHROME_BY_PATH: Record<string, { active: string; crumbs: Crumb[] }> = {
-  "/wallets": { active: "Wallets", crumbs: [{ label: "Wallets" }] },
-  "/wallets/gold": { active: "Wallets", crumbs: [WALLETS, { label: "Gold" }] },
-  "/wallets/silver": { active: "Wallets", crumbs: [WALLETS, { label: "Silver" }] },
-  "/wallets/usd": { active: "Wallets", crumbs: [WALLETS, { label: "USD" }] },
-  "/activity": { active: "Activity", crumbs: [{ label: "Activity" }] },
-  "/bank-accounts": { active: "Bank accounts", crumbs: [{ label: "Bank accounts" }] },
-  "/settings": { active: "Settings", crumbs: [{ label: "Settings" }] },
+  "/console/wallets": { active: "Wallets", crumbs: [{ label: "Wallets" }] },
+  "/console/wallets/gold": { active: "Wallets", crumbs: [WALLETS, { label: "Gold" }] },
+  "/console/wallets/silver": { active: "Wallets", crumbs: [WALLETS, { label: "Silver" }] },
+  "/console/wallets/usd": { active: "Wallets", crumbs: [WALLETS, { label: "USD" }] },
+  "/console/activity": { active: "Activity", crumbs: [{ label: "Activity" }] },
+  "/console/bank-accounts": { active: "Bank accounts", crumbs: [{ label: "Bank accounts" }] },
+  "/console/profile": { active: "Profile", crumbs: [{ label: "Profile" }] },
+  "/console/notifications": { active: "Notifications", crumbs: [{ label: "Notifications" }] },
+  "/console/business-profile": { active: "Business profile", crumbs: [{ label: "Business profile" }] },
 };
 
 export default function ProductChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const chrome = CHROME_BY_PATH[pathname] ?? CHROME_BY_PATH["/wallets"];
+  const chrome = CHROME_BY_PATH[pathname] ?? CHROME_BY_PATH["/console/wallets"];
   return (
     <AppChromeV2 active={chrome.active} crumbs={chrome.crumbs}>
       {children}

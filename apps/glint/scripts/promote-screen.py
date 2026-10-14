@@ -126,6 +126,9 @@ COMPONENT_MODULES = {
     "ActivityListV2": "@/components/activity-list-v2",
     "AccountCardV2": "@/components/account-card-v2",
     "TransferV2": "@/components/transfer-v2",
+    # Staging, 14 Oct 2026: the portal's identity (Acme Corp) and its
+    # notifications, from "Glint - Web Portal - Full New".
+    "PortalV2": "@/lib/portal-v2",
 }
 
 # BuyFlow is deliberately absent. TradeFlow superseded it and there is no

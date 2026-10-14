@@ -99,7 +99,7 @@
       "replace": "function JumpGroup({\n  caption,\n  jumps,\n}: {\n  caption: string;\n  jumps: { label: string; target: string }[];\n}) {"
     }
   ],
-  "app/login/code/page.tsx": [
+  "app/log-in/code/page.tsx": [
     {
       "why": "the ref and the digit list are typed (staging log in, 7 Oct)",
       "find": "const cells = React.useRef([]);",
@@ -156,7 +156,7 @@
       "replace": "onFocus={(e: React.FocusEvent<HTMLInputElement>) =>"
     }
   ],
-  "app/login/page.tsx": [
+  "app/log-in/page.tsx": [
     {
       "why": "the ref and the digit list are typed (staging log in, 7 Oct)",
       "find": "const sendRef = React.useRef(null);",
@@ -173,38 +173,55 @@
       "replace": "onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {\n              if (e.key === \"Enter\")"
     }
   ],
-  "app/(product)/activity/page.tsx": [
+  "app/console/activity/page.tsx": [
     {
       "why": "the filter is a wallet key or \"all\" (7 Oct)",
       "find": "const [filter, setFilter] = React.useState(\"all\");",
       "replace": "const [filter, setFilter] = React.useState<\"all\" | \"gold\" | \"silver\">(\"all\");"
     }
   ],
-  "app/(product)/settings/page.tsx": [
+  "app/console/profile/page.tsx": [
     {
-      "why": "Settings helpers typed (7 Oct)",
+      "why": "Profile and Notifications helpers typed (14 Oct)",
       "find": "  const set = (next) => {",
       "replace": "  const set = (next: string) => {"
     },
     {
-      "why": "Settings helpers typed (7 Oct)",
-      "find": "function SettingsSection({ title, children }) {",
-      "replace": "function SettingsSection({ title, children }: { title: string; children: React.ReactNode }) {"
-    },
-    {
-      "why": "Settings helpers typed (7 Oct)",
+      "why": "Profile and Notifications helpers typed (14 Oct)",
       "find": "function DisplayControl({ label, note, value, onValueChange, options }) {",
-      "replace": "function DisplayControl({\n  label,\n  note,\n  value,\n  onValueChange,\n  options,\n}: {\n  label: string;\n  note: string;\n  value: string;\n  onValueChange: (v: any) => void;\n  options: { value: string; label: string }[];\n}) {"
+      "replace": "function DisplayControl({\n  label,\n  note,\n  value,\n  onValueChange,\n  options,\n}: {\n  label: string;\n  note: string | null;\n  value: string;\n  onValueChange: (v: any) => void;\n  options: { value: string; label: string }[];\n}) {"
     },
     {
-      "why": "Settings helpers typed (7 Oct)",
+      "why": "Profile and Notifications helpers typed (14 Oct)",
+      "find": "function Detail({ label, children }) {",
+      "replace": "function Detail({ label, children }: { label: string; children: React.ReactNode }) {"
+    },
+    {
+      "why": "Profile and Notifications helpers typed (14 Oct)",
+      "find": "{p.address.map((line) => (",
+      "replace": "{p.address.map((line: string) => ("
+    },
+    {
+      "why": "Profile and Notifications helpers typed (14 Oct)",
       "find": "onValueChange={(u) => {",
-      "replace": "onValueChange={(u: \"g\" | \"oz\") => {"
+      "replace": "onValueChange={(u: any) => {"
     },
     {
-      "why": "Settings helpers typed (7 Oct)",
+      "why": "Profile and Notifications helpers typed (14 Oct)",
+      "find": "const UNIT_NOTE = {",
+      "replace": "const UNIT_NOTE: Record<string, string> = {"
+    },
+    {
+      "why": "Profile helpers typed (14 Oct)",
       "find": "  return [mode, set];",
       "replace": "  return [mode, set] as const;"
+    }
+  ],
+  "app/console/notifications/page.tsx": [
+    {
+      "why": "Profile and Notifications helpers typed (14 Oct)",
+      "find": "{rows.map((n) => (",
+      "replace": "{rows.map((n: any) => ("
     }
   ]
 }

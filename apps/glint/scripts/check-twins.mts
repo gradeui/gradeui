@@ -129,6 +129,15 @@ const TWINS: Record<string, string> = {
   RingLattice: "components/ring-lattice.tsx",
   LoginTemplateV2: "components/login-template-v2.tsx",
   ErrorPageV2: "components/error-page-v2.tsx",
+  /* 7 Oct 2026, mechanical twins (scripts/mechanical-twin.py). */
+  WebDsV2: "components/web-ds-v2.tsx",
+  WalletGroupCardV2: "components/wallet-group-card-v2.tsx",
+  AutoBuyV2: "components/auto-buy-v2.tsx",
+  ActivityListV2: "components/activity-list-v2.tsx",
+  AccountCardV2: "components/account-card-v2.tsx",
+  TransferV2: "components/transfer-v2.tsx",
+  /* 14 Oct 2026. */
+  PortalV2: "lib/portal-v2.ts",
 };
 
 /**

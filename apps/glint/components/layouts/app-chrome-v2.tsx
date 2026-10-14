@@ -24,9 +24,10 @@
 //     not lit), the label in Raleway Bold 16/20 and a 12/16 line under it;
 //     the lit one sits on sidebar-accent with its icon filled. The footer
 //     is empty, so the old "Chat with us" box has gone.
-//   - THE NAV IS WALLETS AND ACTIVITY. Bank accounts is no longer in it
-//     (ASSUMPTION, flagged to Ali: the page and its route stay, reachable
-//     by address only, until he says where it belongs).
+//   - THE NAV IS WALLETS, ACTIVITY AND BUSINESS PROFILE (14 Oct, Full New
+//     adds the third, its second line the business name). Bank accounts is
+//     no longer in it (ASSUMPTION, flagged to Ali: the page and its route
+//     stay, reachable by address only, until he says where it belongs).
 //   - THE HEADER is the Web DS Header, Surface=raised: a card inset 6 and
 //     8 from the edges, 56 tall, 16 corners, 24 sides, a border; a
 //     breadcrumb on the left (Chivo Medium 14/20: a link in
@@ -34,9 +35,19 @@
 //     the right a 36 round Notifications button (bell 20, muted-foreground)
 //     and the 32 avatar. Collapsing the sidebar shows the Header's own
 //     trigger (panel-left in primary) at its start.
-//   - THE ACCOUNT MENU (Profile drop down): the avatar and the person's
-//     name, then Profile, Settings, Help, then Sign out, which now goes to
-//     the log in. Settings opens the Settings page.
+//   - THE ACCOUNT MENU (Profile drop down, 72:165143, 14 Oct): 320 wide,
+//     6 inside; a header of the 40 avatar, the name (Chivo Medium 14/20,
+//     wrapping: the Long name state) and the business under it in
+//     muted-foreground; then Profile and Sign out, each 40 tall, with a
+//     rule 6 above and below every one (a plain 1px div: the shipped
+//     DropdownMenuSeparator in the app drops margin classes). Settings and
+//     Help are gone.
+//   - THE HEADER AVATAR wears a 2px ring in the gold token (Profile drop
+//     down, Wallets · Default), 36 across in all.
+//   - THE BELL opens Notifications. ASSUMPTION (14 Oct): the red count
+//     badge on it is the LIVE Glint build's (web.staging.glintpay.com),
+//     which Full New does not draw; it counts unread notifications and
+//     clears on Mark all as read.
 //   - MOBILE (Wallets · Default · Mobile): a 60 top bar, 12 and 16 in, the
 //     wordmark on the left and two 36 ghost buttons on the right,
 //     Notifications and the menu (panel-left), which opens the sidebar as a
@@ -48,8 +59,8 @@
 // three wallets, and how many activity rows fall on or after the day
 // before the newest one (the demo has no real "today").
 //
-// ASSUMPTION, THE ACCOUNT: Figma's "Acme Corp" is sample data; this shows
-// the persona's business (Ridgeline Construction).
+// THE ACCOUNT (14 Oct, Ali chose Full New's names): Acme Corp, from
+// PortalV2. Before this it showed the persona's Ridgeline Construction.
 //
 // PROPS: active ("Wallets" | "Activity" | ...), crumbs ([{ label,
 // target? }], the last one is the page). In the app the route layout
@@ -65,19 +76,18 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
 } from "@gradeui/ui";
 import {
   Bell,
   PanelLeft,
   ChevronsUpDown,
   ChevronRight,
-  Settings,
-  CircleHelp,
+  Briefcase,
   LogOut,
 } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { Persona } from "@/lib/persona";
+import { PortalV2 } from "@/lib/portal-v2";
 import { RingLattice } from "@/components/ring-lattice";
 import { WebDsV2 } from "@/components/web-ds-v2";
 
@@ -124,15 +134,24 @@ function ProfileIcon({ className }) {
   );
 }
 
+/* Business profile's briefcase (Full New's sidebar). ASSUMPTION: Figma
+   shows no lit state for it, so it is lucide's outline briefcase at the
+   tab icons' 2pt stroke, filled like them when lit. */
+function BusinessIcon({ filled = false, className }) {
+  return <Briefcase aria-hidden strokeWidth={2} fill={filled ? "currentColor" : "none"} className={className} />;
+}
+
 /* The nav targets are Studio SCREEN NAMES resolved by the goto protocol
    (and by the app's screen registry), so the long dash is part of each
    name. Each item's second line is built from live data in the shell. */
 const NAV = [
   { label: "Wallets", icon: WalletsIcon, target: "Dashboard — logged-in home v2" },
   { label: "Activity", icon: ActivityIcon, target: "Activity — history v2" },
+  { label: "Business profile", icon: BusinessIcon, target: "Business profile v2" },
 ];
 const LOG_IN = "Log in v2";
-const SETTINGS = "Settings v2";
+const PROFILE = "Profile v2";
+const NOTIFICATIONS = "Notifications v2";
 
 /** Studio only: the Web DS type tokens on the document, and the faces.
  *  Plus LINING TABULAR FIGURES as the page default (Ali, 2 Oct: every
@@ -186,12 +205,14 @@ const cx = (...c) => c.filter(Boolean).join(" ");
 const FOCUS =
   "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--wds-ring)]";
 
-/** Web DS Avatar, Size=default: 32, muted, initials Chivo Medium 12/16. */
-function InitialsAvatar({ text, className }) {
+/** Web DS Avatar, Size=default: 32, muted, initials Chivo Medium 12/16.
+ *  ring adds the 2px gold-token ring the header's avatar wears. */
+function InitialsAvatar({ text, ring = false, className }) {
   return (
     <span
       className={cx(
         "flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--wds-muted)] text-xs font-medium leading-4 text-[color:var(--wds-muted-foreground)]",
+        ring && "ring-2 ring-[color:var(--wds-gold)]",
         className,
       )}
     >
@@ -220,7 +241,7 @@ function IconButton({ label, children, className, ...props }) {
 
 /** The sidebar: header, account, nav. Shared by the desktop rail and the
  *  mobile sheet. */
-function SidebarBody({ active, business, describe, onTrigger, onNavigate }) {
+function SidebarBody({ active, business, describe, onTrigger, onNavigate, person }) {
   return (
     <div className="relative flex h-full flex-col gap-4 overflow-hidden bg-[var(--wds-sidebar)]">
       <RingLattice strength={0.1} fade="top" />
@@ -319,49 +340,99 @@ function SidebarBody({ active, business, describe, onTrigger, onNavigate }) {
             );
           })}
         </nav>
+        {/* THE PHONE MENU'S ACCOUNT ROWS (14 Oct). Below md there is no
+            header avatar, so Profile and Sign out were unreachable on a
+            phone (12 Oct bug list). ASSUMPTION: Full New draws no phone
+            menu, so the sheet (only: `person` is passed there) ends with
+            the two rows of the account menu, at its 40 height and 14/20. */}
+        {person ? (
+          <div className="mt-auto flex flex-col gap-1 border-t border-[color:var(--wds-sidebar-border)] p-2">
+            <div className="flex items-center gap-3 px-2.5 py-2">
+              <InitialsAvatar text={initials(person)} />
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-sm font-medium leading-5 text-[color:var(--wds-foreground)]">{person}</span>
+                <span className="truncate text-xs leading-4 text-[color:var(--wds-muted-foreground)]">{business}</span>
+              </span>
+            </div>
+            {[
+              { label: "Profile", Icon: ProfileIcon, target: PROFILE },
+              { label: "Sign out", Icon: LogOut, target: LOG_IN },
+            ].map(({ label, Icon, target }) => (
+              <button
+                key={label}
+                type="button"
+                data-grade-goto={target}
+                onClick={onNavigate}
+                className={cx(
+                  "flex h-10 w-full cursor-pointer items-center gap-3 rounded-[8px] px-2.5 text-left text-sm leading-5 text-[color:var(--wds-sidebar-foreground)] transition-colors hover:bg-[var(--wds-sidebar-accent)]",
+                  FOCUS,
+                )}
+              >
+                <Icon className="size-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );
 }
 
 /** The avatar's account menu (Profile drop down). */
-function AccountMenu({ name }) {
+function AccountMenu({ name, business }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" aria-label="Account menu" className={cx("cursor-pointer rounded-full", FOCUS)}>
-          <InitialsAvatar text={initials(name)} />
+        <button type="button" aria-label="Account menu" className={cx("ml-1 cursor-pointer rounded-full", FOCUS)}>
+          <InitialsAvatar text={initials(name)} ring />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8} style={{ width: "17.5rem" }}>
-        <DropdownMenuLabel className="font-normal">
-          <span className="flex items-center gap-2 py-1">
-            <InitialsAvatar text={initials(name)} />
-            <span className="truncate text-sm font-medium leading-5 text-[color:var(--wds-foreground)]">
-              {name}
+      <DropdownMenuContent align="end" sideOffset={8} className="p-1.5" style={{ width: "20rem" }}>
+        <DropdownMenuLabel className="px-3 py-3 font-normal">
+          <span className="flex items-center gap-3">
+            <InitialsAvatar text={initials(name)} className="size-10" />
+            <span className="flex min-w-0 flex-col">
+              <span className="text-sm font-medium leading-5 text-[color:var(--wds-foreground)]">{name}</span>
+              <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">{business}</span>
             </span>
           </span>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="h-10">
+        <div role="separator" className="my-1.5 h-px bg-[var(--wds-border)]" />
+        <DropdownMenuItem className="h-10 gap-3 px-3" data-grade-goto={PROFILE}>
           <ProfileIcon className="size-4" />
           Profile
         </DropdownMenuItem>
-        <DropdownMenuItem className="h-10" data-grade-goto={SETTINGS}>
-          <Settings className="size-4" />
-          Settings
-        </DropdownMenuItem>
-        <DropdownMenuItem className="h-10">
-          <CircleHelp className="size-4" />
-          Help
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="h-10" data-grade-goto={LOG_IN}>
+        <div role="separator" className="my-1.5 h-px bg-[var(--wds-border)]" />
+        <DropdownMenuItem className="h-10 gap-3 px-3" data-grade-goto={LOG_IN}>
           <LogOut className="size-4" />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/** The header's Notifications button: opens the page, with the unread
+ *  count in a red badge over the bell (the live build's, see the header). */
+function BellButton({ size = "size-5" }) {
+  const [, unread] = PortalV2.useNotifications();
+  return (
+    <IconButton
+      label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+      data-grade-goto={NOTIFICATIONS}
+      className="relative text-[color:var(--wds-muted-foreground)]"
+    >
+      <Bell className={size} />
+      {unread ? (
+        <span
+          aria-hidden
+          className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--wds-destructive)] px-1 text-[10px] font-semibold leading-none text-[color:var(--wds-destructive-foreground)]"
+        >
+          {unread}
+        </span>
+      ) : null}
+    </IconButton>
   );
 }
 
@@ -413,7 +484,7 @@ function sinceYesterday(rows) {
 function AppChromeV2({
   active = "Wallets",
   crumbs,
-  business = Persona.DEFAULT.business,
+  business = PortalV2.business,
   children,
 }) {
   const [slots, setSlots] = React.useState({});
@@ -461,8 +532,9 @@ function AppChromeV2({
   const describe = {
     Wallets: `${Persona.fmtMoney(gold + silver + fiat)} total`,
     Activity: `${sinceYesterday(rows)} since yesterday`,
+    "Business profile": business,
   };
-  const person = Persona.fullName();
+  const person = PortalV2.PROFILE.fullName;
   const trail = crumbs && crumbs.length ? crumbs : [{ label: active }];
 
   return (
@@ -493,9 +565,7 @@ function AppChromeV2({
             <Wordmark tone="current" style={{ height: 24, color: "var(--wds-wordmark)" }} />
           </button>
           <div className="flex items-center gap-1">
-            <IconButton label="Notifications" className="text-[color:var(--wds-muted-foreground)]">
-              <Bell className="size-4" />
-            </IconButton>
+            <BellButton size="size-4" />
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <IconButton
                 label="Menu"
@@ -504,13 +574,17 @@ function AppChromeV2({
               >
                 <PanelLeft className="size-4" />
               </IconButton>
-              {/* Closes on navigation: see the effect by menuOpen. */}
-              <SheetContent side="left" className="w-[264px] max-w-[85vw] gap-0 border-0 p-0">
+              {/* Closes on navigation: see the effect by menuOpen. The DS
+                  sheet's own close X (its last child) is hidden: it sat on
+                  top of the sidebar's trigger (12 Oct bug list), which
+                  closes the sheet here anyway. */}
+              <SheetContent side="left" className="w-[264px] max-w-[85vw] gap-0 border-0 p-0 [&>button:last-child]:hidden">
                 <SheetTitle className="sr-only">Menu</SheetTitle>
                 <SidebarBody
                   active={active}
                   business={business}
                   describe={describe}
+                  person={person}
                   onTrigger={() => setMenuOpen(false)}
                 />
               </SheetContent>
@@ -540,10 +614,8 @@ function AppChromeV2({
             </div>
             <div className="flex items-center gap-0.5">
               {slotsIn("trailing")}
-              <IconButton label="Notifications" className="text-[color:var(--wds-muted-foreground)]">
-                <Bell className="size-5" />
-              </IconButton>
-              <AccountMenu name={person} />
+              <BellButton />
+              <AccountMenu name={person} business={business} />
             </div>
           </header>
         </div>
