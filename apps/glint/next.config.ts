@@ -15,8 +15,13 @@ const nextConfig: NextConfig = {
       { source: "/wallets/:metal(gold|silver|usd)", destination: "/console/wallets/:metal", permanent: false },
       { source: "/activity", destination: "/console/activity", permanent: false },
       { source: "/bank-accounts", destination: "/console/bank-accounts", permanent: false },
-      { source: "/settings", destination: "/console/profile", permanent: false },
-      { source: "/console/settings", destination: "/console/profile", permanent: false },
+      { source: "/settings", destination: "/console/user/profile", permanent: false },
+      { source: "/console/settings", destination: "/console/user/profile", permanent: false },
+      /* 14 Oct, later: the live build's Profile is /console/user/profile;
+         Business profile has no live page, so it sits beside it (Ali: "anything
+         new make a sensible choice"). */
+      { source: "/console/profile", destination: "/console/user/profile", permanent: false },
+      { source: "/console/business-profile", destination: "/console/user/business-profile", permanent: false },
       { source: "/console", destination: "/console/wallets", permanent: false },
       { source: "/login", destination: "/log-in", permanent: false },
       { source: "/login/:step*", destination: "/log-in/:step*", permanent: false },

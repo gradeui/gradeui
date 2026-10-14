@@ -166,8 +166,8 @@ export const SCREENS: ScreenEntry[] = [
     name: "Activity — history v2",
     id: "dmupumb6uwgoj",
     aliases: ["Activity — history"],
-    promotedAt: 1792007391997,
-    sourceHash: "8962b6add177",
+    promotedAt: 1792009308959,
+    sourceHash: "358b90ccd451",
   },
   {
     slug: "/console/wallets/gold",
@@ -198,7 +198,7 @@ export const SCREENS: ScreenEntry[] = [
      name stays as an alias so an old goto lands on Profile, and
      /console/settings redirects there (next.config.ts). */
   {
-    slug: "/console/profile",
+    slug: "/console/user/profile",
     name: "Profile v2",
     id: "dmv8hrbkp0e3v",
     aliases: ["Settings v2"],
@@ -213,7 +213,7 @@ export const SCREENS: ScreenEntry[] = [
     sourceHash: "54490ee67526",
   },
   {
-    slug: "/console/business-profile",
+    slug: "/console/user/business-profile",
     name: "Business profile v2",
     id: "dmv8hrg7gdew8",
     promotedAt: 1792005426124,

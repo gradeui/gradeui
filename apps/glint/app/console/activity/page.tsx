@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Activity — history v2"
-// (design dmupumb6uwgoj, version 1792007391997). Registry: lib/screens.ts;
+// (design dmupumb6uwgoj, version 1792009308959). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 8962b6add177
+// source-hash: 358b90ccd451
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -35,8 +35,23 @@ const FILTERS = [
   { value: "silver", label: "Silver" },
 ];
 
+/* The live build's activity address names a wallet per vault
+   (?wallet=GGM, GGM_USMIA, SIL, SIL_USMIA, USD). Its metal picks this page's
+   filter (14 Oct). ASSUMPTION: the vault part and USD have no filter here
+   yet, so they open on All; the live table and wallet select are an open
+   question for Ali. */
+const WALLET_FILTER: Record<string, "gold" | "silver"> = { GGM: "gold", GGM_USMIA: "gold", SIL: "silver", SIL_USMIA: "silver" };
+function filterFromAddress() {
+  try {
+    return WALLET_FILTER[new URLSearchParams(window.location.search).get("wallet") ?? ""] ?? "all";
+  } catch {
+    return "all";
+  }
+}
+
 export default function ActivityPage() {
   const [filter, setFilter] = React.useState<"all" | "gold" | "silver">("all");
+  React.useEffect(() => setFilter(filterFromAddress()), []);
   const rows = Persona.useActivity(filter === "all" ? undefined : filter);
   /* ?state=empty (14 Oct): System · Empty · Activity, the title and the
      Web DS EmptyState, no buttons and no filter, as the slide draws it. */

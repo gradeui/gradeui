@@ -29,9 +29,9 @@ const CHROME_BY_PATH: Record<string, { active: string; crumbs: Crumb[] }> = {
   "/console/wallets/usd": { active: "Wallets", crumbs: [WALLETS, { label: "USD" }] },
   "/console/activity": { active: "Activity", crumbs: [{ label: "Activity" }] },
   "/console/bank-accounts": { active: "Bank accounts", crumbs: [{ label: "Bank accounts" }] },
-  "/console/profile": { active: "Profile", crumbs: [{ label: "Profile" }] },
+  "/console/user/profile": { active: "Profile", crumbs: [{ label: "Profile" }] },
   "/console/notifications": { active: "Notifications", crumbs: [{ label: "Notifications" }] },
-  "/console/business-profile": { active: "Business profile", crumbs: [{ label: "Business profile" }] },
+  "/console/user/business-profile": { active: "Business profile", crumbs: [{ label: "Business profile" }] },
 };
 
 export default function ProductChrome({ children }: { children: React.ReactNode }) {
