@@ -13,7 +13,8 @@
     "mirror:component": "tsx scripts/mirror-shared-component.mts",
     "write:screen": "tsx scripts/write-screen.mts",
     "read:component": "tsx scripts/read-shared-component.mts",
-    "read:screen": "tsx scripts/read-screen.mts"
+    "read:screen": "tsx scripts/read-screen.mts",
+    "capture:live": "node scripts/live-capture/capture-live.mjs"
   },
   "dependencies": {
     "@gradeui/ui": "workspace:*",
