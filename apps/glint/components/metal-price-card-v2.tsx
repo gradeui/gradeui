@@ -87,7 +87,10 @@ function PriceTooltip({ active, payload }) {
 
 function MetalPriceCardV2({ metal = "gold", className }) {
   const [range, setRange] = React.useState("1Y");
-  const LINE = metal === "silver" ? "var(--wds-silver)" : "var(--wds-gold)";
+  /* Gold is gold/500 in both modes: the Glint build's line measures
+     #9a7c14 in Dark, nearest gold/500 (the gold token's Dark step,
+     gold/300, read near white). Silver is the silver token. */
+  const LINE = metal === "silver" ? "var(--wds-silver)" : "var(--wds-gold-500)";
   const [unit] = Persona.usePreference(`unit.${metal}`);
   const label = Persona.DEFAULT.balances[metal].label;
   const latest = Market.latest(metal);
