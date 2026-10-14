@@ -1112,7 +1112,11 @@ WebDsV2.Toast = function WebDsV2Toast({ type = "info", title, body, action, acti
    action, goto, progress, duration }). A toast with the same id replaces
    the one showing (progress, then its result). duration in ms; 0 keeps
    it until closed. The host (mounted once by AppChromeV2) shows them
-   bottom right, 24 in, newest last. */
+   bottom right, 24 in, newest last. WITH A DRAWER OPEN (a trade's toasts
+   arrive while its drawer shows Success) they sit 24 to the left of the
+   drawer instead, so they never cover its buttons; where there is no room
+   beside it (a phone), at the top. ASSUMPTION: Figma draws toasts over a
+   bare page only. */
 WebDsV2.toast = function toast(detail) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent("glint:toast", { detail }));
@@ -1134,10 +1138,29 @@ WebDsV2.ToastHost = function WebDsV2ToastHost() {
       timers.forEach(clearTimeout);
     };
   }, []);
+  /* Where to sit: beside an open drawer, or at the top on a phone. */
+  const [drawerW, setDrawerW] = React.useState(0);
+  React.useEffect(() => {
+    if (!items.length) return undefined;
+    const measure = () => {
+      const d = document.querySelector('[role="dialog"][data-state="open"]');
+      setDrawerW(d ? Math.round(d.getBoundingClientRect().width) : 0);
+    };
+    measure();
+    const mo = new MutationObserver(measure);
+    mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-state"] });
+    return () => mo.disconnect();
+  }, [items.length]);
   const close = (id) => setItems((xs) => xs.filter((x) => x.id !== id));
   if (!items.length) return null;
+  const roomBeside = typeof window !== "undefined" && window.innerWidth - drawerW >= 448;
+  const place = !drawerW
+    ? { right: 24, bottom: 24 }
+    : roomBeside
+      ? { right: drawerW + 24, bottom: 24 }
+      : { left: 16, right: 16, top: 16, alignItems: "center" };
   return (
-    <div className="pointer-events-none fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-3">
+    <div className="pointer-events-none fixed z-[60] flex flex-col items-end gap-3" style={place}>
       {items.map((t) => (
         <div key={t.id} className="pointer-events-auto">
           <WebDsV2.Toast
