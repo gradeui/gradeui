@@ -115,11 +115,13 @@ function MetalPriceCardV2({ metal = "gold", className }) {
     <div
       className={`flex flex-col rounded-[16px] border border-[color:var(--wds-border)] bg-[var(--wds-card)] p-5 ${className ?? ""}`}
     >
-      <div className="flex h-9 items-center justify-between gap-4">
+      {/* Below sm the range takes its own row, full width (ASSUMPTION:
+          Full New draws no phone price card). */}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 sm:h-9 sm:flex-nowrap">
         <span className="wds-display text-xl font-bold leading-7 text-[color:var(--wds-card-foreground)]">
           {label} price
         </span>
-        <div className="w-[264px] shrink-0">
+        <div className="w-full shrink-0 sm:w-[264px]">
           <WebDsV2.Segmented
             aria-label="Chart range"
             stretch
