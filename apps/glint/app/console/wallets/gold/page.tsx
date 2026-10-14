@@ -1,9 +1,9 @@
 "use client";
 
 // Promoted from Studio screen "Gold — wallet v2"
-// (design dmuppmu4zpn8y, version 1791399488228). Registry: lib/screens.ts;
+// (design dmuppmu4zpn8y, version 1792006235918). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: f5a80bfac8f4
+// source-hash: 87a417a049cf
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -12,27 +12,33 @@
 // "Gold — wallet", which stays untouched because the live demo is promoted
 // from it.
 //
-// 7 OCT, MATCHED TO "Glint - Web Portal - Full New", Silver · Default
-// (the one metal page Figma draws; Gold is the same page with gold in it):
+// 14 OCT, MATCHED TO "Glint - Web Portal - Full New" (Gold · 2 vaults, 1
+// vault, No holdings), measured off the slides:
 //   - breadcrumb "Wallets > Gold"; the title, Raleway Bold 24/32;
-//   - the Gold WalletGroupCard (Subtle) and the Vaults card side by side,
-//     24 apart (451 and 493 at 1280, kept as that ratio);
-//   - "Gold activity" (Chivo SemiBold 18/28) over the Web DS activity list,
-//     every row that touches the Gold wallet, metal over cash.
-//   The LBMA price chart that sat beside the card is not on the page any
-//   more: Figma has none.
+//   - 24 under it, the Gold WalletGroupCard (Subtle) and the Vaults card
+//     side by side, 24 apart (451 and 493 at 1280, kept as that ratio);
+//   - 35 under them, the price card (MetalPriceCardV2), full width: the
+//     LBMA chart is back, as Full New draws it;
+//   - 36 under that, "Gold activity" (Chivo SemiBold 18/28) over the Web
+//     DS activity list, every row that touches the Gold wallet, metal over
+//     cash; with none, "No gold activity yet." in Chivo 14/20
+//     muted-foreground, 8 under the heading.
+//   The 35 and 36 are the slide's own gaps (the page's other blocks sit
+//   24 apart), so they are set here on top of Main's 24.
 //
-// ASSUMPTION: the slide's title and card read "Gold" under a "Silver"
-// breadcrumb and a "Silver activity" heading, a leftover from duplicating
-// the Gold slide. The page here is all Gold.
+// STATES: 2 vaults and 1 vault follow the holding (a Buy into a second
+// vault makes 2); No holdings is ?state=empty (StagingSwitches).
 import * as React from "react";
 import { AppChromeV2 } from "@/components/layouts/app-chrome-v2";
 import { Persona } from "@/lib/persona";
+import { StagingSwitches } from "@/lib/staging-switches";
 import { WalletGroupCardV2 } from "@/components/wallet-group-card-v2";
+import { MetalPriceCardV2 } from "@/components/metal-price-card-v2";
 import { ActivityListV2 } from "@/components/activity-list-v2";
 
 export default function GoldWalletPage() {
-  const rows = Persona.useActivity("gold");
+  const live = Persona.useActivity("gold");
+  const rows = StagingSwitches.useState() === "empty" ? [] : live;
   return (
     <>
       <AppChromeV2.Main>
@@ -41,9 +47,14 @@ export default function GoldWalletPage() {
           <WalletGroupCardV2 asset="gold" />
           <WalletGroupCardV2.Vaults asset="gold" />
         </div>
-        <section className="flex flex-col gap-2">
+        <MetalPriceCardV2 metal="gold" className="md:mt-[11px]" />
+        <section className="flex flex-col gap-2 md:mt-3">
           <AppChromeV2.Heading>Gold activity</AppChromeV2.Heading>
-          <ActivityListV2 rows={rows} lead="metal" />
+          {rows.length ? (
+            <ActivityListV2 rows={rows} lead="metal" />
+          ) : (
+            <p className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">No gold activity yet.</p>
+          )}
         </section>
       </AppChromeV2.Main>
     </>

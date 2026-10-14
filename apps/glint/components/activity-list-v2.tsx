@@ -28,10 +28,26 @@
 //
 // Pressing a row opens its detail in the SideDrawer (as ActivityTableV2
 // did). Filters live on the page (Activity's All / Gold / Silver).
+//
+// THE DETAIL (14 Oct), Full New's Activity · Detail plus what Ali kept from
+// the 7 Oct drawer: the row's description as the title (no line under
+// it); for a metal trade the Web DS DisplayNumber md with the metal amount
+// and the dollar leg under it in Chivo 14/20 muted-foreground, for cash
+// the dollar amount alone; 16 under that, one Web DS Summary of inline
+// DescriptionItems: Status, Type, Date, Vault (or From, for a deposit), a
+// rule, Gold bought / sold (or Amount), Price, Fee, a rule, then Total paid
+// or Total received in the total emphasis. No Done button, as Figma.
+// Ali, 14 Oct: the header stays AND the rows repeat its figures; there is
+// no Reference row, because the product has no transaction id.
+// PROVISIONAL: Ali is checking these fields against the live Glint build,
+// which the dev team is making separately. ASSUMPTIONS: a deposit's From
+// is the linked account (Accounts' external, "account ending 4417"); a fee
+// the row does not carry reads "Free"; Price is the row's rate per gram
+// at 2dp, as Figma writes "$135.03 / g"; the vault is its short label.
 import * as React from "react";
-import { PropertyList, Callout, CalloutTitle, CalloutDescription } from "@gradeui/ui";
-import { Info } from "lucide-react";
 import { Persona } from "@/lib/persona";
+import { PortalV2 } from "@/lib/portal-v2";
+import { Accounts } from "@/lib/accounts";
 import { VaultsV2 } from "@/lib/vaults-v2";
 import { SideDrawer } from "@/components/side-drawer";
 import { StagingSwitches } from "@/lib/staging-switches";
@@ -80,50 +96,69 @@ function subtitle(row, autoBuy) {
     .join(" · ");
 }
 
-/** The activity item in the side drawer, field for field with the iOS
- *  transaction detail screen (carried over from ActivityTableV2). */
+/** "$135.03 / g". */
+function price(rate) {
+  return `${Persona.fmtMoney(rate)} / g`;
+}
+
+/** The activity item in the side drawer (see THE DETAIL above). */
 function TxSheet({ row, onClose, autoBuy }) {
   const d = row ? Persona.fmtTxDate(row.timestamp) : null;
+  const metal = row && row.metalAmount != null;
+  const bought = metal && row.metalAmount > 0;
+  const metalName = row?.metal ? Persona.DEFAULT.balances[row.metal]?.label ?? "Metal" : "Metal";
+  const deposit = row && (row.kind === "deposit" || row.type === "deposit");
+  const fee = row?.fee ? Persona.fmtMoney(row.fee) : "Free";
   return (
     <SideDrawer open={Boolean(row)} onOpenChange={(o) => (o ? null : onClose())}>
       {row && (
         <>
-          <SideDrawer.Header title={row.description} description={methodLabel(row, autoBuy)} />
+          <SideDrawer.Header inset="sheet" title={row.description} />
           <SideDrawer.Body>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
-                {row.metalAmount == null ? (
-                  <DisplayNumber value={row.fiatAmount} currency sign size="md" className="text-foreground" />
+                {metal ? (
+                  <DisplayNumber value={row.metalAmount} places={4} suffix=" g" sign size="md" className="text-[color:var(--wds-foreground)]" />
                 ) : (
-                  <DisplayNumber value={row.metalAmount} places={4} suffix=" g" sign size="md" className="text-foreground" />
+                  <DisplayNumber value={row.fiatAmount} currency sign size="md" className="text-[color:var(--wds-foreground)]" />
                 )}
-                {row.metalAmount != null && (
-                  <span className="text-sm text-muted-foreground">{money(row.fiatAmount)}</span>
-                )}
+                {metal ? (
+                  <span className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">{money(row.fiatAmount)}</span>
+                ) : null}
               </div>
-              <PropertyList divider>
-                <PropertyList.Row label="Date">{d?.full}</PropertyList.Row>
-                {row.rate != null && <PropertyList.Row label="Rate">{Persona.fmtRate(row.rate)}</PropertyList.Row>}
-                {row.fee != null && <PropertyList.Row label="Fee">{Persona.fmtMoney(row.fee)}</PropertyList.Row>}
-                <PropertyList.Row label="Type">{methodLabel(row, autoBuy)}</PropertyList.Row>
-                {row.vault && <PropertyList.Row label="Vault">{VaultsV2.location(row.vault)}</PropertyList.Row>}
-                <PropertyList.Row label="Status">{Persona.TX_STATUS_LABEL[row.status]}</PropertyList.Row>
-                {row.reference && <PropertyList.Row label="Reference">{row.reference}</PropertyList.Row>}
-              </PropertyList>
-              {row.feeNote && (
-                <Callout variant="info">
-                  <Info />
-                  <CalloutTitle>Notice</CalloutTitle>
-                  <CalloutDescription>{row.feeNote}</CalloutDescription>
-                </Callout>
-              )}
+              <WebDsV2.Summary>
+                <WebDsV2.DescriptionItem label="Status" value={Persona.TX_STATUS_LABEL[row.status]} />
+                <WebDsV2.DescriptionItem label="Type" value={methodLabel(row, autoBuy)} />
+                <WebDsV2.DescriptionItem label="Date" value={d?.full} />
+                {row.vault ? <WebDsV2.DescriptionItem label="Vault" value={VaultsV2.label(row.vault)} /> : null}
+                {deposit ? (
+                  <WebDsV2.DescriptionItem
+                    label="From"
+                    value={`${PortalV2.business}, account ending ${Accounts.ALL.external.number.slice(-4)}`}
+                  />
+                ) : null}
+                <WebDsV2.Divider />
+                {metal ? (
+                  <>
+                    <WebDsV2.DescriptionItem
+                      label={`${metalName} ${bought ? "bought" : "sold"}`}
+                      value={grams(row.metalAmount).slice(1)}
+                    />
+                    {row.rate != null ? <WebDsV2.DescriptionItem label="Price" value={price(row.rate)} /> : null}
+                  </>
+                ) : (
+                  <WebDsV2.DescriptionItem label="Amount" value={Persona.fmtMoney(row.fiatAmount)} />
+                )}
+                <WebDsV2.DescriptionItem label="Fee" value={fee} />
+                <WebDsV2.Divider />
+                <WebDsV2.DescriptionItem
+                  label={row.type === "withdrawal" ? "Total sent" : row.fiatAmount < 0 ? "Total paid" : "Total received"}
+                  value={Persona.fmtMoney(row.fiatAmount)}
+                  emphasis="total"
+                />
+              </WebDsV2.Summary>
             </div>
           </SideDrawer.Body>
-          <SideDrawer.Footer>
-            <WebDsV2.Button size="xl" className="w-full" onClick={onClose}>
-              Done
-            </WebDsV2.Button>
-          </SideDrawer.Footer>
         </>
       )}
     </SideDrawer>

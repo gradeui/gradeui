@@ -42,7 +42,9 @@
 //   <WebDsV2.DescriptionItem label value copy emphasis>  Web DS DescriptionItem
 //   <WebDsV2.Divider />                           the 1px border rule
 //   <WebDsV2.Switch checked /> <WebDsV2.Radio checked />  Web DS Switch, Radio (visual)
-//   <WebDsV2.OptionRow trailing selected disabled title description logo onSelect>  Web DS OptionRow
+//   <WebDsV2.OptionRow trailing selected disabled title description logo tile align onSelect>  Web DS OptionRow
+//     (tile="box": a 48 muted square, 8 corners, 24 icon; align="start" tops
+//     the tile and trailing to the title, as Deposit · 1 Choose method does)
 //   <WebDsV2.Alert tone title>body</WebDsV2.Alert>   Web DS Alert
 //   <WebDsV2.Progress value />, <WebDsV2.Summary>, <WebDsV2.Field label helper error>
 //   WebDsV2.v("input-background")                 "var(--wds-input-background)"
@@ -777,6 +779,7 @@ WebDsV2.OptionRow = function WebDsV2OptionRow({
   description,
   logo,
   tile = "sm",
+  align = "center",
   badge,
   onSelect,
   className,
@@ -790,7 +793,8 @@ WebDsV2.OptionRow = function WebDsV2OptionRow({
       disabled={disabled}
       onClick={onSelect}
       className={cx(
-        "flex w-full cursor-pointer items-center gap-3 rounded-[14px] bg-[var(--wds-card)] text-left disabled:cursor-not-allowed disabled:opacity-50",
+        "flex w-full cursor-pointer gap-3 rounded-[14px] bg-[var(--wds-card)] text-left disabled:cursor-not-allowed disabled:opacity-50",
+        align === "start" ? "items-start" : "items-center",
         selected ? "border-2 border-[color:var(--wds-primary)] p-[10px]" : "border border-[color:var(--wds-border)] p-[11px]",
         FOCUS,
         className,
@@ -798,7 +802,16 @@ WebDsV2.OptionRow = function WebDsV2OptionRow({
       {...props}
     >
       {logo ? (
-        <span className={cx("flex shrink-0 items-center justify-center", tile === "lg" ? "size-12 p-3" : "w-8 px-1 py-3")}>
+        <span
+          className={cx(
+            "flex shrink-0 items-center justify-center",
+            tile === "box"
+              ? "size-12 rounded-[8px] bg-[var(--wds-muted)] text-[color:var(--wds-foreground)] [&_svg]:size-6"
+              : tile === "lg"
+                ? "size-12 p-3"
+                : "w-8 px-1 py-3",
+          )}
+        >
           {logo}
         </span>
       ) : null}

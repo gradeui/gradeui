@@ -17,6 +17,20 @@
 //                           (Ali, 2 Oct: "I think the subtle metals work
 //                           for Web"); metal stays one parameter away for
 //                           comparison.
+//   ?state=live | empty | error | offline   (14 Oct) The System states
+//                           slides of "Glint - Web Portal - Full New",
+//                           which nothing in the demo would otherwise
+//                           reach: EMPTY is a business with nothing yet
+//                           (no activity, no metal: the Gold and Silver
+//                           No holdings slides and Empty · Activity);
+//                           ERROR is the in-shell error page (Error ·
+//                           Page); OFFLINE is Wallets failing to load
+//                           (Error · Inline) with the Couldn't connect
+//                           toast. LIVE (the default) is the demo.
+//   ?announce=on | off      (14 Oct) The announcement bar over the
+//                           Wallets page (Announcement bar · Default).
+//                           Off by default; dismissing it hides it for
+//                           the tab.
 //   ?autobuy=on | off       Everything auto-buy: the control by the
 //                           Balance, the chip on the metal cards, the USD
 //                           card's "Auto-buy to ..." line, the control on
@@ -47,6 +61,8 @@ const SWITCHES = {
   /* ASSUMPTION (7 Oct): auto-buy shows by default on staging now. To put
      it back behind ?autobuy=on, change this fallback to "off". */
   autobuy: { key: "glint-autobuy", values: ["off", "on"], fallback: "on" },
+  state: { key: "glint-state", values: ["live", "empty", "error", "offline"], fallback: "live" },
+  announce: { key: "glint-announce", values: ["off", "on"], fallback: "off" },
 };
 
 /** ?name= on this page, or on the page hosting this frame. */
@@ -109,6 +125,16 @@ function StagingSwitches() {
 /** "subtle" (the default) or "metal". */
 StagingSwitches.useCards = function useCards() {
   return useSwitch("cards");
+};
+
+/** "live" (the default), "empty", "error" or "offline". */
+StagingSwitches.useState = function useStateSwitch() {
+  return useSwitch("state");
+};
+
+/** false by default; true with ?announce=on. */
+StagingSwitches.useAnnounce = function useAnnounce() {
+  return useSwitch("announce") === "on";
 };
 
 /** true by default; false with ?autobuy=off. */

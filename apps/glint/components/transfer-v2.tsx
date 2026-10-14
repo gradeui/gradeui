@@ -4,11 +4,11 @@
 // hand-porting.
 "use client";
 
-// TransferV2 (7 Oct 2026): Deposit, and Withdraw by ACH or wire, for the
+// TransferV2 (7 Oct 2026, REWORKED 14 Oct): Deposit and Withdraw for the
 // Glint business portal v2 on staging, as "Glint - Web Portal - Full New"
-// designs them on its "Withdraw & Transfer" page: USD · Deposit; USD ·
-// Withdraw, Review, Requested; USD · Withdraw · Wire, Wire · Review, Wire
-// · Requested. Opened from the USD card's Deposit and Withdraw.
+// draws them on its Deposit page (USD · Deposit · 1 Choose method, 2 ACH
+// transfer, 3 Wire transfer) and Withdraw page (USD · Withdraw, Review,
+// Requested). Opened from the USD card's Deposit and Withdraw.
 //
 // TWIN: the Studio shared component "TransferV2" (cmuyiqiijarq57). Editing one does
 // not touch the other. Keep the pair in sync.
@@ -16,65 +16,89 @@
 //   <TransferV2.Deposit><Button>Deposit</Button></TransferV2.Deposit>
 //   <TransferV2.Withdraw><Button>Withdraw</Button></TransferV2.Withdraw>
 //
-// FIGMA NOW DESIGNS WITHDRAW, so it is built, although withdrawing used
-// to be a manual support process and Ali's 1 Oct web scope was Buy and
-// Sell only (glint-product-facts). "Transfer" on the page is the wire, the
-// second way to send.
+// DEPOSIT, one drawer in three steps (14 Oct):
+//   - Choose method: "Choose how you want to add US dollars to your
+//     wallet." over two Web DS OptionRows (chevron, a 48 muted tile with
+//     the landmark icon, tile and chevron topped to the title): ACH
+//     transfer and Wire transfer, each with its fee, limits and timing.
+//   - ACH transfer / Wire transfer: a round Back, "Send an ACH (a wire)
+//     using the details below.", the details on a muted panel (stacked
+//     Web DS DescriptionItems, every one with copy: Account name, the
+//     routing number, Account number, Bank name, Bank address), the rail's
+//     limits note, and Share details in the footer.
+//   Money arrives from outside the app (Ali, 1 Oct), so there is no form.
 //
-// DEPOSIT: the Glint account's details on a muted panel (stacked Web DS
-// DescriptionItems, copy on the routing and account numbers) and "Send a
-// domestic wire or ACH to these details to fund your USD wallet." Money
-// arrives from outside the app (Ali, 1 Oct), so there is no form.
-//
-// WITHDRAW, one drawer that walks Form > Review > Requested:
-//   - Amount ($ prefix, USD suffix, "$X available"); Send by, ACH or Wire
-//     (Web DS segmented, full width) with its cost and timing under it;
-//     then the recipient's bank details (ACH: holder, routing and account
-//     type side by side, account number, confirm; wire: holder, bank name,
-//     wire routing number, account number, confirm, reference). The
-//     footer says "We don’t save bank details, so you’ll enter them each
-//     time." over "Review withdrawal" / "Review wire".
-//   - Review: Back, "Review withdrawal" / "Review wire", "Check the details
-//     before you confirm."; Amount, Fee (Free) or Wire fee ($25.00), Total
-//     from USD wallet; when it arrives; "Sending to" and the details; on a
-//     wire the warning Alert "Wires can’t be reversed". Footer: "Our team
-//     checks and approves every withdrawal before it’s sent." over
-//     "Confirm withdrawal" / "Confirm wire".
-//   - Requested: "Withdrawal requested" / "Wire requested", "We’ve sent
-//     your request to our team for approval."; Reference ID (copy),
-//     Status, Amount, Send by, To, Arrives; "Quote your reference ID if you
-//     contact us about this withdrawal." over Done.
+// WITHDRAW, one drawer that walks Form > Review > Requested (14 Oct, Full
+// New has dropped the 7 Oct wire option and the account type):
+//   - Form: Amount ($ prefix, USD suffix, "$X available"); Account holder
+//     name ("Must match your business name"), Routing number, Account
+//     number, Confirm account number; Review withdrawal in the footer.
+//   - Review: a round Back, "Check the details before you confirm."; Amount,
+//     Fee (Free), Total from USD wallet; "Arrives 1 to 3 business days
+//     after approval."; "Sending to" and the holder, routing number and
+//     account number. Confirm withdrawal.
+//   - Requested: "We’ve sent your request to our team for approval.";
+//     Reference ID (copy), Status, Amount, To, Arrives. Done.
 //
 // THE DATA, as entities (glint-data-modelling): a withdrawal is { id,
-// rail ("ach" | "wire"), amount, fee, status ("in-review"), recipient:
-// { holder, bankName, routingNumber, accountNumber, accountType,
-// reference } }. Every sentence on screen is composed from those fields
-// and the label maps below ("ACH, free", "Acme Corp, account ending
-// 2502"), never stored. Confirming keeps the withdrawal for the tab
-// (FlowStore "transfer.withdrawals"), takes the total from the USD wallet,
-// and adds a pending activity row, so the card and the lists move.
+// rail "ach", amount, fee, status ("in-review"), recipient: { holder,
+// routingNumber, accountLast4 } }. Every sentence on screen is composed
+// from those fields ("Acme Corp, account ending 2502"), never stored.
+// Confirming keeps the withdrawal for the tab (FlowStore
+// "transfer.withdrawals"), takes the total from the USD wallet, and adds
+// a pending activity row, so the card and the lists move.
 //
 // A DEMO: nothing is sent, nothing leaves the browser tab, no bank is
 // contacted. The bank details are typed by the person and kept only in
-// this drawer's state until it closes (the withdrawal record keeps the
-// last four of the account, not the number).
+// this drawer's state until it closes.
 //
 // ASSUMPTIONS, NOT IN FIGMA:
-//   - Review looks live from the start, as the Withdraw slides draw it;
+//   - THE DEPOSIT NUMBERS STAY MINTED. Full New shows routing numbers
+//     that look like the sponsor bank's real ones (041215663, 041208777)
+//     and a 12 digit account number; the demo's rule since 11 Aug is that
+//     no number shown can address a real account (see Accounts), so the
+//     ACH routing number and the account number are Accounts' minted
+//     pair and the wire routing number is minted the same way
+//     (041208531, checksum valid). The names and address follow Figma.
+//   - Share details opens the device's share sheet with the details as
+//     text, or copies them where there is none and says "Details copied".
+//   - Review looks live from the start, as the Withdraw slide draws it;
 //     pressed with something missing, it turns the missing fields'
-//     borders destructive (the Web DS Input invalid state) and moves to
-//     the first one, with no new copy. An amount over what the wallet
-//     holds says "$X more than your USD wallet holds." under the field
-//     (the Buy drawer's pattern, minus the fee clause on ACH);
-//   - the drawer's header follows the Web DS SheetHeader these slides use
-//     (24 from the top), which sits 8 lower than the Buy and Auto-buy
-//     drawers' embedded header.
+//     borders destructive and moves to the first one, with no new copy.
+//     An amount over the wallet says "$X more than your USD wallet holds."
 import * as React from "react";
+import { Landmark } from "lucide-react";
 import { Persona } from "@/lib/persona";
 import { Accounts } from "@/lib/accounts";
 import { FlowStore } from "@/lib/flow-store";
 import { SideDrawer } from "@/components/side-drawer";
 import { WebDsV2 } from "@/components/web-ds-v2";
+
+/* Deposit methods, as the Choose method slide words them. The routing
+   numbers are minted: see the header. */
+const DEPOSIT = {
+  ach: {
+    title: "ACH transfer",
+    description: "No fee. $10 to $200,000 a day from a bank account in your business name. Arrives in 1 to 3 business days.",
+    intro: "Send an ACH using the details below.",
+    routingLabel: "ACH routing number",
+    routing: null /* Accounts' minted ACH number, read at render */,
+    note: "Limits are $10 minimum and $200,000 maximum a day. We only accept deposits from a bank account in your business name.",
+  },
+  wire: {
+    title: "Wire transfer",
+    description: "$25 fee per wire. $500 to $200,000 a day from a US bank account in your business name. Arrives in 1 to 2 business days.",
+    intro: "Send a wire using the details below.",
+    routingLabel: "Wire routing number",
+    routing: "041208531",
+    note: "Wires have a $25 incoming fee. Limits are $500 minimum and $200,000 maximum a day. Wires under $500 will be returned.",
+  },
+};
+const DEPOSIT_TO = {
+  accountName: "Glint Pay",
+  bankName: "Sutton Bank",
+  bankAddress: "1 S Main Street, Attica, OH 44807",
+};
 
 const RAIL = {
   ach: {
@@ -101,7 +125,6 @@ const RAIL = {
   },
 };
 const STATUS_LABEL = { "in-review": "In review" };
-const ACCOUNT_TYPE_LABEL = { checking: "Checking", savings: "Savings" };
 
 /** "WD-7K2F-9Q4X": a reference made up in the browser for the demo. */
 function newReference() {
@@ -114,33 +137,92 @@ function Note({ children }) {
   return <p className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">{children}</p>;
 }
 
-/** The Glint account's details, to fund the USD wallet from outside. */
+/** Deposit: Choose method, then the ACH or wire details to send to. */
 function Deposit({ children }) {
-  const a = Accounts.ALL.fiat;
-  const holder = Persona.DEFAULT.company?.legalName ?? Persona.DEFAULT.business;
+  const [open, setOpen] = React.useState(false);
+  const [method, setMethod] = React.useState(null);
+  const [shared, setShared] = React.useState(false);
+  const close = (next) => {
+    setOpen(next);
+    if (!next) {
+      setMethod(null);
+      setShared(false);
+    }
+  };
+  const m = method ? DEPOSIT[method] : null;
+  const rows = m
+    ? [
+        { label: "Account name", value: DEPOSIT_TO.accountName },
+        { label: m.routingLabel, value: m.routing ?? Accounts.ALL.fiat.routingNumber },
+        { label: "Account number", value: Accounts.numberFull("fiat") },
+        { label: "Bank name", value: DEPOSIT_TO.bankName },
+        { label: "Bank address", value: DEPOSIT_TO.bankAddress },
+      ]
+    : [];
+  const share = async () => {
+    const text = `${m.title}\n` + rows.map((r) => `${r.label}: ${r.value}`).join("\n");
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `Glint ${m.title.toLowerCase()} details`, text });
+        return;
+      }
+    } catch {
+      /* dismissed or refused: fall through to copying */
+    }
+    try {
+      await navigator.clipboard?.writeText(text);
+    } catch {
+      /* no clipboard in this frame: the label still confirms */
+    }
+    setShared(true);
+    window.setTimeout(() => setShared(false), 1600);
+  };
+
   return (
-    <SideDrawer trigger={children}>
-      <SideDrawer.Header
-        inset="sheet"
-        title="Deposit"
-        description="Add money to your USD wallet from your business bank account."
-      />
+    <SideDrawer open={open} onOpenChange={close} trigger={children}>
+      {m ? (
+        <SideDrawer.Header inset="sheet" onBack={() => setMethod(null)} title={m.title} description={m.intro} />
+      ) : (
+        <SideDrawer.Header
+          inset="sheet"
+          title="Deposit"
+          description="Choose how you want to add US dollars to your wallet."
+        />
+      )}
       <SideDrawer.Body>
-        <div className="flex flex-col gap-4">
-          <WebDsV2.Summary>
-            <WebDsV2.DescriptionItem layout="stacked" label="Account holder" value={holder} />
-            <WebDsV2.DescriptionItem layout="stacked" label="Routing number" value={a.routingNumber} copy={a.routingNumber} />
-            <WebDsV2.DescriptionItem
-              layout="stacked"
-              label="Account number"
-              value={Accounts.numberFull("fiat")}
-              copy={Accounts.numberFull("fiat")}
-            />
-            <WebDsV2.DescriptionItem layout="stacked" label="Account type" value={a.type} />
-          </WebDsV2.Summary>
-          <Note>Send a domestic wire or ACH to these details to fund your USD wallet.</Note>
-        </div>
+        {m ? (
+          <div className="flex flex-col gap-4">
+            <WebDsV2.Summary>
+              {rows.map((r) => (
+                <WebDsV2.DescriptionItem key={r.label} layout="stacked" label={r.label} value={r.value} copy={r.value} />
+              ))}
+            </WebDsV2.Summary>
+            <Note>{m.note}</Note>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {Object.entries(DEPOSIT).map(([key, d]) => (
+              <WebDsV2.OptionRow
+                key={key}
+                trailing="chevron"
+                tile="box"
+                align="start"
+                logo={<Landmark aria-hidden />}
+                title={d.title}
+                description={d.description}
+                onSelect={() => setMethod(key)}
+              />
+            ))}
+          </div>
+        )}
       </SideDrawer.Body>
+      {m ? (
+        <SideDrawer.Footer>
+          <WebDsV2.Button size="xl" className="w-full" onClick={share}>
+            {shared ? "Details copied" : "Share details"}
+          </WebDsV2.Button>
+        </SideDrawer.Footer>
+      ) : null}
     </SideDrawer>
   );
 }
@@ -149,12 +231,9 @@ const EMPTY = {
   amount: "",
   rail: "ach",
   holder: "",
-  bankName: "",
   routing: "",
-  accountType: "checking",
   account: "",
   confirm: "",
-  reference: "",
 };
 
 /** Withdraw: Form, Review, Requested in one drawer. */
@@ -177,7 +256,6 @@ function Withdraw({ children }) {
   const problems = {
     amount: !has || over,
     holder: !f.holder.trim(),
-    bank: f.rail === "wire" && !f.bankName.trim(),
     routing: digits(f.routing).length !== 9,
     account: digits(f.account).length < 4,
     confirm: digits(f.account) !== digits(f.confirm) || !f.confirm,
@@ -185,7 +263,6 @@ function Withdraw({ children }) {
   const FIELD_ID = {
     amount: "withdraw-amount",
     holder: "withdraw-holder",
-    bank: "withdraw-bank",
     routing: "withdraw-routing",
     account: "withdraw-account",
     confirm: "withdraw-confirm",
@@ -224,11 +301,8 @@ function Withdraw({ children }) {
       createdAt: at,
       recipient: {
         holder: f.holder.trim(),
-        bankName: f.rail === "wire" ? f.bankName.trim() : "",
         routingNumber: digits(f.routing),
         accountLast4: digits(f.account).slice(-4),
-        accountType: f.rail === "ach" ? f.accountType : "",
-        reference: f.reference.trim(),
       },
     };
     setKept([w, ...kept]);
@@ -267,7 +341,6 @@ function Withdraw({ children }) {
         <WebDsV2.DescriptionItem layout="stacked" label="Reference ID" value={done.id} copy={done.id} />
         <WebDsV2.DescriptionItem layout="stacked" label="Status" value={STATUS_LABEL[done.status]} />
         <WebDsV2.DescriptionItem layout="stacked" label="Amount" value={Persona.fmtMoney(done.amount)} />
-        <WebDsV2.DescriptionItem layout="stacked" label="Send by" value={`${r.label}, ${r.cost}`} />
         <WebDsV2.DescriptionItem
           layout="stacked"
           label="To"
@@ -277,12 +350,9 @@ function Withdraw({ children }) {
       </WebDsV2.Summary>
     );
     footer = (
-      <>
-        <Note>Quote your reference ID if you contact us about this withdrawal.</Note>
-        <WebDsV2.Button size="xl" className="w-full" onClick={() => close(false)}>
-          Done
-        </WebDsV2.Button>
-      </>
+      <WebDsV2.Button size="xl" className="w-full" onClick={() => close(false)}>
+        Done
+      </WebDsV2.Button>
     );
   } else if (step === "review") {
     header = (
@@ -297,10 +367,7 @@ function Withdraw({ children }) {
       <div className="flex flex-col gap-4">
         <WebDsV2.Summary>
           <WebDsV2.DescriptionItem label="Amount" value={Persona.fmtMoney(amount)} />
-          <WebDsV2.DescriptionItem
-            label={f.rail === "wire" ? "Wire fee" : "Fee"}
-            value={rail.fee ? Persona.fmtMoney(rail.fee) : "Free"}
-          />
+          <WebDsV2.DescriptionItem label="Fee" value={rail.fee ? Persona.fmtMoney(rail.fee) : "Free"} />
           <WebDsV2.Divider />
           <WebDsV2.DescriptionItem label="Total from USD wallet" value={Persona.fmtMoney(total)} emphasis="total" />
         </WebDsV2.Summary>
@@ -308,34 +375,15 @@ function Withdraw({ children }) {
         <span className="text-sm font-medium leading-5 text-[color:var(--wds-foreground)]">Sending to</span>
         <WebDsV2.Summary>
           <WebDsV2.DescriptionItem label="Account holder" value={f.holder.trim()} />
-          <WebDsV2.DescriptionItem
-            label={f.rail === "wire" ? "Wire routing number" : "Routing number"}
-            value={digits(f.routing)}
-          />
+          <WebDsV2.DescriptionItem label="Routing number" value={digits(f.routing)} />
           <WebDsV2.DescriptionItem label="Account number" value={digits(f.account)} />
-          {f.rail === "wire" ? (
-            <>
-              <WebDsV2.DescriptionItem label="Bank name" value={f.bankName.trim()} />
-              {f.reference.trim() ? <WebDsV2.DescriptionItem label="Reference" value={f.reference.trim()} /> : null}
-            </>
-          ) : (
-            <WebDsV2.DescriptionItem label="Account type" value={ACCOUNT_TYPE_LABEL[f.accountType]} />
-          )}
         </WebDsV2.Summary>
-        {f.rail === "wire" ? (
-          <WebDsV2.Alert tone="warning" title="Wires can’t be reversed">
-            Check the bank details carefully. Once a wire is sent, we can’t get the money back.
-          </WebDsV2.Alert>
-        ) : null}
       </div>
     );
     footer = (
-      <>
-        <Note>Our team checks and approves every withdrawal before it’s sent.</Note>
-        <WebDsV2.Button size="xl" className="w-full" onClick={confirm}>
-          {rail.confirm}
-        </WebDsV2.Button>
-      </>
+      <WebDsV2.Button size="xl" className="w-full" onClick={confirm}>
+        {rail.confirm}
+      </WebDsV2.Button>
     );
   } else {
     header = (
@@ -366,76 +414,24 @@ function Withdraw({ children }) {
             onChange={set("amount")}
           />
         </WebDsV2.Field>
-        <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium leading-5 text-[color:var(--wds-foreground)]">Send by</span>
-          <WebDsV2.Segmented
-            aria-label="Send by"
-            stretch
-            value={f.rail}
-            onValueChange={(v) => setF((x) => ({ ...x, rail: v }))}
-            options={[
-              { value: "ach", label: RAIL.ach.label },
-              { value: "wire", label: RAIL.wire.label },
-            ]}
-          />
-          <span className="pt-2 text-xs leading-4 text-[color:var(--wds-muted-foreground)]">{rail.helper}</span>
-        </div>
         <WebDsV2.Field label="Account holder name" htmlFor="withdraw-holder" helper="Must match your business name">
           <WebDsV2.Input id="withdraw-holder" size="default" invalid={bad("holder")} autoComplete="off" placeholder="Business name" value={f.holder} onChange={set("holder")} />
         </WebDsV2.Field>
-        {f.rail === "wire" ? (
-          <>
-            <WebDsV2.Field label="Bank name" htmlFor="withdraw-bank">
-              <WebDsV2.Input id="withdraw-bank" size="default" invalid={bad("bank")} autoComplete="off" placeholder="Bank name" value={f.bankName} onChange={set("bankName")} />
-            </WebDsV2.Field>
-            <WebDsV2.Field
-              label="Wire routing number"
-              htmlFor="withdraw-routing"
-              helper="Check with your bank, this can differ from your ACH routing number."
-            >
-              <WebDsV2.Input id="withdraw-routing" size="default" invalid={bad("routing")} inputMode="numeric" autoComplete="off" placeholder="9 digits" value={f.routing} onChange={set("routing")} />
-            </WebDsV2.Field>
-          </>
-        ) : (
-          <div className="grid grid-cols-2 gap-4">
-            <WebDsV2.Field label="Routing number" htmlFor="withdraw-routing">
-              <WebDsV2.Input id="withdraw-routing" size="default" invalid={bad("routing")} inputMode="numeric" autoComplete="off" placeholder="9 digits" value={f.routing} onChange={set("routing")} />
-            </WebDsV2.Field>
-            <div className="flex flex-col gap-1">
-              <span className="text-sm font-medium leading-5 text-[color:var(--wds-foreground)]">Account type</span>
-              <WebDsV2.Segmented
-                aria-label="Account type"
-                stretch
-                value={f.accountType}
-                onValueChange={(v) => setF((x) => ({ ...x, accountType: v }))}
-                options={[
-                  { value: "checking", label: ACCOUNT_TYPE_LABEL.checking },
-                  { value: "savings", label: ACCOUNT_TYPE_LABEL.savings },
-                ]}
-              />
-            </div>
-          </div>
-        )}
+        <WebDsV2.Field label="Routing number" htmlFor="withdraw-routing">
+          <WebDsV2.Input id="withdraw-routing" size="default" invalid={bad("routing")} inputMode="numeric" autoComplete="off" placeholder="9 digits" value={f.routing} onChange={set("routing")} />
+        </WebDsV2.Field>
         <WebDsV2.Field label="Account number" htmlFor="withdraw-account">
           <WebDsV2.Input id="withdraw-account" size="default" invalid={bad("account")} inputMode="numeric" autoComplete="off" placeholder="Account number" value={f.account} onChange={set("account")} />
         </WebDsV2.Field>
         <WebDsV2.Field label="Confirm account number" htmlFor="withdraw-confirm">
           <WebDsV2.Input id="withdraw-confirm" size="default" invalid={bad("confirm")} inputMode="numeric" autoComplete="off" placeholder="Re-enter account number" value={f.confirm} onChange={set("confirm")} />
         </WebDsV2.Field>
-        {f.rail === "wire" ? (
-          <WebDsV2.Field label="Reference (optional)" htmlFor="withdraw-reference">
-            <WebDsV2.Input id="withdraw-reference" size="default" autoComplete="off" placeholder="For example, an invoice number" value={f.reference} onChange={set("reference")} />
-          </WebDsV2.Field>
-        ) : null}
       </div>
     );
     footer = (
-      <>
-        <Note>We don’t save bank details, so you’ll enter them each time.</Note>
-        <WebDsV2.Button size="xl" className="w-full" onClick={toReview}>
-          {rail.review}
-        </WebDsV2.Button>
-      </>
+      <WebDsV2.Button size="xl" className="w-full" onClick={toReview}>
+        {rail.review}
+      </WebDsV2.Button>
     );
   }
 

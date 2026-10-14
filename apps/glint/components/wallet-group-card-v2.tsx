@@ -90,10 +90,11 @@ function SubtleEdge({ metal }) {
   );
 }
 
-/** "Zurich" for one vault, "2 vaults" for more. */
+/** "Zurich" for one vault, "2 vaults" for more, "No vaults yet" for none
+ *  (14 Oct, the No holdings slides). */
 function heldIn(vaults) {
   const held = vaults.filter((v) => v.amount > 0);
-  if (held.length === 0) return "";
+  if (held.length === 0) return "No vaults yet";
   if (held.length > 1) return `${held.length} vaults`;
   return VaultsV2.label(held[0].vault);
 }
@@ -106,9 +107,14 @@ function WalletGroupCardV2({
   className,
 }) {
   const metal = asset === "fiat" ? null : asset;
-  const [amount] = Persona.useBalance(asset);
+  /* ?state=empty (14 Oct): a business with nothing in it yet, the Gold
+     and Silver No holdings slides. */
+  const empty = StagingSwitches.useState() === "empty";
+  const [held] = Persona.useBalance(asset);
+  const amount = empty ? 0 : held;
   const [unit] = Persona.usePreference(asset === "silver" ? "unit.silver" : "unit.gold");
-  const vaults = VaultsV2.useVaults(asset);
+  const liveVaults = VaultsV2.useVaults(asset);
+  const vaults = empty ? [] : liveVaults;
   const cards = StagingSwitches.useCards();
   const label = Persona.DEFAULT.balances[asset].label;
   const surface = metal ? surfaceProp ?? (cards === "metal" ? "metal" : "subtle") : "solid";
@@ -120,7 +126,10 @@ function WalletGroupCardV2({
   return (
     <div
       className={cx(
-        "relative flex flex-col gap-2 rounded-[16px] p-5",
+        /* Subtle draws a 2px metal edge INSIDE the card, so its content
+           starts 22 in, as Full New measures (14 Oct); the others 20. */
+        "relative flex flex-col gap-2 rounded-[16px]",
+        surface === "subtle" ? "p-[22px]" : "p-5",
         surface === "solid" ? "border border-[color:var(--wds-border)] bg-[var(--wds-card)]" : "",
         surface === "subtle" ? "bg-[var(--wds-card)]" : "",
         link && !face ? "cursor-pointer transition-colors hover:bg-[var(--wds-card-hover)] [&:active:not(:has(.z-10_*:active))]:bg-[var(--wds-card-pressed)]" : "",
@@ -195,8 +204,10 @@ function WalletGroupCardV2({
                 <TradeFlowV2 metal={metal}>
                   <WebDsV2.MetalButton metal={metal} shape="square">Buy {label}</WebDsV2.MetalButton>
                 </TradeFlowV2>
+                {/* Nothing to sell: the No holdings slides draw Sell in the
+                    Web DS disabled state. */}
                 <TradeFlowV2 metal={metal} direction="sell">
-                  <WebDsV2.Button variant="secondary" size="lg" aria-label={`Sell ${label}`}>
+                  <WebDsV2.Button variant="secondary" size="lg" aria-label={`Sell ${label}`} disabled={amount <= 0}>
                     Sell
                   </WebDsV2.Button>
                 </TradeFlowV2>
@@ -224,14 +235,20 @@ function WalletGroupCardV2({
 
 /** The Vaults card beside a metal's wallet card (Silver · Default): 20
  *  all round, 4 between, 16 corners, card with a border; "Vaults" in
- *  Raleway Bold 20/28, then a row per vault, 10 above and below: the
+ *  Raleway Bold 20/28, then (14 Oct, Gold · 2 vaults, 1 vault, No
+ *  holdings) a Chivo 14/20 muted-foreground line saying what a vault is,
+ *  and "No gold held yet." in the same style when there is none; then a
+ *  row per vault, 10 above and below: the
  *  vault in Chivo Medium 16/24 over its share in 14/20 muted on the left,
  *  the holding in Medium 16/24 over its dollar value in 14/20 muted on the
  *  right. ASSUMPTION: Figma's right-hand second line repeats "100%"; the
  *  dollar value is what that slot most plausibly means, and the share
  *  already sits on the left. */
 WalletGroupCardV2.Vaults = function WalletGroupCardV2Vaults({ asset = "gold", className }) {
-  const vaults = VaultsV2.useVaults(asset).filter((v) => v.amount > 0);
+  const empty = StagingSwitches.useState() === "empty";
+  const live = VaultsV2.useVaults(asset).filter((v) => v.amount > 0);
+  const vaults = empty ? [] : live;
+  const noun = Persona.DEFAULT.balances[asset].label.toLowerCase();
   const [unit] = Persona.usePreference(asset === "silver" ? "unit.silver" : "unit.gold");
   const total = vaults.reduce((sum, v) => sum + v.amount, 0);
   return (
@@ -242,6 +259,14 @@ WalletGroupCardV2.Vaults = function WalletGroupCardV2Vaults({ asset = "gold", cl
       )}
     >
       <span className="wds-display text-xl font-bold leading-7 text-[color:var(--wds-foreground)]">Vaults</span>
+      <p className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">
+        {vaults.length
+          ? `This is where your ${noun} is stored. You choose a vault each time you buy, and can hold ${noun} in more than one.`
+          : `This is where your ${noun} will be stored. You choose a vault each time you buy.`}
+      </p>
+      {vaults.length ? null : (
+        <p className="text-sm leading-5 text-[color:var(--wds-muted-foreground)]">No {noun} held yet.</p>
+      )}
       {vaults.map((v) => (
         <div key={v.vault} className="flex items-center justify-between gap-4 py-2.5">
           <span className="flex flex-col gap-0.5">

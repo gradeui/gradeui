@@ -1,264 +1,184 @@
+// @ts-nocheck: a MECHANICAL twin (7 Oct 2026). The body is the Studio
+// JSX byte for byte; only the imports and the export line are rewritten
+// (scripts/mechanical-twin.py), so the pair cannot drift by
+// hand-porting.
 "use client";
 
-/**
- * MetalPriceCardV2 (2 Oct 2026): MetalPriceCard for the Glint business
- * portal v2 on glint-staging. A FORK, so the live demo's Gold and Silver
- * pages keep MetalPriceCard exactly as it is. TWIN: the Studio shared
- * component "MetalPriceCardV2" (cmuqwdkwwesmee). Editing one does not
- * touch the other. Keep the pair in sync.
- *
- * THE ONE CHANGE: the headline price is the Web DS DisplayNumber (Ali,
- * 2 Oct: "the large numbers seem to be in the wrong font on Web ... make
- * sure they are tabular"). Raleway 700 with lining tabular figures, the
- * whole number large and the "$", the cents and the "/g" smaller, as the
- * Web DS sets "$105.33/g". Size=md, 36 / 30, the same size as the wallet
- * card's grams beside it, so the two cards' big figures still line up
- * (the header-height contract below).
- * ASSUMPTION: md rather than the Balance's lg. The Web DS frame shows the
- * price at about the card grams' size, not the Balance's; lg would also
- * break the line-up with the wallet card. Ali to confirm.
- *
- * Everything below is MetalPriceCard's, and its notes still apply.
- *
- * Glint metal price card (Ali, 11 Aug 2026), ported from the Studio
- * shared component "MetalPriceCard" (cmsotthrj7ma4q).
- *
- * EXTRACTED because the gold and silver wallet screens each carried
- * their own copy of this card, and the silver one was a paste of the
- * gold one: it inherited gold's header comment, gold's Y-axis padding
- * and gold's chart id. Componentising is the fix for that whole class
- * of bug, so anything metal-specific here derives from the `metal` prop
- * and nothing is typed twice.
- *
- * OPENS ON 5Y (Ali, 11 Aug). The long view is the one that shows gold
- * doing what the product is sold on; 1M opens on a squiggle. The
- * headline price is unaffected either way, because latest() always
- * reads the 1M tail, the only range guaranteed to end on the last
- * settled auction.
- *
- * NO CHART ANIMATION (Ali, 11 Aug: "animation is very sow"). Recharts
- * animates an Area over 1500ms by default and replays the whole line on
- * every range change, so toggling 1M to 5Y felt like the app was
- * thinking. isAnimationActive={false} makes range switching instant.
- * Put a short animationDuration back if it ever wants a little motion;
- * do not just shorten the default, because the cost here is on every
- * toggle, not on first paint.
- *
- * PROPORTIONAL Y DOMAIN, the bug this extraction fixes. The old pages
- * both hardcoded domain={["dataMin - 2", "dataMax + 1"]}, which is sized
- * for gold at 128 to 139 USD/g. Against silver at 1.78 to 2.07 that same
- * padding gives a domain of -0.22 to 3.07, so the silver line rendered
- * as a near-flat squiggle in the lower tenth of the card with the axis
- * running below zero. The padding is now a fraction of the series' own
- * range, computed here, so it is correct for either metal, either unit
- * and any range. Recharts' string form ("dataMin - 2") cannot express
- * this: its parser only takes a literal number, so the bounds are
- * computed and passed as numbers.
- *
- * RANGE CONTROL LIVES IN THE HEADER, top right, opposite the title
- * (Ali, 11 Aug). Below the price it sat between two things it was not
- * about, and pushed the chart down; in the header it reads as the card's
- * own control. The card header is therefore a Row, not just a title.
- *
- * NO SOURCE CAPTION (Ali, 11 Aug). This first read "LBMA PM auction ·
- * 2026-08-10", then lost the date, and is now gone entirely. The price is
- * the point of the card and the provenance was a footnote nobody needed
- * on screen. lib/market's header still records where the numbers come
- * from, which is where that belongs.
- *
- * COLOUR comes from metalSolid(metal), the single flat metal colour, so
- * no screen hand-picks a ladder step. The gradient id is per-metal: two
- * of these cards on one page with a shared id would both draw the first
- * one's fill.
- */
-
+// MetalPriceCardV2 (2 Oct 2026, REDRAWN 14 Oct): the price card on the
+// business portal v2's Gold and Silver pages. A FORK of MetalPriceCard, so
+// the live demo's wallet screens keep that one exactly as it is.
+//
+// TWIN: the Studio shared component "MetalPriceCardV2" (cmuqwdkwwesmee). Editing one does
+// not touch the other. Keep the pair in sync.
+// not touch the other. Keep the pair in sync.
+//
+// 14 OCT, AS "Glint - Web Portal - Full New" DRAWS IT (Gold · 2 vaults and
+// the Charts slides: Up, Down, Neutral, Hover), measured off the slides:
+//   - THE CARD: card with a border, 16 corners, 20 all round.
+//   - THE HEADER, 36 tall: "Gold price" in Raleway Bold 20/28 on the
+//     left; on the right the Web DS segmented control, 264 wide, 1M 1Y 2Y
+//     5Y sharing it equally. OPENS ON 1Y, as every slide shows it.
+//   - 4 under it, the price: the Web DS DisplayNumber md, "$131.82" with
+//     "/g" in muted-foreground; then the change line, Chivo 12/16 in
+//     muted-foreground after a 12 arrow: "0.65% ($0.86) past year". The
+//     arrow is the state: UP (higher than the start of the range) is
+//     arrow-up-right in success, DOWN is arrow-down-right in destructive,
+//     NEUTRAL (under 1% either way) is a flat arrow-right, muted. Those
+//     are the Charts slides' own words.
+//   - 16 under that, the chart, 104 tall: a 1.5 line in the silver token
+//     for both metals (silver/300 Dark, silver/500 Light, as the slides
+//     paint it), a dot on the last point, and a dashed 1px rule in
+//     muted-foreground (4 on, 4 off) at the range's FIRST price, so the
+//     line reads as above or below where it started. No fill, no axes.
+//   - HOVER (Charts · Hover): Recharts' tooltip, cursor and active dot.
+//     The cursor is a 1px border-coloured rule, the active dot the line's
+//     colour, the tooltip a popover card (border, 8 corners, 12 in) with
+//     the date and "Price : $139.25", Chivo 12/16.
+//   - 16 under the chart, the legend in Chivo 14/20 muted-foreground:
+//     "USD per g • $125.39 to $179.95", the low and high of the range.
+//
+// 2Y: Market has 1M, 3M, 1Y and 5Y. Figma's 2Y is the last two years of
+// the 5Y series (monthly points), cut here so Market stays as it is.
+//
+// ASSUMPTIONS: the figures are Market's LBMA series, not Figma's samples
+// ($131.82, $125.39 to $179.95), so the state a range shows depends on
+// the real prices; the change line's "past 2 years" and "past 5 years"
+// extend Figma's "past month" and "past year".
 import * as React from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  Stack,
-  Row,
-  ToggleGroup,
-  ToggleGroupItem,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@gradeui/ui";
-import { AreaChart, Area, XAxis, YAxis } from "recharts";
-import { fmtMoney, usePreference, DEFAULT_PERSONA } from "@/lib/persona";
-import {
-  OZ,
-  RANGES,
-  RANGE_LABEL,
-  latest,
-  series,
-  type MetalKey,
-  type Range,
-} from "@/lib/market";
-import { metalSolid } from "@/components/wordmark";
+import { LineChart, Line, XAxis, YAxis, Tooltip as ChartTip, ReferenceLine, ResponsiveContainer } from "recharts";
+import { ArrowRight, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Persona } from "@/lib/persona";
+import { Market } from "@/lib/market";
 import { DisplayNumber } from "@/components/display-number";
+import { WebDsV2 } from "@/components/web-ds-v2";
 
-export interface MetalPriceCardV2Props {
-  metal?: MetalKey;
-  /** The screen sets the grid span. */
-  className?: string;
+const RANGES = ["1M", "1Y", "2Y", "5Y"];
+const PAST = { "1M": "past month", "1Y": "past year", "2Y": "past 2 years", "5Y": "past 5 years" };
+const LINE = "var(--wds-silver)";
+
+/** The rows for a range, oldest first: Market's, and 2Y cut from 5Y. */
+function rowsFor(metal, range) {
+  if (range !== "2Y") return Market.series(metal, range);
+  const all = Market.series(metal, "5Y");
+  const last = new Date(all[all.length - 1][0]);
+  const from = new Date(last.getFullYear() - 2, last.getMonth(), last.getDate()).getTime();
+  return all.filter(([d]) => new Date(d).getTime() >= from);
 }
 
-export function MetalPriceCardV2({
-  metal = "gold",
-  className,
-}: MetalPriceCardV2Props) {
-  const [range, setRange] = React.useState<Range>("5Y");
-  const [unit] = usePreference(`unit.${metal}`);
-  const label = DEFAULT_PERSONA.balances[metal].label;
-  const lastAuction = latest(metal);
-  const price = unit === "oz" ? lastAuction.usdPerOz : lastAuction.usdPerG;
+const fmtDate = (d) =>
+  new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
-  /* Chart the range in the preferred unit, in the metal's own colour. */
-  const data = series(metal, range).map(([d, usdPerG]) => ({
+/** Charts · Hover's tooltip: a popover card, the date over "Price : $x". */
+function PriceTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0].payload;
+  return (
+    <div className="flex flex-col gap-1 rounded-[8px] border border-[color:var(--wds-border)] bg-[var(--wds-popover)] p-3 text-xs leading-4 text-[color:var(--wds-popover-foreground)] shadow-sm">
+      <span>{fmtDate(p.d)}</span>
+      <span>Price : {Persona.fmtMoney(p.price)}</span>
+    </div>
+  );
+}
+
+function MetalPriceCardV2({ metal = "gold", className }) {
+  const [range, setRange] = React.useState("1Y");
+  const [unit] = Persona.usePreference(`unit.${metal}`);
+  const label = Persona.DEFAULT.balances[metal].label;
+  const latest = Market.latest(metal);
+  const price = unit === "oz" ? latest.usdPerOz : latest.usdPerG;
+
+  /* The range in the preferred unit. */
+  const data = rowsFor(metal, range).map(([d, usdPerG]) => ({
     d,
-    price: Math.round((unit === "oz" ? usdPerG * OZ : usdPerG) * 100) / 100,
+    price: Math.round((unit === "oz" ? usdPerG * Market.OZ : usdPerG) * 100) / 100,
   }));
-
-  /* Bounds from the series itself, so the line fills the card whatever
-     the metal, unit or range. The || guard covers a hypothetical flat
-     series, where hi - lo is 0 and the domain would collapse. */
   const values = data.map((p) => p.price);
   const lo = Math.min(...values);
   const hi = Math.max(...values);
-  const pad = (hi - lo) * 0.12 || hi * 0.02;
-
-  const config: ChartConfig = {
-    price: { label: "USD", color: metalSolid(metal) },
-  };
-  const fillId = `fill-${metal}-price`;
-  const stroke = metalSolid(metal);
-
-  /* THE LEGEND (Ali, 11 Aug). Both axes are hidden, so without this the
-     chart is a shape with no reference: no scale, and no way to tell
-     whether the line ended up above or below where it started. The key
-     names the series, the low to high gives the scale, and the change is
-     the one number a price chart exists to show.
-     Read off the SAME `data` the line draws, so the legend can never
-     describe a different range than the chart. */
+  /* Bounds from the series itself, so the line fills the chart whatever
+     the metal, unit or range; the || covers a flat series. */
+  const pad = (hi - lo) * 0.1 || hi * 0.02;
   const first = values[0] ?? 0;
   const last = values[values.length - 1] ?? 0;
-  const changePct = first ? ((last - first) / first) * 100 : 0;
-  const up = changePct >= 0;
+  const change = last - first;
+  const pct = first ? (change / first) * 100 : 0;
+  const state = Math.abs(pct) < 1 ? "neutral" : pct > 0 ? "up" : "down";
+  const Arrow = state === "up" ? ArrowUpRight : state === "down" ? ArrowDownRight : ArrowRight;
+  const arrowInk =
+    state === "up"
+      ? "text-[color:var(--wds-success)]"
+      : state === "down"
+        ? "text-[color:var(--wds-destructive)]"
+        : "text-[color:var(--wds-muted-foreground)]";
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        {/* HEADER HEIGHT IS A CONTRACT BETWEEN THE TWO CARDS (Ali, 11 Aug:
-            "could do with the card titles and the big numbers lining up
-            visually"). These two sit side by side, so whichever header is
-            taller pushes its whole card down and the pair stops reading as
-            a row. The price card's header holds a size="sm" ToggleGroup, and
-            that control measures 36px, not the 28px of its items: the
-            segmented track wraps them in p-0.5. Taller than the wallet card's 20px mark, which left the titles
-            8px apart and the big figures 16px apart. min-h-9 is that 36px,
-            floored in BOTH headers so neither can drift. Change one, change
-            the other. */}
-        <Row justify="between" align="center" gap="md" className="min-h-9">
-          <CardTitle>{label} price</CardTitle>
-          {/* RANGE (Ali, 11 Aug): 1M is the floor because LBMA publishes
-              one auction price a day, so the app's 1D and 1W would be
-              invented; 5Y is the ceiling he asked for. lib/market thins
-              the points per range. */}
-          <ToggleGroup
-            type="single"
-            variant="segmented"
-            size="sm"
+    <div
+      className={`flex flex-col rounded-[16px] border border-[color:var(--wds-border)] bg-[var(--wds-card)] p-5 ${className ?? ""}`}
+    >
+      <div className="flex h-9 items-center justify-between gap-4">
+        <span className="wds-display text-xl font-bold leading-7 text-[color:var(--wds-card-foreground)]">
+          {label} price
+        </span>
+        <div className="w-[264px] shrink-0">
+          <WebDsV2.Segmented
+            aria-label="Chart range"
+            stretch
             value={range}
-            onValueChange={(v) => v && setRange(v as Range)}
-            className="w-fit shrink-0"
-          >
-            {RANGES.map((r) => (
-              <ToggleGroupItem key={r} value={r} className="min-w-11">
-                {RANGE_LABEL[r]}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </Row>
-      </CardHeader>
-      <CardContent>
-        <Stack gap="md">
-          {/* HEADLINE SIZE IS DELIBERATE AND SHARED (Ali, 11 Aug: "on the
-              cards we need the numbers to be bigger"). The figure size is
-              the same on all three wallet screens, Gold, Silver and USD,
-              so it matches the figure sitting beside this card: now the
-              Web DS DisplayNumber at Size=md (2 Oct), the whole dollars 36
-              and the "$", the cents and the unit 30. Change one, change
-              all three. "/g" sits tight against the cents, as the Web DS
-              writes "$105.33/g". */}
-          <DisplayNumber
-            value={price}
-            currency
-            suffix={`/${unit}`}
-            size="md"
-            className="text-foreground"
+            onValueChange={setRange}
+            options={RANGES.map((r) => ({ value: r, label: r }))}
           />
-          <ChartContainer config={config} className="h-[180px] w-full">
-            <AreaChart
-              data={data}
-              margin={{ top: 8, right: 0, bottom: 0, left: 0 }}
-            >
-              <defs>
-                <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="0%"
-                    stopColor="var(--color-price)"
-                    stopOpacity={0.25}
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor="var(--color-price)"
-                    stopOpacity={0.02}
-                  />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="d" hide />
-              <YAxis hide domain={[lo - pad, hi + pad]} />
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent indicator="line" />}
-              />
-              <Area
-                dataKey="price"
-                type="monotone"
-                stroke="var(--color-price)"
-                strokeWidth={2}
-                fill={`url(#${fillId})`}
-                isAnimationActive={false}
-              />
-            </AreaChart>
-          </ChartContainer>
-          <Row justify="between" align="center" gap="sm" className="text-xs">
-            <Row gap="xs" align="center">
-              {/* The swatch is the metal's own flat colour, the same value
-                  the line is stroked with, read from one place so the key
-                  cannot drift from the chart. */}
-              <span
-                aria-hidden="true"
-                className="size-2 shrink-0 rounded-full"
-                style={{ backgroundColor: stroke }}
-              />
-              <span className="tabular-nums text-muted-foreground">
-                USD per {unit}, {fmtMoney(lo)} to {fmtMoney(hi)}
-              </span>
-            </Row>
-            <span
-              className={`tabular-nums ${up ? "text-success" : "text-destructive"}`}
-            >
-              {up ? "+" : ""}
-              {changePct.toFixed(1)}% over {RANGE_LABEL[range]}
-            </span>
-          </Row>
-        </Stack>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+      <DisplayNumber
+        value={price}
+        currency
+        suffix={unit === "oz" ? "/oz t" : "/g"}
+        suffixColor="var(--wds-muted-foreground)"
+        size="md"
+        className="mt-1 text-[color:var(--wds-foreground)]"
+      />
+      <span className="flex items-center gap-1 text-xs leading-4 text-[color:var(--wds-muted-foreground)]">
+        <Arrow aria-hidden className={`size-3 shrink-0 ${arrowInk}`} strokeWidth={2} />
+        {Math.abs(pct).toFixed(2)}% ({Persona.fmtMoney(change)}) {PAST[range]}
+      </span>
+      <div className="mt-4 h-[104px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 0, right: 4, bottom: 0, left: 0 }}>
+            <XAxis dataKey="d" hide />
+            <YAxis hide domain={[lo - pad, hi + pad]} />
+            <ReferenceLine y={first} stroke="var(--wds-muted-foreground)" strokeDasharray="4 4" strokeWidth={1} />
+            {/* Recharts' Tooltip, aliased: the contract validator reads a bare
+                <Tooltip> as the DS one. */}
+            <ChartTip
+              content={<PriceTooltip />}
+              cursor={{ stroke: "var(--wds-border)", strokeWidth: 1 }}
+              isAnimationActive={false}
+            />
+            <Line
+              dataKey="price"
+              type="linear"
+              stroke={LINE}
+              strokeWidth={1.5}
+              isAnimationActive={false}
+              activeDot={{ r: 3, fill: LINE, stroke: "none" }}
+              dot={(props) =>
+                props.index === data.length - 1 ? (
+                  <circle key="last" cx={props.cx} cy={props.cy} r={3} fill={LINE} />
+                ) : (
+                  <g key={props.index} />
+                )
+              }
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <span className="mt-4 text-sm leading-5 text-[color:var(--wds-muted-foreground)]">
+        USD per {unit === "oz" ? "oz t" : unit} • {Persona.fmtMoney(lo)} to {Persona.fmtMoney(hi)}
+      </span>
+    </div>
   );
 }
+
+/* Exported untyped: the body is plain JSX (see the header). */
+const __MetalPriceCardV2: any = MetalPriceCardV2;
+export { __MetalPriceCardV2 as MetalPriceCardV2 };
