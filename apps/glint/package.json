@@ -14,7 +14,8 @@
     "write:screen": "tsx scripts/write-screen.mts",
     "read:component": "tsx scripts/read-shared-component.mts",
     "read:screen": "tsx scripts/read-screen.mts",
-    "capture:live": "node scripts/live-capture/capture-live.mjs"
+    "capture:live": "node scripts/live-capture/capture-live.mjs",
+    "capture:live:login": "node scripts/live-capture/capture-login.mjs"
   },
   "dependencies": {
     "@gradeui/ui": "workspace:*",
