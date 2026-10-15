@@ -79,7 +79,9 @@
 //   - SIGNED OUT (14 Oct, the Glint build sends a signed-out /console page
 //     to /log-in): Sign out marks the tab signed out (FlowStore
 //     "v2.signedOut"), and while it is, any page in this chrome goes to the
-//     log in; logging in (the passcode, or a new passcode) clears it. A DEMO:
+//     log in; logging in (the passcode, or a new passcode) clears it. Sign
+//     out itself lands on "Logged out v2" (15 Oct, the Glint build's
+//     /log-out: "You’ve been logged out", Go home). A DEMO:
 //     a fresh tab starts signed in, so a shared link opens on its page.
 //   - SYSTEM STATES (14 Oct, StagingSwitches ?state=): "error" swaps every
 //     page's content for the Web DS EmptyState of Error · Page; "offline"
@@ -190,6 +192,7 @@ const NAV = [
   { label: "Business profile", icon: BusinessIcon, target: "Business profile v2" },
 ];
 const LOG_IN = "Log in v2";
+const LOGGED_OUT = "Logged out v2";
 const PROFILE = "Profile v2";
 const NOTIFICATIONS = "Notifications v2";
 
@@ -402,7 +405,7 @@ function SidebarBody({ active, business, describe, onTrigger, onNavigate, person
             </div>
             {[
               { label: "Profile", Icon: ProfileIcon, target: PROFILE },
-              { label: "Sign out", Icon: LogOut, target: LOG_IN, out: true },
+              { label: "Sign out", Icon: LogOut, target: LOGGED_OUT, out: true },
             ].map(({ label, Icon, target, out }) => (
               <button
                 key={label}
@@ -677,7 +680,7 @@ function AccountMenu({ name, business }) {
           Profile
         </DropdownMenuItem>
         <div role="separator" className="my-1.5 h-px bg-[var(--wds-border)]" />
-        <DropdownMenuItem className="h-10 gap-3 px-3" data-grade-goto={LOG_IN} onPointerDown={signOut} onKeyDown={signOut}>
+        <DropdownMenuItem className="h-10 gap-3 px-3" data-grade-goto={LOGGED_OUT} onPointerDown={signOut} onKeyDown={signOut}>
           <LogOut className="size-4" />
           Sign out
         </DropdownMenuItem>

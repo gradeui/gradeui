@@ -270,6 +270,15 @@ export const SCREENS: ScreenEntry[] = [
     promotedAt: 1792017035008,
     sourceHash: "964d04b787cf",
   },
+  /* Staging, 15 Oct 2026: where Sign out lands, the Glint build's /log-out
+     (Ali asked for it here and in Figma). */
+  {
+    slug: "/log-out",
+    name: "Logged out v2",
+    id: "dmv99za1sq00m",
+    promotedAt: 1792052820640,
+    sourceHash: "e36df40479de",
+  },
   {
     slug: "/404",
     name: "Page not found v2",
