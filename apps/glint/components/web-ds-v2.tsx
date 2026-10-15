@@ -725,7 +725,9 @@ WebDsV2.ListItem = function WebDsV2ListItem({
    muted-foreground on the left, value Chivo Medium 16/24 foreground on
    the right; Emphasis=total sets both SemiBold, the value 18/28. stacked:
    12 above and below, label 14/20 over value 16/24. copy adds the 16
-   copy icon in primary, which turns into a success check once pressed. */
+   copy icon in primary, which turns into a success check once pressed.
+   A long inline value (15 Oct: a bank address on Review withdrawal)
+   wraps right-aligned beside the label, which keeps its one line. */
 WebDsV2.DescriptionItem = function WebDsV2DescriptionItem({
   label,
   value,
@@ -775,7 +777,7 @@ WebDsV2.DescriptionItem = function WebDsV2DescriptionItem({
     <div className={cx("flex items-center gap-4 py-2", className)}>
       <span
         className={cx(
-          "min-w-0 flex-1 text-base leading-6",
+          "flex-1 shrink-0 whitespace-nowrap text-base leading-6",
           total ? "font-semibold text-[color:var(--wds-foreground)]" : "text-[color:var(--wds-muted-foreground)]",
         )}
       >
@@ -783,7 +785,7 @@ WebDsV2.DescriptionItem = function WebDsV2DescriptionItem({
       </span>
       <span
         className={cx(
-          "text-right text-[color:var(--wds-foreground)]",
+          "min-w-0 text-right text-[color:var(--wds-foreground)]",
           total ? "text-lg font-semibold leading-7" : "text-base font-medium leading-6",
         )}
       >
