@@ -194,8 +194,8 @@ export const SCREENS: ScreenEntry[] = [
     name: "Profile v2",
     id: "dmv8hrbkp0e3v",
     aliases: ["Settings v2"],
-    promotedAt: 1792016112558,
-    sourceHash: "56ac7e2a9d7b",
+    promotedAt: 1792052356584,
+    sourceHash: "1b51e26243d0",
   },
   {
     slug: "/console/notifications",

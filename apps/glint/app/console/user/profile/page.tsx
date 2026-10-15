@@ -2,9 +2,9 @@
 "use client";
 
 // Promoted from Studio screen "Profile v2"
-// (design dmv8hrbkp0e3v, version 1792016112558). Registry: lib/screens.ts;
+// (design dmv8hrbkp0e3v, version 1792052356584). Registry: lib/screens.ts;
 // re-promotion workflow: apps/glint/README.md.
-// source-hash: 56ac7e2a9d7b
+// source-hash: 1b51e26243d0
 // (the drift guard's signature of the Studio source this page was
 // built from, so check:promotions measures Studio against THIS copy
 // and not against a baseline that --update can rewrite.)
@@ -29,8 +29,9 @@
 // 14 OCT, ALI'S CALL ("we need to match the fields exactly for profile and
 // address in Figma and Our Prototype (we dont need tabs)"): Personal
 // details carries the Glint build's six fields, Title, First name, Middle
-// names, Last name, Email, Phone, unmasked; under it its Home address card,
-// tagged Primary, with House name or number, Street name, Flat or unit,
+// names, Last name, Email, Phone, unmasked; under it its Home address card
+// (15 Oct: without the Glint build's Primary badge, Ali's call), with
+// House name or number, Street name, Flat or unit,
 // Town or city, State, ZIP code, Country. Both are Figma's muted card,
 // the fields two to a row as the Glint build sets them. One page, no
 // tabs; /console/user/addresses lands here.
@@ -133,10 +134,8 @@ export default function ProfilePage() {
               <Detail label="Email">{p.email}</Detail>
               <Detail label="Phone">{p.phone}</Detail>
             </DetailsCard>
-            <div className="mt-5 flex items-center gap-2">
-              <AppChromeV2.Heading>Home address</AppChromeV2.Heading>
-              <WebDsV2.Badge variant="secondary">Primary</WebDsV2.Badge>
-            </div>
+            {/* No Primary badge (Ali, 15 Oct), although the Glint build has one. */}
+            <AppChromeV2.Heading className="mt-5">Home address</AppChromeV2.Heading>
             <p className="text-xs leading-4 text-[color:var(--wds-muted-foreground)]">Your primary residential address.</p>
             <DetailsCard>
               <Detail label="House name or number">{p.address.house}</Detail>
