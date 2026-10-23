@@ -45,13 +45,24 @@
  * exact about.
  * One print per day, published with a lag: latest() is the last
  * settled auction, not today.
+ *
+ * 23 OCT 2026, THE DEMO ACCOUNT'S PRICE (Ali: "new figures on the gradeui
+ * staging please to match what we are using"): each series ends on the
+ * styleguide's demo account price (Glint-Styleguide brand/demo-account.ts),
+ * gold $3,993.56/oz -> 128.3959/g and silver $53.47/oz -> 1.7191/g, from
+ * BullionVault's live spot at 15:21 and 15:23 London time, 23 Oct 2026.
+ * NOT an LBMA auction print: LBMA's tables have moved behind its licensed
+ * MyLBMA portal and the public feed refuses scripts, so the series has no
+ * prints between 11 Aug and this one. Refresh the tails from a licensed
+ * LBMA feed when there is one; until then the charts step from 11 Aug
+ * straight to 23 Oct.
  */
 
 export type MetalKey = "gold" | "silver";
 
 export const OZ = 31.1034768; // grams per troy ounce
 
-export const GBPUSD = 1.3501; // implied by the 2026-08-11 gold auction row
+export const GBPUSD = 1.3368; // the ECB reference rates, 23 Oct 2026 (the demo account's)
 /* Reference only: it is NOT on the price path any more, since both
    metals are stored in USD. Kept because the onboarding copy quotes a
    sterling figure. */
@@ -93,6 +104,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-08-05", 135.2453], ["2026-08-06", 137.2146], ["2026-08-07", 139.3912],
       ["2026-08-10", 139.0343],
       ["2026-08-11", 140.928],
+      ["2026-10-23", 128.3959],
     ],
     "3M": [
       ["2026-05-11", 152.0457], ["2026-05-13", 150.3272], ["2026-05-15", 145.5786],
@@ -107,6 +119,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-07-27", 131.0143], ["2026-07-29", 128.6303], ["2026-07-31", 129.4582],
       ["2026-08-04", 131.3101], ["2026-08-06", 137.2146], ["2026-08-10", 139.0343],
       ["2026-08-11", 140.928],
+      ["2026-10-23", 128.3959],
     ],
     "1Y": [
       ["2025-08-11", 107.9108], ["2025-08-18", 107.1391], ["2025-08-26", 108.2548],
@@ -127,6 +140,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-07-06", 133.1346], ["2026-07-13", 129.881], ["2026-07-20", 128.7171],
       ["2026-07-27", 131.0143], ["2026-08-03", 129.508], ["2026-08-10", 139.0343],
       ["2026-08-11", 140.928],
+      ["2026-10-23", 128.3959],
     ],
     "5Y": [
       ["2021-08-10", 55.407], ["2021-09-09", 57.4936], ["2021-10-08", 57.0113],
@@ -151,6 +165,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-05-26", 145.1767], ["2026-06-24", 129.3891], ["2026-07-23", 130.0466],
       ["2026-08-10", 139.0343],
       ["2026-08-11", 140.928],
+      ["2026-10-23", 128.3959],
     ],
   },
   silver: {
@@ -164,6 +179,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-08-05", 1.9697], ["2026-08-06", 1.9848], ["2026-08-07", 2.0679],
       ["2026-08-10", 2.0556],
       ["2026-08-11", 2.0957],
+      ["2026-10-23", 1.7191],
     ],
     "3M": [
       ["2026-05-11", 2.5849], ["2026-05-13", 2.7873], ["2026-05-15", 2.5315],
@@ -178,6 +194,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-07-27", 1.898], ["2026-07-29", 1.8453], ["2026-07-31", 1.8559],
       ["2026-08-04", 1.89], ["2026-08-06", 1.9848], ["2026-08-10", 2.0556],
       ["2026-08-11", 2.0957],
+      ["2026-10-23", 1.7191],
     ],
     "1Y": [
       ["2025-08-11", 1.2139], ["2025-08-18", 1.2245], ["2025-08-26", 1.2352],
@@ -199,6 +216,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-07-23", 1.886], ["2026-07-30", 1.8665], ["2026-08-06", 1.9848],
       ["2026-08-10", 2.0556],
       ["2026-08-11", 2.0957],
+      ["2026-10-23", 1.7191],
     ],
     "5Y": [
       ["2021-08-10", 0.752], ["2021-09-09", 0.7763], ["2021-10-08", 0.725],
@@ -223,6 +241,7 @@ export const SERIES: Record<MetalKey, Record<Range, PriceRow[]>> = {
       ["2026-05-11", 2.5849], ["2026-06-10", 2.0724], ["2026-07-09", 1.8913],
       ["2026-08-07", 2.0679], ["2026-08-10", 2.0556],
       ["2026-08-11", 2.0957],
+      ["2026-10-23", 1.7191],
     ],
   },
 };

@@ -60,17 +60,27 @@
  * lib/accounts.ts; this file only ever stores an id.
  *
  * THE INVARIANT, and its limit. Each metal's vault figures SUM EXACTLY
- * to that metal's balance: 4226.17 + 2410.63 = 6636.80 for gold, and
- * 2984.15 for silver (one vault), both in USD,
+ * to that metal's balance: 9330.2125 + 5718.5173 = 15048.7298 for gold,
+ * and 1320.8877 for silver (one vault), both in USD,
  * the unit `amount` is stored in. That is the ONLY arithmetic these
  * figures satisfy. They do not reconcile against the five metal
  * activity rows, and they are not meant to: a balance here is a stated
  * standing position, while the activity is a recent window that opens
  * partway through the account's life and carries no running vault
  * total. So do not "fix" the balances to match the rows. Worth knowing
- * before trying: the four gold rows move 98.6569 g between them, more
- * metal than $6,636.80 represents at Market's price, so there is no
- * adjustment that makes the two agree in either direction.
+ * before trying: the four gold rows move 106.8312 g between them, close
+ * to the 117.2057 g the balance holds but not a ledger of it, so there is
+ * no adjustment that makes the two agree in either direction.
+ *
+ * THE DEMO ACCOUNT (23 Oct 2026, Ali: "I need new figures on the gradeui
+ * staging please to match what we are using"): the balances are the
+ * styleguide's demo account, Glint-Styleguide brand/demo-account.ts, US in
+ * USD, the one source for every figure in Glint's collateral: 117.2057 g
+ * of gold (Zurich 72.6675 g, Miami 44.5382 g), 768.36 g of silver (Zurich)
+ * and $2,893.84. Each `amount` is the grams times Market's latest price,
+ * stored to four places so the grams the screens derive from it come back
+ * exactly (15048.7298 / 128.3959 = 117.2057); the screens show it to the
+ * cent, $15,048.73, which is the demo account's figure.
  * WHAT A REAL RECONCILIATION WOULD NEED, if it is ever wanted: an
  * opening per-vault position per metal; the complete row history from
  * that opening rather than a five-row window; and a stated rule for
@@ -82,10 +92,10 @@
  * ACTIVITY: the persona's transaction rows, shared by the Dashboard's
  * recent list and /activity's filtered views. Static for now; appended
  * rows will ride a FlowStore key when Buy/Sell flows land. The figures
- * RECONCILE against Market's LBMA prices and its 0.9% fee, so a row's
+ * RECONCILE against Market's latest price and its 0.9% fee, so a row's
  * rate, quantity, fee and cash actually agree: every gold rate of
- * 140.2856 is 139.0343 x 1.009, and the silver sell's 2.0371 is
- * 2.0556 x 0.991. Change a price in lib/market.ts and these rows stop
+ * 129.5515 is 128.3959 x 1.009, and the silver sell's 1.7036 is
+ * 1.7191 x 0.991. Change a price in lib/market.ts and these rows stop
  * reconciling. See the note above the rows: that has already happened
  * once to silver, and the note carries the re-derivation.
  */
@@ -431,31 +441,30 @@ export const PERSONAS: Record<string, PersonaRecord> = {
          more importantly, the limits of what that sum proves. */
       gold: {
         label: "Gold",
-        amount: 6636.8,
+        amount: 15048.7298,
         account: accountLabel("gold"),
         vaults: [
-          /* MIAMI IS THE MAIN VAULT. Since 2 Oct it holds what the third
-             vault held as well (2,891.44 + 1,334.73 = 4,226.17), so the two
-             most recent Direct Gold conversions sit here and it holding the
-             most is the story the activity list already tells. Zurich
-             keeps 2,410.63 because the 1 Aug conversion, under the older
-             default, went there. Sum is unchanged and still exactly the
-             gold balance: 4,226.17 + 2,410.63 = 6,636.80. */
-          { vault: "miami", amount: 4226.17 },
-          { vault: "zurich", amount: 2410.63 },
+          /* The demo account's split (23 Oct 2026): Zurich 72.6675 g and
+             Miami 44.5382 g, 62% and 38%, each priced at Market's latest
+             print, so the two sum exactly to the gold balance:
+             9,330.2125 + 5,718.5173 = 15,048.7298 (shown $9,330.21 and
+             $5,718.52, $15,048.73). Zurich holds the most now; Miami is
+             still where a new purchase lands (preferences.vault). */
+          { vault: "zurich", amount: 9330.2125 },
+          { vault: "miami", amount: 5718.5173 },
         ],
       },
       silver: {
         label: "Silver",
-        amount: 2984.15,
+        amount: 1320.8877,
         account: accountLabel("silver"),
         /* ONE VAULT (Ali, 11 Aug: "we wouldnt always have it in multiple
-           vaults"), and since 2 Oct that vault is Miami (Ali: "Swap Salt
-           Lake City for Miami"). The 6 Aug sale of 510 g came out of Miami
-           too, so the holding that remains is what the sale left behind.
-           Worth keeping as the single-entry case: it is what proves the
-           vault table renders one row, at 100%, with no divider under it. */
-        vaults: [{ vault: "miami", amount: 2984.15 }],
+           vaults"). Since 23 Oct 2026 it's Zurich, as the demo account
+           holds it: 768.36 g at 1.7191 = 1,320.8877, shown $1,320.89. The
+           6 Aug sale of 510 g came out of Zurich too. Worth keeping as the
+           single-entry case: it is what proves the vault table renders one
+           row, at 100%, with no divider under it. */
+        vaults: [{ vault: "zurich", amount: 1320.8877 }],
       },
       /* NO VAULTS ON CASH, and this is a decision rather than an
          oversight: the dollars sit in the Sutton Bank checking account,
@@ -466,12 +475,18 @@ export const PERSONAS: Record<string, PersonaRecord> = {
          number. vaultsFor("fiat") returns an empty array for exactly
          this reason, so a caller mapping all three assets needs no
          special case. */
-      fiat: { label: "USD", amount: 1842.6, account: accountLabel("fiat") },
+      fiat: { label: "USD", amount: 2893.84, account: accountLabel("fiat") },
     },
     /* Figures are consistent with Market's LBMA prices and its 0.9% fee,
        so a row's rate, quantity, fee and cash actually reconcile. The old
        rows were priced at roughly $86/g and no longer matched anything
        the product quotes.
+       RE-DERIVED 23 Oct 2026 against Market's latest print (the demo
+       account's price): 128.3959 x 1.009 = 129.5515, each row's grams
+       its cash over that rate, and every buy fee amount * (1 - 1/1.009),
+       which the price doesn't change. The silver sell: 1.7191 x 0.991 =
+       1.7036, proceeds 510 x 1.7036281 = 868.85, fee 510 x 1.7191 x 0.009
+       = 7.89, from Zurich, where the demo account's silver is.
        ASSUMPTION, verified 11 Aug: the four gold rows still reconcile
        against Market's latest print, 139.0343 x 1.009 = 140.2856, and
        every buy fee is amount * (1 - 1/1.009). The SILVER row WAS priced
@@ -494,10 +509,10 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         kind: "exchange-buy",
         description: "Exchange USD to Gold",
         timestamp: "2026-08-11T11:10:00",
-        metalAmount: 7.1283,
+        metalAmount: 7.7189,
         metal: "gold",
         fiatAmount: -1000,
-        rate: 140.2856,
+        rate: 129.5515,
         type: "exchange",
         status: "completed",
         account: "gold",
@@ -518,16 +533,16 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         timestamp: "2026-08-06T15:42:00",
         metalAmount: -510,
         metal: "silver",
-        fiatAmount: 1038.92,
-        rate: 2.0371,
+        fiatAmount: 868.85,
+        rate: 1.7036,
         type: "exchange",
         status: "completed",
         account: "silver",
         counterAccount: "fiat",
-        /* A sell, so the 510 g left Miami. */
-        vault: "miami",
+        /* A sell, so the 510 g left Zurich, where the silver is. */
+        vault: "zurich",
         method: "market-order",
-        fee: 9.44,
+        fee: 7.89,
         reference: "GX-4390-0117",
       },
       {
@@ -558,10 +573,10 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         kind: "exchange-buy",
         description: "Exchange USD to Gold",
         timestamp: "2026-08-11T14:21:00",
-        metalAmount: 59.8778,
+        metalAmount: 64.8391,
         metal: "gold",
         fiatAmount: -8400,
-        rate: 140.2856,
+        rate: 129.5515,
         type: "exchange",
         status: "completed",
         account: "gold",
@@ -583,10 +598,10 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         kind: "exchange-buy",
         description: "Exchange USD to Gold",
         timestamp: "2026-08-02T10:15:00",
-        metalAmount: 8.8402,
+        metalAmount: 9.5726,
         metal: "gold",
         fiatAmount: -1240.15,
-        rate: 140.2856,
+        rate: 129.5515,
         type: "exchange",
         status: "completed",
         account: "gold",
@@ -621,10 +636,10 @@ export const PERSONAS: Record<string, PersonaRecord> = {
         kind: "exchange-buy",
         description: "Exchange USD to Gold",
         timestamp: "2026-08-01T07:42:00",
-        metalAmount: 22.8106,
+        metalAmount: 24.7006,
         metal: "gold",
         fiatAmount: -3200,
-        rate: 140.2856,
+        rate: 129.5515,
         type: "exchange",
         status: "completed",
         account: "gold",
